@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white"
+    android:orientation="vertical"
+    tools:ignore="MissingPrefix">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@mipmap/bg_login_and_register"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/tv_activity_login_and_register_login"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:layout_marginLeft="@dimen/dip_10"
+            android:background="@drawable/bg_btn_login_and_register_select"
+            android:paddingBottom="@dimen/dip_3"
+            android:paddingLeft="@dimen/dip_15"
+            android:paddingRight="@dimen/dip_15"
+            android:paddingTop="@dimen/dip_3"
+            android:text="登 录"
+            android:textColor="@android:color/white"
+            android:textSize="@dimen/dip_15" />
+
+        <TextView
+            android:id="@+id/tv_activity_login_and_register_register"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:layout_marginLeft="@dimen/dip_15"
+            android:background="@drawable/bg_btn_login_and_register_select"
+            android:paddingBottom="@dimen/dip_5"
+            android:paddingLeft="@dimen/dip_15"
+            android:paddingRight="@dimen/dip_15"
+            android:paddingTop="@dimen/dip_3"
+            android:text="注 册"
+            android:textColor="@android:color/black"
+            android:textSize="@dimen/dip_15" />
+    </LinearLayout>
+
+    <!--<android.support.v4.view.ViewPager-->
+        <!--android:id="@+id/vp_activity_login_and_register"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="match_parent"-->
+        <!--android:layout_marginLeft="@dimen/dip_8"-->
+        <!--android:layout_marginRight="@dimen/dip_8" />-->
+    <include layout="@layout/fragment_login"/>
+</LinearLayout>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#152f49"
+    android:orientation="vertical">
+
+    <EditText
+        android:id="@+id/remote_input_et"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="16dp"
+        android:layout_marginRight="16dp"
+        android:layout_marginTop="20dp"
+        android:background="@drawable/bg_edit_normal"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:gravity="center_vertical"
+        android:hint="请输入"
+        android:imeOptions="actionDone"
+        android:maxLength="100"
+        android:minHeight="32dp"
+        android:paddingLeft="@dimen/dip_8"
+        android:scrollbars="vertical"
+        android:textColor="#ffffff"
+        android:textColorHint="#4dffffff"
+        android:textCursorDrawable="@drawable/edit_line"
+        android:textSize="@dimen/dip_14"
+        android:typeface="sans" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="20dp" />
+
+    <include
+        layout="@layout/fm_input_center_panal"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginLeft="16dp"
+        android:layout_marginRight="16dp"
+        android:layout_weight="170" />
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="310">
+
+        <com.android.baselibrary.widget.keyboard2.KeyboardViewUnity
+            android:id="@+id/customized_keyboard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true" />
+
+    </RelativeLayout>
+
+
+</LinearLayout>

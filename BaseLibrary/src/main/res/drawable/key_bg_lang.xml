@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="false">
+        <layer-list>
+            <item>
+                <shape
+                    android:shape="rectangle">
+                    <solid android:color="#445c74"/>
+                    <corners
+                        android:radius="4dip"/>
+                </shape>
+            </item>
+            <item>
+                <bitmap android:src="@drawable/ic_keyboard_type"/>
+            </item>
+        </layer-list>
+    </item>
+
+    <item android:state_pressed="true">
+        <layer-list>
+            <item>
+                <shape android:shape="rectangle">
+                    <!--<solid android:color="#dbdbdb"/>-->
+                    <gradient
+                        android:angle="180"
+                        android:endColor="#05bde9"
+                        android:startColor="#10dab4"/>
+
+                    <corners
+                        android:bottomLeftRadius="4dip"
+                        android:bottomRightRadius="4dip"
+                        android:topLeftRadius="4dip"
+                        android:topRightRadius="4dip"/>
+                </shape>
+            </item>
+            <item>
+                <bitmap android:src="@drawable/ic_keyboard_type"/>
+            </item>
+        </layer-list>
+    </item>
+</selector>

@@ -1,0 +1,120 @@
+<resources>
+    <string name="app_name">CustomWidget</string>
+
+    <string name="title_draw_color">drawColor()</string>
+    <string name="title_draw_circle">drawCircle()</string>
+    <string name="title_draw_rect">drawRect()</string>
+    <string name="title_draw_point">drawPoint()</string>
+    <string name="title_draw_oval">drawOval()</string>
+    <string name="title_draw_line">drawLine()</string>
+    <string name="title_draw_round_rect">drawRoundRect()</string>
+    <string name="title_draw_arc">drawArc()</string>
+    <string name="title_draw_path">drawPath()</string>
+    <string name="title_draw_histogram">直方图</string>
+    <string name="title_draw_pie_chart">饼图</string>
+
+    <string name="title_linear_gradient">LinearGradient</string>
+    <string name="title_radial_gradient">RadialGradient</string>
+    <string name="title_sweep_gradient">SweepGradient</string>
+    <string name="title_bitmap_shader">BitmapShader</string>
+    <string name="title_compose_shader">ComposeShader</string>
+    <string name="title_lighting_color_filter">LightingColorFilter</string>
+    <string name="title_color_matrix_color_filter">ColorMatrixColorFilter</string>
+    <string name="title_xfermode">setXfermode()</string>
+    <string name="title_stroke_cap">setStrokeCap()</string>
+    <string name="title_stroke_join">setStrokeJoin()</string>
+    <string name="title_stroke_miter">setStrokeMiter()</string>
+    <string name="title_path_effect">setPathEffect()</string>
+    <string name="title_shader_layer">setShadowLayer()</string>
+    <string name="title_mask_filter">setMaskFilter()</string>
+    <string name="title_fill_path">setFillPath()</string>
+    <string name="title_text_path">setTextPath()</string>
+
+    <string name="title_draw_text">drawText()</string>
+    <string name="title_static_layout">StaticLayout</string>
+    <string name="title_set_text_size">setTextSize()</string>
+    <string name="title_set_typeface">setTypeface()</string>
+    <string name="title_set_fake_bold_text">setFakeBoldText()</string>
+    <string name="title_set_strike_thru_text">setStrikeThruText()</string>
+    <string name="title_set_underline_text">setUnderlineText()</string>
+    <string name="title_set_text_skew_x">setTextSkewX()</string>
+    <string name="title_set_text_scale_x">setTextScaleX()</string>
+    <string name="title_set_text_align">setTextAlign()</string>
+    <string name="title_get_font_spacing">getFontSpacing()</string>
+    <string name="title_measure_text">measureText()</string>
+    <string name="title_get_text_bounds">getTextBounds()</string>
+    <string name="title_get_font_metrics">getFontMetrics()</string>
+
+    <string name="title_clip_rect">clipRect()</string>
+    <string name="title_clip_path">clipPath()</string>
+    <string name="title_translate">translate()</string>
+    <string name="title_scale">scale()</string>
+    <string name="title_rotate">rotate()</string>
+    <string name="title_skew">skew()</string>
+    <string name="title_matrix_translate">Matrix.translate()</string>
+    <string name="title_matrix_scale">Matrix.scale()</string>
+    <string name="title_matrix_rotate">Matrix.rotate()</string>
+    <string name="title_matrix_skew">Matrix.skew()</string>
+    <string name="title_camera_rotate">Camera.rotateX/Y()</string>
+    <string name="title_camera_rotate_fixed">Camera.rotateX/Y() 修正版</string>
+    <string name="title_camera_rotate_hitting_face">Camera.rotateX/Y() 糊脸修正</string>
+    <string name="title_flipboard">翻页效果</string>
+
+    <string name="title_after_on_draw">onDraw()-后插</string>
+    <string name="title_before_on_draw">onDraw()-前插</string>
+    <string name="title_on_draw_layout">onDraw()-在 Layout 中</string>
+    <string name="title_dispatch_draw">dispatchDraw()</string>
+    <string name="title_after_on_draw_foreground">onDrawForeground()-后插</string>
+    <string name="title_before_on_draw_foreground">onDrawForeground()-前插</string>
+    <string name="title_after_draw">draw()-后插</string>
+    <string name="title_before_draw">draw()-前插</string>
+    <string name="hello">Hello HenCoder</string>
+    <string name="about_hencoder">HenCoder 是\n针对高级 Android 工程师\n的进阶手册\n旨在突破高手们最基础的技能瓶颈\n结束止步不前的状态，继续快速提升\n内容难度上也许对新手不够友好\n只能说句得罪了\n我个人水平有限\n照顾不到所有人</string>
+    <string name="image_size">尺寸：%1$d x %2$d</string>
+    <string name="batman">Batman</string>
+
+    <string name="title_translation">translationX/Y/Z()</string>
+    <string name="title_rotation">rotation/X/Y()</string>
+    <string name="title_scale_6">scaleX/Y()</string>
+    <string name="title_alpha">alpha()</string>
+    <string name="title_multi_properties">ViewPropertyAnimator-多属性</string>
+    <string name="title_duration">setDuration()</string>
+    <string name="title_interpolator">setInterpolator()</string>
+    <string name="title_object_animator">ObjectAnimator</string>
+    <string name="duration">Duration</string>
+    <string name="ms_with_value">%dms</string>
+    <string name="interpolator">Interpolator</string>
+    <string name="animate">animate</string>
+    <string name="title_object_animator_multi_float">ObjectAnimator.ofMultiFloat()</string>
+    <string name="api_lower_than_21">API 21 及更高版本才支持这个，换个高版本的设备再试吧</string>
+    <string-array name="interpolators">
+        <item>AccelerateDecelerateInterpolator</item>
+        <item>LinearInterpolator</item>
+        <item>AccelerateInterpolator</item>
+        <item>DecelerateInterpolator</item>
+        <item>AnticipateInterpolator</item>
+        <item>OvershootInterpolator</item>
+        <item>AnticipateOvershootInterpolator</item>
+        <item>BounceInterpolator</item>
+        <item>CycleInterpolator</item>
+        <item>PathInterpolator</item>
+        <item>FastOutLinearInInterpolator</item>
+        <item>FastOutSlowInInterpolator</item>
+        <item>LinearOutSlowInInterpolator</item>
+    </string-array>
+
+    <string name="title_argb_evaluator">ArgbEvaluator</string>
+    <string name="title_hsv_evaluator">HsvEvaluator</string>
+    <string name="title_of_object">ofObject()</string>
+    <string name="title_property_values_holder">PropertyValuesHolder</string>
+    <string name="title_animator_set">AnimatorSet</string>
+    <string name="title_keyframe">PropertyValuesHolder.ofKeyframe()</string>
+
+    <string name="title_square_image_view">SquareImageView</string>
+    <string name="title_message_edit_text">MessageEditText</string>
+    <string name="width">宽度</string>
+    <string name="height">高度</string>
+    <string name="adjust_frame">外框调节</string>
+    <string name="text_message">不得违背核心价值观</string>
+    <string name="eidt_text_with_message">在此输入用户名</string>
+</resources>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="#1b4570"
+    android:paddingBottom="4dp"
+    android:paddingTop="6dp">
+
+    <com.android.baselibrary.widget.keyboard2.PolyKeyboardView
+        android:id="@+id/poly_keyboard_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="0dp"
+        android:background="#00000000"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:keyBackground="@xml/keyboard_key_bg"
+        android:keyTextColor="#FFFFFF"
+        android:keyTextSize="22dp"
+        android:padding="0dp" />
+</RelativeLayout>

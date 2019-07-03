@@ -1,0 +1,3 @@
+[submodule "BaseLibrary"]
+	path = BaseLibrary
+	url = https://gitee.com/jcy_1995/BaseLibrary

@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="0dp"
+    android:layout_weight="0.85">
+
+    <android.support.constraint.Guideline
+        android:id="@+id/guideline_left_v"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_begin="10dp" />
+
+    <android.support.constraint.Guideline
+        android:id="@+id/guideline_right_v"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_end="@dimen/dip_10" />
+
+    <EditText
+        android:id="@+id/et_fragment_login_username"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/dip_10"
+        android:background="@null"
+        android:ellipsize="end"
+        android:hint="请输入您的账号"
+        android:inputType="textPassword"
+        android:singleLine="true"
+        android:textColor="@android:color/black"
+        android:textColorHint="#D7D7D7"
+        android:textSize="@dimen/dip_20"
+        app:layout_constraintEnd_toStartOf="@+id/guideline_right_v"
+        app:layout_constraintStart_toEndOf="@+id/guideline_left_v"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <View
+        android:id="@+id/line1"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/dip_1"
+        android:background="#D7D7D7"
+        app:layout_constraintEnd_toStartOf="@+id/guideline_right_v"
+        app:layout_constraintStart_toEndOf="@+id/guideline_left_v"
+        app:layout_constraintTop_toBottomOf="@id/et_fragment_login_username" />
+
+    <EditText
+        android:id="@+id/et_fragment_login_password"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/dip_10"
+        android:background="@null"
+        android:ellipsize="end"
+        android:hint="请输入您的密码"
+        android:inputType="textPassword"
+        android:textColor="@android:color/black"
+        android:textColorHint="#D7D7D7"
+        android:textSize="@dimen/dip_20"
+        app:layout_constraintEnd_toStartOf="@+id/guideline_right_v"
+        app:layout_constraintStart_toEndOf="@+id/guideline_left_v"
+        app:layout_constraintTop_toBottomOf="@id/line1"/>
+
+    <View
+        android:id="@+id/line2"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/dip_1"
+        android:background="#D7D7D7"
+        app:layout_constraintEnd_toStartOf="@+id/guideline_right_v"
+        app:layout_constraintStart_toEndOf="@+id/guideline_left_v"
+        app:layout_constraintTop_toBottomOf="@id/et_fragment_login_password"/>
+
+    <TextView
+        android:id="@+id/tv_fragment_login_forget_password"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/dip_10"
+        android:text="忘记密码？"
+        android:textColor="#D7D7D7"
+        android:textSize="@dimen/dip_16"
+        app:layout_constraintEnd_toStartOf="@+id/guideline_right_v"
+        app:layout_constraintTop_toBottomOf="@+id/et_fragment_login_password" />
+
+    <TextView
+        android:id="@+id/tv_activity_login_and_register_login"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/dip_15"
+        android:background="@drawable/bg_btn_login_and_register_select"
+        android:gravity="center"
+        android:padding="@dimen/dip_10"
+        android:text="立  即  登  录"
+        android:textColor="@android:color/white"
+        android:textSize="@dimen/dip_18"
+        app:layout_constraintEnd_toStartOf="@+id/guideline_right_v"
+        app:layout_constraintStart_toEndOf="@+id/guideline_left_v"
+        app:layout_constraintTop_toBottomOf="@+id/tv_fragment_login_forget_password" />
+
+    <View
+        android:id="@+id/view_fragment_login"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/dip_1"
+        android:layout_marginTop="@dimen/dip_30"
+        android:background="#000000"
+        app:layout_constraintEnd_toStartOf="@+id/guideline_right_v"
+        app:layout_constraintStart_toEndOf="@+id/guideline_left_v"
+        app:layout_constraintTop_toBottomOf="@id/tv_activity_login_and_register_login" />
+
+    <TextView
+        android:id="@+id/tv_fragment_login_other"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:background="@android:color/white"
+        android:padding="@dimen/dip_10"
+        android:text="其 他 登 录 方 式"
+        android:textColor="#D7D7D7"
+        android:textSize="@dimen/dip_14"
+        app:layout_constraintTop_toTopOf="@id/view_fragment_login"
+        app:layout_constraintBottom_toBottomOf="@id/view_fragment_login"
+        app:layout_constraintLeft_toLeftOf="@id/view_fragment_login"
+        app:layout_constraintRight_toRightOf="@id/view_fragment_login" />
+
+    <ImageView
+        android:id="@+id/iv_fragment_login_qq"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@mipmap/bg_btn_qq"
+        android:padding="@dimen/dip_10"
+        app:layout_constraintStart_toEndOf="@+id/guideline_left_v"
+        app:layout_constraintTop_toBottomOf="@id/tv_fragment_login_other"/>
+
+    <ImageView
+        android:id="@+id/iv_fragment_login_wechat"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@mipmap/bg_btn_wechat"
+        android:layout_marginLeft="@dimen/dip_20"
+        android:padding="@dimen/dip_10"
+        app:layout_constraintEnd_toStartOf="@+id/guideline_right_v"
+        app:layout_constraintTop_toBottomOf="@id/tv_fragment_login_other"/>
+
+</android.support.constraint.ConstraintLayout>

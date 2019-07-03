@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="fab_margin">16dp</dimen>
+    <!--创建fragmentList自动生成的参数-->
+
+    <!-- Default screen margins, per the Android Design guidelines. -->
+    <dimen name="fragment_fake_status_bar_height">0dp</dimen>
+    <!--尺寸参考youtube actionbar高度-->
+    <dimen name="fake_tool_bar_height">44dp</dimen>
+    <dimen name="card_corner_radius">7dp</dimen>
+    <dimen name="tab_layout_text_size">17sp</dimen>
+
+    <dimen name="dip_1">1dp</dimen>
+    <dimen name="dip_2">2dp</dimen>
+    <dimen name="dip_3">3dp</dimen>
+    <dimen name="dip_4">4dp</dimen>
+    <dimen name="dip_5">5dp</dimen>
+    <dimen name="dip_6">6dp</dimen>
+    <dimen name="dip_7">7dp</dimen>
+    <dimen name="dip_8">8dp</dimen>
+    <dimen name="dip_9">9dp</dimen>
+    <dimen name="dip_10">10dp</dimen>
+    <dimen name="dip_11">11dp</dimen>
+    <dimen name="dip_12">12dp</dimen>
+    <dimen name="dip_13">13dp</dimen>
+    <dimen name="dip_14">14dp</dimen>
+    <dimen name="dip_15">15dp</dimen>
+    <dimen name="dip_16">16dp</dimen>
+    <dimen name="dip_17">17dp</dimen>
+    <dimen name="dip_18">18dp</dimen>
+    <dimen name="dip_19">19dp</dimen>
+    <dimen name="dip_20">20dp</dimen>
+    <dimen name="dip_30">30dp</dimen>
+    <dimen name="dip_48">48dp</dimen>
+
+</resources>

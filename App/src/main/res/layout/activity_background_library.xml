@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="@string/layoutInflater_factory_shape_selector"
+        android:textSize="24dp" />
+
+    <TextView
+        android:layout_width="130dp"
+        android:layout_height="36dp"
+        android:layout_gravity="center"
+        android:layout_marginTop="30dp"
+        android:gravity="center"
+        android:text="TextView"
+        android:textColor="#8c6822"
+        android:textSize="20sp"
+        app:bl_corners_radius="4dp"
+        app:bl_solid_color="#E3B666"
+        app:bl_stroke_color="#8c6822"
+        app:bl_stroke_width="2dp"
+        tools:ignore="MissingPrefix" />
+
+    <Button
+        android:layout_width="300dp"
+        android:layout_height="50dp"
+        android:layout_gravity="center"
+        android:layout_marginTop="5dp"
+        android:gravity="center"
+        android:padding="0dp"
+        android:text="有波纹触摸反馈的按钮"
+        android:textColor="@android:color/white"
+        android:textSize="20sp"
+        app:bl_corners_radius="20dp"
+        app:bl_pressed_drawable="#71C671"
+        app:bl_ripple_color="#71C671"
+        app:bl_ripple_enable="true"
+        app:bl_stroke_color="#8c6822"
+        app:bl_stroke_width="2dp"
+        app:bl_unPressed_drawable="#7CFC00"
+        tools:ignore="MissingPrefix" />
+
+    <Button
+        android:layout_width="300dp"
+        android:layout_height="50dp"
+        android:layout_gravity="center"
+        android:layout_marginTop="5dp"
+        android:gravity="center"
+        android:padding="0dp"
+        android:text="点击文字变色"
+        app:bl_pressed_textColor="#919DAF"
+        app:bl_unPressed_textColor="@android:color/holo_red_dark"
+        tools:ignore="MissingPrefix" />
+
+
+</LinearLayout>
