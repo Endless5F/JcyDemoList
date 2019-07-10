@@ -11,6 +11,7 @@
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true"
         tools:ignore="GoogleAppIndexingWarning">
+        <activity android:name=".kotlin.activity.ScrollRecycleViewActivity"/>
         <activity android:name=".activity.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -18,16 +19,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".exerciseList.hencoderpracticedraw1.DrawBasicActivity"/>
-        <activity android:name=".exerciseList.hencoderpracticedraw2.PaintActivity"/>
-        <activity android:name=".exerciseList.hencoderpracticedraw3.DrawTextActivity"/>
-        <activity android:name=".exerciseList.hencoderpracticedraw4.ClipAndMatrixActivity"/>
-        <activity android:name=".exerciseList.hencoderpracticedraw5.DrawOrderActivity"/>
-        <activity android:name=".exerciseList.hencoderpracticedraw6.Animation1Activity"/>
-        <activity android:name=".exerciseList.hencoderpracticedraw7.Animation2Activity"/>
-        <activity android:name=".exerciseList.hencoderpracticelayout1.LayoutBasicActivity"/>
-
-        <activity android:name=".activity.exerciseActivity.ThumbUpActivity"/>
+        <activity android:name=".exerciseList.hencoderpracticedraw1.DrawBasicActivity" />
+        <activity android:name=".exerciseList.hencoderpracticedraw2.PaintActivity" />
+        <activity android:name=".exerciseList.hencoderpracticedraw3.DrawTextActivity" />
+        <activity android:name=".exerciseList.hencoderpracticedraw4.ClipAndMatrixActivity" />
+        <activity android:name=".exerciseList.hencoderpracticedraw5.DrawOrderActivity" />
+        <activity android:name=".exerciseList.hencoderpracticedraw6.Animation1Activity" />
+        <activity android:name=".exerciseList.hencoderpracticedraw7.Animation2Activity" />
+        <activity android:name=".exerciseList.hencoderpracticelayout1.LayoutBasicActivity" />
+        <activity android:name=".activity.exerciseActivity.ThumbUpActivity" />
     </application>
 
 </manifest>

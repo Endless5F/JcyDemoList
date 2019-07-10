@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # android 开源框架库
 
 #### 项目介绍
@@ -13,3 +14,6 @@ CustomWidget：自定义组件，学习HenCoder练习项目集锦，以及自己
 SourceCodeAnalysis：源码分析，不仅包括源码分析，还包括本人所写的所有掘金文章留存
 
 掘金地址：https://juejin.im/user/5b532fa56fb9a04f8c5edaf6
+=======
+# JcyDemoList
+>>>>>>> parent of f6724c3... 初始化

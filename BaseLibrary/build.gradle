@@ -1,4 +1,6 @@
 apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-android'
 
 android {
     compileSdkVersion compile_sdk
@@ -64,7 +66,7 @@ dependencies {
     api 'org.greenrobot:eventbus:3.1.1'//@{proguard}
 
     api 'jp.wasabeef:glide-transformations:4.0.1'
-    api 'com.github.bumptech.glide:glide:4.7.1'
+    api 'com.github.bumptech.glide:glide:4.8.0'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.7.1'
     //Log
     api 'com.orhanobut:logger:2.1.1'
@@ -76,6 +78,13 @@ dependencies {
     // 通过标签直接生成shape，无需再写shape.xml
     api 'com.noober.background:core:1.3.1'
 
+    // kotlin 配置
+    api "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    api "org.jetbrains.anko:anko:$anko_version"
+
     // 用于学习
     api 'org.litepal.android:core:2.0.0'
+}
+repositories {
+    mavenCentral()
 }
