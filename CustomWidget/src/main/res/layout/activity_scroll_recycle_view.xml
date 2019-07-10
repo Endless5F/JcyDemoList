@@ -11,7 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="48dp" />
 
-    <LinearLayout
+    <com.android.customwidget.kotlin.widget.ThouchLinearLayout
         android:id="@+id/ll_touch"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
@@ -20,5 +20,5 @@
             android:id="@+id/rv_content"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
-    </LinearLayout>
+    </com.android.customwidget.kotlin.widget.ThouchLinearLayout>
 </LinearLayout>

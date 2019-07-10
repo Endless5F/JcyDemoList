@@ -20,7 +20,7 @@ class TimeRvAdapter(private val mContext : Context, private val dataList : List<
     }
 
     override fun onBindViewHolder(viewHodler: TimeViewHodler, position: Int) {
-        viewHodler.itemView.tv_time.setText(dataList[position])
+        viewHodler.itemView.tv_time.text = dataList[position]
     }
 
     class TimeViewHodler constructor(itemView: View) : RecyclerView.ViewHolder(itemView)

@@ -3,12 +3,15 @@ package com.android.customwidget.kotlin.activity
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
+import android.util.Log
 
 import com.android.customwidget.R
+import com.android.customwidget.kotlin.adapter.ContentRvAdapter
 import com.android.customwidget.kotlin.adapter.TimeRvAdapter
 import com.android.customwidget.kotlin.bean.Program
 import com.android.customwidget.kotlin.utils.FormatUtil
 import kotlinx.android.synthetic.main.activity_scroll_recycle_view.*
+import org.jetbrains.anko.toast
 
 class ScrollRecycleViewActivity : AppCompatActivity() {
 
@@ -29,6 +32,8 @@ class ScrollRecycleViewActivity : AppCompatActivity() {
 
         initData()
         initRecycle()
+        initListener()
+//        toast("Hello, World")
     }
 
     private fun initData() {
@@ -43,7 +48,16 @@ class ScrollRecycleViewActivity : AppCompatActivity() {
 
     private fun initRecycle() {
         rv_time.adapter = TimeRvAdapter(this, timeList)
+        rv_content.adapter = ContentRvAdapter(this, contentList)
     }
 
+    private fun initListener() {
+        ll_touch.setOnTouchListener { _, event ->
+            rv_time.isLayoutFrozen = false
+            Log.d("scrollState", "scrollState $rv_time.getScrollState()")
+            rv_time.onTouchEvent(event)
+            true
+        }
+    }
 
 }
