@@ -1,7 +1,9 @@
 package com.android.customwidget.kotlin.activity
 
+import android.content.Context
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.support.v4.app.FragmentManager
 import android.support.v7.widget.LinearLayoutManager
 import android.util.Log
 
@@ -11,7 +13,6 @@ import com.android.customwidget.kotlin.adapter.TimeRvAdapter
 import com.android.customwidget.kotlin.bean.Program
 import com.android.customwidget.kotlin.utils.FormatUtil
 import kotlinx.android.synthetic.main.activity_scroll_recycle_view.*
-import org.jetbrains.anko.toast
 
 class ScrollRecycleViewActivity : AppCompatActivity() {
 
@@ -47,17 +48,35 @@ class ScrollRecycleViewActivity : AppCompatActivity() {
     }
 
     private fun initRecycle() {
+        val tras = supportFragmentManager.beginTransaction()
+        tras.commit()
         rv_time.adapter = TimeRvAdapter(this, timeList)
         rv_content.adapter = ContentRvAdapter(this, contentList)
     }
 
     private fun initListener() {
-        ll_touch.setOnTouchListener { _, event ->
-            rv_time.isLayoutFrozen = false
-            Log.d("scrollState", "scrollState $rv_time.getScrollState()")
-            rv_time.onTouchEvent(event)
-            true
-        }
+        ll_touch.setDragRecycleView(rv_time)
+//        val clazz = rv_time::class.java.javaClass
+//        val method = clazz.getDeclaredMethod("setScrollState", Int::class.javaPrimitiveType)
+//        method.isAccessible = true
+//        val declaredConstructor = clazz.getConstructor(Context::class.javaPrimitiveType)
+//        method.invoke(declaredConstructor.newInstance(this),1)
+//        rv_content.setOnTouchListener { _, event ->
+//            rv_time.isLayoutFrozen = false
+//            val state = rv_time.scrollState
+//            Log.d("scrollState", "scrollState $state")
+//            rv_time.onTouchEvent(event)
+////            rv_content.onTouchEvent(event)
+//            true
+//        }
+
+//        ll_touch.setOnTouchListener { _, event ->
+//            rv_time.isLayoutFrozen = false
+//            val state = rv_time.scrollState
+//            Log.d("scrollState", "scrollState $state")
+//            rv_time.onTouchEvent(event)
+//            true
+//        }
     }
 
 }
