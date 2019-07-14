@@ -1,1 +1,1 @@
-include ':App',':BaseLibrary', ':SourceCodeAnalysis', ':CustomWidget'
+include ':App',':BaseLibrary', ':SourceCodeAnalysis', ':CustomWidget', ':Architecture'
