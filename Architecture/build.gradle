@@ -12,6 +12,7 @@ android {
 
 
     defaultConfig {
+        multiDexEnabled true
         applicationId "com.android.architecture"
         minSdkVersion 21
         targetSdkVersion 28
@@ -42,6 +43,7 @@ dependencies {
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
 
+    implementation 'com.android.support:multidex:1.0.3'
     // kotlin 配置
     implementation "org.jetbrains.anko:anko:$anko_version"
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
