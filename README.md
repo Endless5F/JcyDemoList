@@ -6,6 +6,8 @@
 #### 结构说明
 APP Moudle：使用BaseLibrary部分示例
 
+Architecture：架构组件学习，包括Jetpack部分组件以及其它
+
 BaseLibrary：基类-子模块，本人总结的开发基Moudle，包括初始化、基类、联网、工具类等等
 
 CustomWidget：自定义组件，学习HenCoder练习项目集锦，以及自己的综合练习demo
