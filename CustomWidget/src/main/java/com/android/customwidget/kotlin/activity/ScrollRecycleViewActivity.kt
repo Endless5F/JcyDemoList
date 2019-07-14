@@ -38,7 +38,7 @@ class ScrollRecycleViewActivity : AppCompatActivity() {
     }
 
     private fun initData() {
-        (1..100).forEach {
+        (1..50).forEach {
             timeList.add(FormatUtil.stampToDate(System.currentTimeMillis() + it * 1000))
         }
 
