@@ -82,6 +82,9 @@ dependencies {
     api "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     api "org.jetbrains.anko:anko:$anko_version"
 
+    // 防止项目方法过多，超过65535，编译报错
+    api 'com.android.support:multidex:1.0.3'
+
     // 用于学习
     api 'org.litepal.android:core:2.0.0'
 }

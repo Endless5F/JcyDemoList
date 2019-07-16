@@ -5,6 +5,7 @@ apply plugin: 'kotlin-android'
 android {
     compileSdkVersion compile_sdk
     defaultConfig {
+        multiDexEnabled true
         applicationId "com.jcy.androidframework"
         minSdkVersion min_sdk
         targetSdkVersion target_sdk
