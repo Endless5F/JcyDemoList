@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto" android:id="@+id/nav_graph_main"
+    app:startDestination="@id/page1Fragment"><!-- startDestination：默认加载到Activity中的布局 -->
+
+    <fragment android:id="@+id/page1Fragment"
+        android:label="fragment_page1"
+        android:name="com.android.architecture.demolist.navigation.MainPage1Fragment">
+        <!-- action：声明导航的行为；destination ：目的地，跳转目标-->
+        <action
+            android:id="@+id/action_page1Fragment_to_page2Fragment"
+            app:destination="@id/page2Fragment" />
+    </fragment>
+    <fragment android:id="@+id/page2Fragment"
+        android:label="fragment_page2"
+        android:name="com.android.architecture.demolist.navigation.MainPage2Fragment">
+        <action
+            android:id="@+id/action_page2Fragment_to_page3Fragment"
+            app:destination="@id/page3Fragment" />
+        <action
+            android:id="@+id/action_page2Fragment_to_page1Fragment"
+            app:destination="@id/page1Fragment" />
+    </fragment>
+    <fragment android:id="@+id/page3Fragment"
+        android:name="com.android.architecture.demolist.navigation.MainPage3Fragment">
+        <action
+            android:id="@+id/action_page3Fragment_to_page2Fragment"
+            app:destination="@id/page2Fragment" />
+    </fragment>
+</navigation>

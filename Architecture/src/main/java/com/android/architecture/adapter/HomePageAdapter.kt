@@ -2,6 +2,7 @@ package com.android.architecture.adapter
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.support.v4.util.SparseArrayCompat
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
@@ -10,6 +11,8 @@ import android.view.ViewGroup
 import android.widget.TextView
 import com.android.architecture.R
 import com.android.architecture.data.HomeData
+import com.android.architecture.demolist.lifecycle.LifecycleActivity
+import com.android.architecture.demolist.navigation.NavigationActivity
 
 class HomePageAdapter(private val mContext: Context, private val mItemData: List<HomeData.ItemView>) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val mHeaderViews = SparseArrayCompat<Int>()
@@ -55,15 +58,18 @@ class HomePageAdapter(private val mContext: Context, private val mItemData: List
             //            itemViewHolder.icon.setText(mItemData.get(position).icon);
             val pos = position
             itemViewHolder.name.setOnClickListener {
+                val intent = Intent()
                 when (pos) {
                     1 -> {
-
+                        intent.setClass(mContext, LifecycleActivity::class.java)
+                        mContext.startActivity(intent)
                     }
                     2 -> {
 
                     }
                     3 -> {
-
+                        intent.setClass(mContext, NavigationActivity::class.java)
+                        mContext.startActivity(intent)
                     }
                     4 -> {
 

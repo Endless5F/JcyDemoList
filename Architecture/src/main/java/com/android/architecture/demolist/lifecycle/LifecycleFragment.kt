@@ -4,7 +4,7 @@ import android.support.v4.app.Fragment
 
 class LifecycleFragment : Fragment() {
     init {
-        lifecycle.addObserver(StudyLifecyleObserver())
+        lifecycle.addObserver(StudyLifecyleObserver(context!!))
     }
 
 

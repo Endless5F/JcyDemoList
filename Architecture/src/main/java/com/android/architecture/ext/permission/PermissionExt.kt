@@ -1,4 +1,4 @@
-package luyao.util.ktx.ext.permission
+package com.android.architecture.ext.permission
 
 import android.app.Activity
 import android.content.pm.PackageManager

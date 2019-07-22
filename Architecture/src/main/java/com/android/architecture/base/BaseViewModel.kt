@@ -1,4 +1,4 @@
-//package luyao.util.ktx.base
+//package com.android.architecture.base
 //
 //import android.arch.lifecycle.LifecycleObserver
 //import android.arch.lifecycle.MutableLiveData

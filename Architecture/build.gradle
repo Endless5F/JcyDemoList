@@ -82,6 +82,9 @@ dependencies {
     // optional - Test helpers for LiveData
     testImplementation "android.arch.core:core-testing:$lifecycle_version"
 
+    def nav_version = '1.0.0-alpha01'
+    implementation "android.arch.navigation:navigation-fragment:$nav_version"
+    implementation "android.arch.navigation:navigation-ui:$nav_version"
 
     // Androidx $lifecycle_version == 2.0.0
     // ViewModel 和 LiveData
