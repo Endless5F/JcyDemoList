@@ -12,11 +12,12 @@ object HomeData {
     init {
         addDeviceItem("", "架构组件 demo")
         addDeviceItem("&#xe620;", "Jetpack(数据绑定部分)之Lifecycles")
+        addDeviceItem("&#xe620;", "Jetpack(数据绑定部分)之ViewModel")
         addDeviceItem("&#xe620;", "Jetpack(数据绑定部分)之LiveData")
-        addDeviceItem("&#xe620;", "Jetpack(数据绑定部分)之Navigation")
+        addDeviceItem("&#xe620;", "Jetpack(数据绑定部分)之DataBinding")
         addDeviceItem("&#xe620;", "Jetpack(数据绑定部分)之Paging")
         addDeviceItem("&#xe620;", "Jetpack(数据绑定部分)之Room")
-        addDeviceItem("&#xe620;", "Jetpack(数据绑定部分)之ViewModel")
+        addDeviceItem("&#xe620;", "Jetpack(数据绑定部分)之Navigation")
         addDeviceItem("&#xe620;", "Jetpack(数据绑定部分)之WorkManager")
     }
 

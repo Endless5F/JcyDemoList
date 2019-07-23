@@ -7,24 +7,41 @@
         android:label="fragment_page1"
         android:name="com.android.architecture.demolist.navigation.MainPage1Fragment">
         <!-- action：声明导航的行为；destination ：目的地，跳转目标-->
+        <!-- enterAnim/exitAnim/popEnterAnim/popExitAnim 进入退出动画 -->
         <action
             android:id="@+id/action_page1Fragment_to_page2Fragment"
-            app:destination="@id/page2Fragment" />
+            app:destination="@id/page2Fragment"
+            app:enterAnim="@anim/nav_default_pop_enter_anim"
+            app:exitAnim="@anim/nav_default_pop_exit_anim"
+            app:popEnterAnim="@anim/nav_default_enter_anim"
+            app:popExitAnim="@anim/nav_default_exit_anim" />
     </fragment>
     <fragment android:id="@+id/page2Fragment"
         android:label="fragment_page2"
         android:name="com.android.architecture.demolist.navigation.MainPage2Fragment">
         <action
             android:id="@+id/action_page2Fragment_to_page3Fragment"
-            app:destination="@id/page3Fragment" />
+            app:destination="@id/page3Fragment"
+            app:enterAnim="@anim/nav_default_pop_enter_anim"
+            app:exitAnim="@anim/nav_default_pop_exit_anim"
+            app:popEnterAnim="@anim/nav_default_pop_enter_anim"
+            app:popExitAnim="@anim/nav_default_exit_anim" />
         <action
             android:id="@+id/action_page2Fragment_to_page1Fragment"
-            app:destination="@id/page1Fragment" />
+            app:destination="@id/page1Fragment"
+            app:enterAnim="@anim/nav_default_pop_enter_anim"
+            app:exitAnim="@anim/nav_default_pop_exit_anim"
+            app:popEnterAnim="@anim/nav_default_pop_enter_anim"
+            app:popExitAnim="@anim/nav_default_exit_anim" />
     </fragment>
     <fragment android:id="@+id/page3Fragment"
         android:name="com.android.architecture.demolist.navigation.MainPage3Fragment">
         <action
             android:id="@+id/action_page3Fragment_to_page2Fragment"
-            app:destination="@id/page2Fragment" />
+            app:destination="@id/page2Fragment"
+            app:enterAnim="@anim/nav_default_pop_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim"
+            app:popEnterAnim="@anim/nav_default_pop_enter_anim"
+            app:popExitAnim="@anim/nav_default_pop_exit_anim" />
     </fragment>
 </navigation>

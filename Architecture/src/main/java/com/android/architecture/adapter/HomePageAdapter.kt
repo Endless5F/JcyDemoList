@@ -12,7 +12,9 @@ import android.widget.TextView
 import com.android.architecture.R
 import com.android.architecture.data.HomeData
 import com.android.architecture.demolist.lifecycle.LifecycleActivity
+import com.android.architecture.demolist.livedata.LiveDataActivity
 import com.android.architecture.demolist.navigation.NavigationActivity
+import com.android.architecture.demolist.viewmodel.ViewModelActivity
 
 class HomePageAdapter(private val mContext: Context, private val mItemData: List<HomeData.ItemView>) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val mHeaderViews = SparseArrayCompat<Int>()
@@ -65,10 +67,11 @@ class HomePageAdapter(private val mContext: Context, private val mItemData: List
                         mContext.startActivity(intent)
                     }
                     2 -> {
-
+                        intent.setClass(mContext, ViewModelActivity::class.java)
+                        mContext.startActivity(intent)
                     }
                     3 -> {
-                        intent.setClass(mContext, NavigationActivity::class.java)
+                        intent.setClass(mContext, LiveDataActivity::class.java)
                         mContext.startActivity(intent)
                     }
                     4 -> {
@@ -78,7 +81,8 @@ class HomePageAdapter(private val mContext: Context, private val mItemData: List
 
                     }
                     6 -> {
-
+                        intent.setClass(mContext, NavigationActivity::class.java)
+                        mContext.startActivity(intent)
                     }
                     7 -> {
 
