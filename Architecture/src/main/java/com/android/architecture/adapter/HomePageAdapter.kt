@@ -11,6 +11,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import com.android.architecture.R
 import com.android.architecture.data.HomeData
+import com.android.architecture.demolist.databinding.DataBindingActivity
 import com.android.architecture.demolist.lifecycle.LifecycleActivity
 import com.android.architecture.demolist.livedata.LiveDataActivity
 import com.android.architecture.demolist.navigation.NavigationActivity
@@ -75,7 +76,8 @@ class HomePageAdapter(private val mContext: Context, private val mItemData: List
                         mContext.startActivity(intent)
                     }
                     4 -> {
-
+                        intent.setClass(mContext, DataBindingActivity::class.java)
+                        mContext.startActivity(intent)
                     }
                     5 -> {
 

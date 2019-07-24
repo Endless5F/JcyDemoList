@@ -11,7 +11,8 @@
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true"
         tools:ignore="GoogleAppIndexingWarning">
-        <activity android:name=".demolist.livedata.LiveDataActivity"/>
+        <activity android:name=".demolist.databinding.DataBindingActivity"></activity>
+        <activity android:name=".demolist.livedata.LiveDataActivity" />
         <activity android:name=".demolist.viewmodel.ViewModelActivity" />
         <activity android:name=".demolist.navigation.NavigationActivity" />
         <activity android:name=".demolist.lifecycle.LifecycleActivity" />

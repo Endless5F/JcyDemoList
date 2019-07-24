@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto" android:id="@+id/nav_graph_data_binding"
+    app:startDestination="@id/data_binding_1">
+
+    <fragment android:id="@+id/data_binding_1"
+        android:label="data_binding_1"
+        android:name="com.android.architecture.demolist.databinding.LoginFragment">
+        <action
+            android:id="@+id/action_data_binding_1_to_data_binding_2"
+            app:destination="@id/data_binding_2" />
+    </fragment>
+
+    <fragment android:id="@+id/data_binding_2"
+        android:label="data_binding_2"
+        android:name="com.android.architecture.demolist.databinding.RegisterFragment">
+        <action
+            android:id="@+id/action_data_binding_2_to_data_binding_1"
+            app:destination="@id/data_binding_1" />
+    </fragment>
+</navigation>

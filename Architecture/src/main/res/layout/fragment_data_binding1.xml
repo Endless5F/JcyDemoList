@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--标签名       作用
+        layout      用作布局的根节点，只能包裹一个View标签，且不能包裹merge标签。
+        data        Data Binding的数据，只能存在一个data标签。
+        variable    data中使用，数据的变量标签，type属性指明变量的类，如com.joe.jetpackdemo.viewmodel.LoginModel。name属性指明变量的名字，方便布局中使用。
+        import      data中使用，需要使用静态方法和静态常量，如需要使用View.Visble属性的时候，则需导入<import type="android.view.View"/>。type属性指明类的路径，如果两个import标签导入的类名相同，则可以使用alias属性声明别名，使用的时候直接使用别名即可。
+        include     View标签中使用，作用同普通布局中的include一样，需要使用bind:<参数名>传递参数
+    -->
+
+    <data>
+        <!--需要的viewModel,通过mBinding.vm=mViewMode注入-->
+        <variable
+            name="model"
+            type="com.android.architecture.demolist.databinding.LoginModel" />
+
+        <variable
+            name="isEnable"
+            type="Boolean" />
+
+        <variable
+            name="activity"
+            type="android.support.v4.app.FragmentActivity" />
+    </data>
+
+    <!--variable有两个:
+            model：类型为com.joe.jetpackdemo.viewmodel.LoginModel，绑定用户名详见et_accountEditText中的android:text="@{model.n.get()}"，
+            当EditText输入框内容变化的时候有如下处理android:onTextChanged="@{(text, start, before, count)->model.onNameChanged(text)}"，以及登录按钮处理android:onClick="@{() -> model.login()}"。
+
+            activity：类型为android.support.v4.app.FragmentActivity，主要用来返回按钮的事件处理，详见txt_cancelTextView的android:onClick="@{()-> activity.onBackPressed()}"。
+    -->
+
+    <!--Data Binding还支持的：
+            运算符 + - / * %       字符串连接 +     逻辑与或 && ||
+            二进制 & | ^           一元 + - ! ~      移位 >> >>> <<
+            比较 == > < >= <= (Note that < needs to be escaped as <)
+            instanceof          Grouping ()         Literals - character, String, numeric, null
+            Cast                方法调用            域访问
+            数组访问                三元操作符
+            除了上述之外，Data Binding新增了空合并操作符??，例如android:text="@{user.displayName ?? user.lastName}"，
+            它等价于android:text="@{user.displayName != null ? user.displayName : user.lastName}"。
+    -->
+
+    <android.support.constraint.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context=".demolist.databinding.LoginFragment">
+
+        <TextView
+            android:id="@+id/tv_cancel"
+            style="@style/WrapWrap"
+            android:layout_marginStart="20dp"
+            android:layout_marginTop="20dp"
+            android:drawableStart="@drawable/common_ic_back"
+            android:drawablePadding="10dp"
+            android:onClick="@{()-> activity.onBackPressed()}"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:text="Cancel"
+            android:textColor="@color/colorPrimary"
+            android:textSize="@dimen/txt_big_size"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/tv_title"
+            style="@style/WrapWrap.ConstraintCenter"
+            android:padding="20dp"
+            android:text="Welcome back"
+            android:textColor="@color/textPrimary"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            app:layout_constraintHorizontal_bias="0.1"
+            app:layout_constraintVertical_bias="0.1"
+            tools:ignore="MissingConstraints" />
+
+        <EditText
+            android:id="@+id/et_account"
+            style="@style/CommonEditStyle"
+            android:drawableStart="@drawable/common_ic_account"
+            android:hint="account"
+            android:text="@={model.n}"
+            app:addTextChangedListener="@{model.nameWatcher}"
+            app:layout_constraintBottom_toTopOf="@+id/et_pwd"
+            app:layout_constraintTop_toBottomOf="@+id/tv_title"
+            app:layout_constraintVertical_bias="0.3"
+            app:layout_constraintVertical_chainStyle="packed"
+            tools:ignore="MissingConstraints" />
+        <!-- TODO android:onTextChanged="@{(text, start, before, count)->model.onNameChanged(text)}"  -->
+
+        <EditText
+            android:id="@+id/et_pwd"
+            style="@style/CommonEditStyle"
+            android:layout_marginTop="20dp"
+            android:drawableStart="@drawable/common_ic_pwd"
+            android:hint="password"
+            android:inputType="textPassword"
+            android:onTextChanged="@{model::onPwdChanged}"
+            android:text="@{model.p}"
+            app:layout_constraintBottom_toTopOf="@+id/btn_register"
+            app:layout_constraintTop_toBottomOf="@+id/et_account"
+            tools:ignore="MissingConstraints" />
+        <!-- TODO BindingAdapter app:addTextChangedListener="@{model.pwdWatcher}" -->
+
+
+        <Button
+            android:id="@+id/btn_login"
+            style="@style/CommonButtonStyle"
+            android:enabled="@{isEnable}"
+            android:text="Sign in"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.7"
+            tools:ignore="MissingConstraints" />
+
+        <Button
+            android:id="@+id/btn_register"
+            style="@style/CommonButtonStyle"
+            android:text="Register"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.9"
+            tools:ignore="MissingConstraints" />
+    </android.support.constraint.ConstraintLayout>
+</layout>
