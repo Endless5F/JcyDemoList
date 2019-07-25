@@ -94,6 +94,12 @@ dependencies {
     implementation "android.arch.navigation:navigation-fragment:$nav_version"
     implementation "android.arch.navigation:navigation-ui:$nav_version"
 
+    def roomVersion = '1.1.1'
+    // room
+    implementation "android.arch.persistence.room:runtime:$roomVersion"
+//    implementation "android.arch.persistence.room:rxjava2:$roomVersion"
+    kapt "android.arch.persistence.room:compiler:$roomVersion"
+
     // Androidx $lifecycle_version == 2.0.0
     // ViewModel 和 LiveData
 //    implementation "androidx.lifecycle:lifecycle-extensions:$lifecycle_version"

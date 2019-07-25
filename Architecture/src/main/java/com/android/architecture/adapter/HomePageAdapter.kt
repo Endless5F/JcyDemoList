@@ -15,6 +15,7 @@ import com.android.architecture.demolist.databinding.DataBindingActivity
 import com.android.architecture.demolist.lifecycle.LifecycleActivity
 import com.android.architecture.demolist.livedata.LiveDataActivity
 import com.android.architecture.demolist.navigation.NavigationActivity
+import com.android.architecture.demolist.room.RoomActivity
 import com.android.architecture.demolist.viewmodel.ViewModelActivity
 
 class HomePageAdapter(private val mContext: Context, private val mItemData: List<HomeData.ItemView>) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -83,11 +84,12 @@ class HomePageAdapter(private val mContext: Context, private val mItemData: List
 
                     }
                     6 -> {
-                        intent.setClass(mContext, NavigationActivity::class.java)
+                        intent.setClass(mContext, RoomActivity::class.java)
                         mContext.startActivity(intent)
                     }
                     7 -> {
-
+                        intent.setClass(mContext, NavigationActivity::class.java)
+                        mContext.startActivity(intent)
                     }
                     8 -> {
 
