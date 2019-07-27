@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center">
+
+    <Button
+        android:id="@+id/mBtnBasicUsage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="基本用法" />
+
+    <Button
+        android:id="@+id/mBtnHeaderMultiType"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="为列表添加Header，通过多类型列表实现（有缺陷）" />
+
+    <Button
+        android:id="@+id/mBtnHeaderProxy"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="为列表添加Header" />
+</LinearLayout>

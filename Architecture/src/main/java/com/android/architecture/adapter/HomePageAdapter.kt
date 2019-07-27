@@ -15,6 +15,7 @@ import com.android.architecture.demolist.databinding.DataBindingActivity
 import com.android.architecture.demolist.lifecycle.LifecycleActivity
 import com.android.architecture.demolist.livedata.LiveDataActivity
 import com.android.architecture.demolist.navigation.NavigationActivity
+import com.android.architecture.demolist.paging.PagingActivity
 import com.android.architecture.demolist.room.RoomActivity
 import com.android.architecture.demolist.viewmodel.ViewModelActivity
 
@@ -81,7 +82,8 @@ class HomePageAdapter(private val mContext: Context, private val mItemData: List
                         mContext.startActivity(intent)
                     }
                     5 -> {
-
+                        intent.setClass(mContext, PagingActivity::class.java)
+                        mContext.startActivity(intent)
                     }
                     6 -> {
                         intent.setClass(mContext, RoomActivity::class.java)

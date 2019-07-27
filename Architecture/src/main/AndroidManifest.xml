@@ -11,7 +11,11 @@
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true"
         tools:ignore="GoogleAppIndexingWarning">
-        <activity android:name=".demolist.room.RoomActivity"/>
+        <activity android:name=".demolist.paging.PagingActivity"/>
+        <activity android:name=".demolist.paging.basic.BasicUsageActivity"/>
+        <activity android:name=".demolist.paging.header_simple.HeaderSimpleActivity"/>
+        <activity android:name=".demolist.paging.header_proxy.HeaderProxyActivity"/>
+        <activity android:name=".demolist.room.RoomActivity" />
         <activity android:name=".demolist.databinding.DataBindingActivity" />
         <activity android:name=".demolist.livedata.LiveDataActivity" />
         <activity android:name=".demolist.viewmodel.ViewModelActivity" />
