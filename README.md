@@ -12,6 +12,8 @@ BaseLibrary：基类-子模块，本人总结的开发基Moudle，包括初始�
 
 CustomWidget：自定义组件，学习HenCoder练习项目集锦，以及自己的综合练习demo
 
+JavaLib：Java类库，目前主要为easyExcel读取（包括多语言文件生成）
+
 SourceCodeAnalysis：源码分析，不仅包括源码分析，还包括本人所写的所有掘金文章留存
 
 掘金地址：https://juejin.im/user/5b532fa56fb9a04f8c5edaf6
