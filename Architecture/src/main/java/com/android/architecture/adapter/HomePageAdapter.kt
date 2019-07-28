@@ -18,6 +18,7 @@ import com.android.architecture.demolist.navigation.NavigationActivity
 import com.android.architecture.demolist.paging.PagingActivity
 import com.android.architecture.demolist.room.RoomActivity
 import com.android.architecture.demolist.viewmodel.ViewModelActivity
+import com.android.architecture.demolist.workmanager.WorkManagerActivity
 
 class HomePageAdapter(private val mContext: Context, private val mItemData: List<HomeData.ItemView>) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val mHeaderViews = SparseArrayCompat<Int>()
@@ -94,7 +95,8 @@ class HomePageAdapter(private val mContext: Context, private val mItemData: List
                         mContext.startActivity(intent)
                     }
                     8 -> {
-
+                        intent.setClass(mContext, WorkManagerActivity::class.java)
+                        mContext.startActivity(intent)
                     }
                     9 -> {
 

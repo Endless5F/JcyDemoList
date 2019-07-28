@@ -107,6 +107,12 @@ dependencies {
     implementation "android.arch.paging:rxjava2:1.0.0-rc1"
     implementation 'io.reactivex.rxjava2:rxandroid:2.1.1'
 
+    implementation "android.arch.work:work-runtime-ktx:1.0.1"
+    implementation "com.google.code.gson:gson:2.8.2"
+
+    // SweetDialog
+    implementation "com.github.f0ris.sweetalert:library:1.5.1"
+
     // Androidx $lifecycle_version == 2.0.0
     // ViewModel 和 LiveData
 //    implementation "androidx.lifecycle:lifecycle-extensions:$lifecycle_version"
