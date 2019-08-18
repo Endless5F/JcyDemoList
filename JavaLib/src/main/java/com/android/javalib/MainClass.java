@@ -2,6 +2,7 @@ package com.android.javalib;
 
 import org.reactivestreams.Subscription;
 
+import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -66,6 +67,12 @@ public class MainClass {
 //        for (int i = 0;i<DeviceCodeDataList.getDevCodeList().size() ; i++){
 //            System.out.println("stringFutureTask == " + DeviceCodeDataList.getDevCodeList().get(i));
 //        }
+
+        ProxyInterface real = new RealClass();
+        ProxyInterface proInterface = (ProxyInterface) Proxy
+                .newProxyInstance(real.getClass().getClassLoader()
+                        ,RealClass.class.getInterfaces(), new TestInvacationHandler(real));
+        proInterface.handlingEvents();
 
     }
 
