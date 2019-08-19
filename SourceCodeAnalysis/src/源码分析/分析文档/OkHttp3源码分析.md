@@ -1,0 +1,296 @@
+自上一篇自定义控件的完结，至今已经有一个月的时间，一直没有什么想写的，因此回到一开始写的初衷，看一些主流的开源框架的源码，深入的了解一下其原理，而不是只知其然，而不知其所以然。本篇是该系列第一篇——OkHttp3（源码以3.10版为准）。
+
+## 基础
+```
+// 通过建造者模式构建OkHttpClient
+OkHttpClient OK_HTTP_CLIENT = new OkHttpClient.Builder()
+    .addInterceptor(loggingInterceptor)
+    .connectTimeout(60, TimeUnit.SECONDS)
+    // 设置缓存 ：参数1：缓存路径（/storage/emulated/0/Android/data/xxx包名/cache） 参数2：最大缓存值(100MB)
+    //.cache(new Cache(new File(getExternalCacheDir()), 100 * 1024 * 1024))
+    .readTimeout(60, TimeUnit.SECONDS)
+    .writeTimeout(60, TimeUnit.SECONDS)
+    .build();
+// 创建请求的Request 对象
+Request request = builder
+    .url(mUrl)
+    .build();
+// 在Okhttp中创建Call 对象，将request和Client进行绑定
+Call call = OK_HTTP_CLIENT.newCall(request);
+// 同步执行
+Response response = call.execute();
+// 异步执行
+call.enqueue(new Callback() {
+    @Override
+    public void onFailure(Call call, IOException e) {
+        LoggerUtil.d("onFailure :  "+e.getMessage());
+    }
+
+    @Override
+    public void onResponse(Call call, Response response) {
+        responseProcess(response);
+    }
+});
+
+// 注意：
+@Override public Call newCall(Request request) {
+    return RealCall.newRealCall(this, request, false /* for web socket */);
+}
+```
+总结（OkHttp请求）：
+
+1. 创建OkHttpClient和Request对象
+2. 将Request封装成Call对象
+3. 调用Call的execute()/enqueue()发送同步/异步请求
+
+**注**：
+
+    1.在使用Builder()构建OkHttpClient时会初始化一个很重要的类Dispatcher(分发器类)
+    ，其作用：会接受我们的同步或者异步的Request队列，根据不同的条件进行任务的分发。
+    2.OK_HTTP_CLIENT.newCall(request)，实际上返回的是RealCall，因此同步/异步请求都是由RealCall发出的
+
+OkHttp3同步/异步请求大体框架流程：
+![](https://user-gold-cdn.xitu.io/2019/8/19/16caa4f53854f22e?w=813&h=482&f=jpeg&s=57313)
+
+## 同步请求的源码分析
+从上一节中我们能了解到同步请求执行的是execute()方法，并且都是由RealCall发出的请求
+```
+// RealCall类：
+@Override                                                                 
+public Response execute() throws IOException {                            
+    synchronized (this) {                                                 
+        if (executed) throw new IllegalStateException("Already Executed");
+        executed = true;                                                  
+    }    
+    // 捕获调用堆栈跟踪(本文不是重点)
+    captureCallStackTrace();                                              
+    eventListener.callStart(this);                                        
+    try {
+        // 调用分发器入队
+        client.dispatcher().executed(this); 
+        // OkHttp精髓之一 通过拦截器链获得响应（具体后续单独讲解）
+        Response result = getResponseWithInterceptorChain();
+        if (result == null) throw new IOException("Canceled");
+        return result;
+    } catch (IOException e) {
+        eventListener.callFailed(this, e);                                
+        throw e; 
+    } finally {
+        // 调用分发器出队
+        client.dispatcher().finished(this);
+    }
+}                                                                         
+```
+由源码分可以看出对于同步请求来说，dispatcher只是简单的入队和出队操作，其余都是通过拦截器链来处理获取响应信息。
+## 异步请求的源码分析
+异步调用是由RealCall类的enqueue方法发出
+```
+// RealCall类：
+@Override
+public void enqueue(Callback responseCallback) {
+    synchronized (this) {
+        if (executed) throw new IllegalStateException("Already Executed");
+        executed = true;
+    }
+    captureCallStackTrace();
+    eventListener.callStart(this);
+    // 创建异步回调AsyncCall，并且将AsyncCall入队操作
+    client.dispatcher().enqueue(new AsyncCall(responseCallback));
+}
+
+// Dispatcher类：
+    private int maxRequests = 64; // 最大请求个数数
+    private int maxRequestsPerHost = 5; // 每个主机的最大请求数，此请求为正在进行网络请求
+    // 执行异步任务的线程池
+    private @Nullable ExecutorService executorService;
+    /**
+    * 准备异步调用的队列
+    */
+    private final Deque<AsyncCall> readyAsyncCalls = new ArrayDeque<>();
+    /**
+    * 正在运行的异步调用队列。包括尚未完成的已取消通话。
+    */
+    private final Deque<AsyncCall> runningAsyncCalls = new ArrayDeque<>();
+    /**
+    * 正在运行的同步调用。包括尚未完成的已取消通话。
+    */
+    private final Deque<RealCall> runningSyncCalls = new ArrayDeque<>();
+
+    synchronized void enqueue(AsyncCall call) {
+        // 正在运行的异步队列个数 < 64 , 与共享主机的正在运行的呼叫数 < 5
+        if (runningAsyncCalls.size() < maxRequests && runningCallsForHost(call) < maxRequestsPerHost) {
+            // 添加到正在运行的异步队列
+            runningAsyncCalls.add(call);
+            // 启动线程池执行异步任务
+            executorService().execute(call);
+        } else {
+            // 添加到准备异步调用的队列
+            readyAsyncCalls.add(call);
+        }
+    }
+```
+从上面源码中可以看出来，异步请求有两个不同的队列，一个是正在运行的请求队列一个是准备异步调用的队列。两者根据正在呼叫的个数以及正在运行的异步队列的个数分别入队。而正在运行的异步队列在入队的同时通过线程池执行了其异步任务。
+
+首先我们先来看一下其线程池的初始化：
+```
+// 类似于单例模式的获取方式
+    public synchronized ExecutorService executorService() {
+        if (executorService == null) {
+            /*
+            * corePoolSize：线程池核心线程数    0
+            * maximumPoolSize：线程池最大数     int 类整数的最大值是 2 的 31 次方 
+            * keepAliveTime：空闲线程存活时间   60s
+            * unit：时间单位                    秒
+            * workQueue：线程池所使用的缓冲队列
+            * threadFactory：线程池创建线程使用的工厂
+            * handler：线程池对拒绝任务的处理策略
+            * */
+            executorService = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 60,
+                    TimeUnit.SECONDS,
+                    new SynchronousQueue<Runnable>(), Util.threadFactory("OkHttp Dispatcher",false));
+        }
+        return executorService;
+    }
+```
+该线程池核心线程数为0，线程池最大线程为整数最大值。
+
+问：若我们的网络请求非常多时，多达Integer.MAX_VALUE，这个线程池性能消耗是否特别大？
+答：其实是不会的，因为OkHttp中的runningAsyncCalls队列最大为64，因此也限制了OkHttp的请求不会超过64，也就是就算我们设置了Integer.MAX_VALUE，对我们的性能也不会有影响。
+
+其次，我们executorService线程池里执行的为AsyncCall，我们来看一看AsyncCall：
+```
+// 继承自Runnable
+public abstract class NamedRunnable implements Runnable {
+  protected final String name;
+
+  public NamedRunnable(String format, Object... args) {
+    this.name = Util.format(format, args);
+  }
+
+  @Override public final void run() {
+    String oldName = Thread.currentThread().getName();
+    Thread.currentThread().setName(name);
+    try {
+        // 实际上就是将run()方法的执行交给了execute()方法，进行了一层包装
+      execute();
+    } finally {
+      Thread.currentThread().setName(oldName);
+    }
+  }
+
+  protected abstract void execute();
+}
+
+// 其继承自NamedRunnable，因此此Runnable真正执行的代码在 execute()方法中
+final class AsyncCall extends NamedRunnable {
+    private final Callback responseCallback;
+
+    AsyncCall(Callback responseCallback) {
+        super("OkHttp %s", redactedUrl());
+        this.responseCallback = responseCallback;
+    }
+
+    String host() {
+        return originalRequest.url().host();
+    }
+
+    Request request() {
+        return originalRequest;
+    }
+
+    RealCall get() {
+        return RealCall.this;
+    }
+
+    @Override
+    protected void execute() {
+        boolean signalledCallback = false;
+        try {
+            // 通过拦截器链获得响应，具体后续详细讲解
+            Response response = getResponseWithInterceptorChain();
+            if (retryAndFollowUpInterceptor.isCanceled()) {
+                signalledCallback = true;
+                // 失败回调
+                responseCallback.onFailure(RealCall.this, new IOException("Canceled"));
+            } else {
+                signalledCallback = true;
+                // 成功回调
+                responseCallback.onResponse(RealCall.this, response);
+            }
+        } catch (IOException e) {
+            if (signalledCallback) {
+                // Do not signal the callback twice!
+                Platform.get().log(INFO, "Callback failure for " + toLoggableString(), e);
+            } else {
+                eventListener.callFailed(RealCall.this, e);
+                // 失败回调
+                responseCallback.onFailure(RealCall.this, e);
+            }
+        } finally {
+            // 异步任务执行结束
+            client.dispatcher().finished(this);
+        }
+    }
+}
+```
+通过源码可以看出，最后调用了AsyncCall的execute()来发起请求，并在execute()方法中执行了我们上面看到的，同样在同步请求中执行的getResponseWithInterceptorChain()方法通过拦截器链来获取响应。
+
+我们再来看一下同步/异步请求结束后的finished：
+```
+    // 异步请求finished
+    void finished(AsyncCall call) {
+        // 注意：参数3 true
+        finished(runningAsyncCalls, call, true);
+    }
+
+    // 同步请求finished
+    void finished(RealCall call) {
+        // 注意：参数3 false
+        finished(runningSyncCalls, call, false);
+    }
+    
+    private <T> void finished(Deque<T> calls, T call, boolean promoteCalls) {
+        int runningCallsCount;
+        Runnable idleCallback;
+        synchronized (this) {
+            // 从正在运行的同步/异步队列中移除任务，如果队列中没有则抛出异常
+            if (!calls.remove(call)) throw new AssertionError("Call wasn't in-flight!");
+            // 同步跳过这一步，一步则执行这一步
+            if (promoteCalls) promoteCalls();
+            runningCallsCount = runningCallsCount();
+            idleCallback = this.idleCallback;
+        }
+
+        if (runningCallsCount == 0 && idleCallback != null) {
+            idleCallback.run();
+        }
+    }
+    
+    // 异步执行
+    private void promoteCalls() {
+        // 已经运行最大容量，则返回
+        if (runningAsyncCalls.size() >= maxRequests) return; 
+        // 没有准备执行的异步任务则返回
+        if (readyAsyncCalls.isEmpty()) return; 
+        // 遍历准备执行的异步请求队列
+        for (Iterator<AsyncCall> i = readyAsyncCalls.iterator(); i.hasNext(); ) {
+            AsyncCall call = i.next(); // 取出下一个异步任务
+            // 如果与共享主机的正在运行的呼叫数 < 5
+            if (runningCallsForHost(call) < maxRequestsPerHost) {
+                i.remove(); // 移除
+                // 添加进正在运行的异步队列
+                runningAsyncCalls.add(call);
+                // 立马在线程池中执行此异步请求
+                executorService().execute(call);
+            }
+
+            if (runningAsyncCalls.size() >= maxRequests) return; // Reached max capacity.
+        }
+    }
+```
+我们可以看出runningAsyncCalls和readyAsyncCalls队列，是通过方法promoteCalls()来将等待执行的任务（readyAsyncCalls中的元素）添加进runningAsyncCalls队列并执行。
+
+![](https://user-gold-cdn.xitu.io/2019/8/20/16caaab431278085?w=1013&h=653&f=jpeg&s=79796)
+
+至此，同步异步请求答题流程已经走完，接下来看一下OkHTTP设计之妙——拦截器。
+## getResponseWithInterceptorChain()

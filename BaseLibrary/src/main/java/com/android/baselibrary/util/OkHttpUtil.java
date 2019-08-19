@@ -5,12 +5,14 @@ import com.android.baselibrary.util.log.LoggerUtil;
 
 import org.litepal.util.LogUtil;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import okhttp3.Cache;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.FormBody;
@@ -50,6 +52,8 @@ public class OkHttpUtil {
         //定制OkHttp
         private static final OkHttpClient OK_HTTP_CLIENT = addInterceptor()
                 .connectTimeout(60, TimeUnit.SECONDS)
+                // 设置缓存 ：参数1：缓存路径（/storage/emulated/0/Android/data/xxx包名/cache） 参数2：最大缓存值(100MB)
+//                .cache(new Cache(new File(getExternalCacheDir()), 100 * 1024 * 1024))
                 .readTimeout(60, TimeUnit.SECONDS)
                 .writeTimeout(60, TimeUnit.SECONDS)
                 .build();
