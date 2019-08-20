@@ -294,3 +294,298 @@ final class AsyncCall extends NamedRunnable {
 
 至此，同步异步请求答题流程已经走完，接下来看一下OkHTTP设计之妙——拦截器。
 ## getResponseWithInterceptorChain()
+```
+// RealCall类：
+    Response getResponseWithInterceptorChain() throws IOException {
+        // Build a full stack of interceptors.
+        List<Interceptor> interceptors = new ArrayList<>();
+        // 我们自己添加的拦截器（ApplicationInterceptor(应用拦截器)）
+        interceptors.addAll(client.interceptors());
+        // 请求重定向拦截器：失败重连等
+        interceptors.add(retryAndFollowUpInterceptor);
+        // 桥接拦截器
+        interceptors.add(new BridgeInterceptor(client.cookieJar()));
+        // 缓存拦截器
+        interceptors.add(new CacheInterceptor(client.internalCache()));
+        // 链接拦截器
+        interceptors.add(new ConnectInterceptor(client));
+        if (!forWebSocket) {
+            // NetworkInterceptor（网络拦截器）
+            interceptors.addAll(client.networkInterceptors());
+        }
+        // 真正调用网络请求的拦截器
+        interceptors.add(new CallServerInterceptor(forWebSocket));
+        // 拦截器链,注意：第5个参数 index == 0
+        Interceptor.Chain chain = new RealInterceptorChain(interceptors, null, null, null, 0,originalRequest, this, eventListener, client.connectTimeoutMillis(),
+        client.readTimeoutMillis(), client.writeTimeoutMillis());
+
+        return chain.proceed(originalRequest);
+    }
+```
+从getResponseWithInterceptorChain()方法的源码中可以看出，拦截器分为应用拦截器、网络拦截器，这两类均为我们自己构建OkhttpClient时添加的。不过我们本文的重点并不是这两类拦截器，而是OkHttp本身的5个拦截器，而这5个拦截器也是整个OkHtp的精华之一。
+
+我们可以看出，源码中将所有拦截器都add进List集合中，并当作参数传入RealInterceptorChain，即拦截器链中，然后调用proceed方法，那我们来看一下这些拦截器是如何串联起来的：
+```
+// RealInterceptorChain类：
+    @Override
+    public Response proceed(Request request) throws IOException {
+        return proceed(request, streamAllocation, httpCodec, connection);
+    }
+
+    public Response proceed(Request request, StreamAllocation streamAllocation
+        , HttpCodec httpCodec,RealConnection connection) throws IOException {
+        
+        ...
+
+        // 调用链中的下一个拦截器。注意：第5个参数 index = index + 1
+        RealInterceptorChain next = new RealInterceptorChain(interceptors, streamAllocation,httpCodec,
+            connection, index + 1, request, call, eventListener, connectTimeout, readTimeout,writeTimeout);
+        // 从getResponseWithInterceptorChain()中我们知道index初始化为0
+        // 获取当前位置拦截器
+        Interceptor interceptor = interceptors.get(index);
+        // 执行当前位置拦截器，并把下一个位置的拦截器链传入
+        Response response = interceptor.intercept(next);
+
+        ...
+
+        return response;
+    }
+    
+// RetryAndFollowUpInterceptor类：
+@Override
+    public Response intercept(Chain chain) throws IOException {
+        Request request = chain.request();
+        RealInterceptorChain realChain = (RealInterceptorChain) chain;
+        Call call = realChain.call();
+        EventListener eventListener = realChain.eventListener();
+        // 初始化分类流：OkHtpp请求的各种组件的封装类
+        StreamAllocation streamAllocation = new StreamAllocation(client.connectionPool(),
+                createAddress(request.url()), call, eventListener, callStackTrace);
+        this.streamAllocation = streamAllocation;
+
+        int followUpCount = 0;
+        Response priorResponse = null;
+        while (true) {
+            ...
+
+            Response response;
+            boolean releaseConnection = true;
+            try {
+                // 执行拦截器链的 proceed 方法
+                response = realChain.proceed(request, streamAllocation, null, null);
+                releaseConnection = false;
+            } 
+            
+            ......
+            
+        }
+    }
+```
+从这段代码两个类的两部分中可以看出各个拦截器是由拦截器链串联起来的，上述代码中以RetryAndFollowUpInterceptor拦截器为例，由拦截器链的方法proceed开始，按照顺序调用各个拦截器，并且每个拦截器中都会继续调用下一个拦截器链对象的proceed，从而将所有拦截器串联起来，最终经过所有拦截器后获取到响应信息。
+请求流程图如下：
+![](https://user-gold-cdn.xitu.io/2019/8/20/16caf40ad7baa96c?w=1123&h=794&f=jpeg&s=207820)
+
+借鉴一张感觉比较完整的的：
+
+![](https://user-gold-cdn.xitu.io/2019/8/20/16caf4740e42bc49?w=1459&h=683&f=png&s=126809)
+接下来我们可以开始分别深入了解一下这些拦截器的实现原理及功能。
+## RetryAndFollowUpInterceptor
+```
+@Override
+public Response intercept(Chain chain) throws IOException {
+    // 获取我们构建的请求
+    Request request = chain.request();
+    // 1. 初始化一个socket连接流对象
+    streamAllocation = new StreamAllocation(
+            client.connectionPool(), createAddress(request.url()), callStackTrace);
+
+    int followUpCount = 0;
+    Response priorResponse = null;
+    while (true) { // 开启死循环，用于执行第一个拦截器或者请求的失败重连
+        if (canceled) {
+            streamAllocation.release();
+            throw new IOException("Canceled");
+        }
+
+        Response response = null;
+        boolean releaseConnection = true;
+        try {
+            // 2. 执行下一个拦截器，即BridgeInterceptor
+            response = ((RealInterceptorChain) chain).proceed(request, streamAllocation, null, null);
+            releaseConnection = false;
+        } catch (RouteException e) {
+            /**
+             * 3. 如果有异常，判断是否要恢复
+             * 不在继续连接的情况：
+             *  1. 应用层配置不在连接，默认为true
+             *  2. 请求Request出错不能继续使用
+             *  3. 是否可以恢复的
+             *      3.1、协议错误（ProtocolException）
+             *      3.2、中断异常（InterruptedIOException）
+             *      3.3、SSL握手错误（SSLHandshakeException && CertificateException）
+             *      3.4、certificate pinning错误（SSLPeerUnverifiedException）
+             *  4. 没用更多线路可供选择
+            */
+            if (!recover(e.getLastConnectException(), false, request)) {
+                throw e.getLastConnectException();
+            }
+            releaseConnection = false;
+            continue;
+        } catch (IOException e) {
+            boolean requestSendStarted = !(e instanceof ConnectionShutdownException);
+            if (!recover(e, requestSendStarted, request)) throw e;
+            releaseConnection = false;
+            continue;
+        } finally {
+            if (releaseConnection) {
+                streamAllocation.streamFailed(null);
+                streamAllocation.release();
+            }
+        }
+
+        // priorResponse如果存在。则构建
+        if (priorResponse != null) {
+            response = response.newBuilder()
+                    .priorResponse(priorResponse.newBuilder()
+                            .body(null)
+                            .build())
+                    .build();
+        }
+        /**
+         * 4. 来检查是否需要进行重定向操作
+         * 是否需要进行请求重定向，是根据http请求的响应码来决定的，
+         * 因此，在followUpRequest方法中，将会根据响应userResponse，获取到响应码，
+         * 并从连接池StreamAllocation中获取连接，然后根据当前连接，得到路由配置参数Route。
+         * */
+        Request followUp = followUpRequest(response);
+
+        if (followUp == null) {
+            if (!forWebSocket) {
+                streamAllocation.release();
+            }
+            // 返回结果
+            return response;
+        }
+        // 5. 不需要重定向，关闭响应流
+        closeQuietly(response.body());
+        // 6. 重定向或者失败重连，是否超过最大限制 MAX_FOLLOW_UPS == 20
+        if (++followUpCount > MAX_FOLLOW_UPS) {
+            streamAllocation.release();
+            throw new ProtocolException("Too many follow-up requests: " + followUpCount);
+        }
+
+        if (followUp.body() instanceof UnrepeatableRequestBody) {
+            streamAllocation.release();
+            throw new HttpRetryException("Cannot retry streamed HTTP body", response.code());
+        }
+        // 7. 检查重定向（失败重连）请求，和当前的请求，是否为同一个连接
+        if (!sameConnection(response, followUp.url())) {
+            streamAllocation.release();
+            streamAllocation = new StreamAllocation(
+                    client.connectionPool(), createAddress(followUp.url()), callStackTrace);
+        } else if (streamAllocation.codec() != null) {
+            throw new IllegalStateException("Closing the body of " + response
+                    + " didn't close its backing stream. Bad interceptor?");
+        }
+
+        request = followUp;
+        priorResponse = response;
+    }
+}
+```
+具体讲解大部分都在代码中说明，简单来说明一下此拦截器的作用：
+
+    1. 初始化一个连接流对象
+    2. 调用下一个拦截器
+    3. 根据异常结果或者响应结果判断是否需要重新请求
+## BridgeInterceptor
+```
+@Override
+public Response intercept(Chain chain) throws IOException {
+    Request userRequest = chain.request();
+    Request.Builder requestBuilder = userRequest.newBuilder();
+    // 构建可以用于发送网络请求的Request
+    // ------------------主要构建完整的请求头 start------------------------
+    RequestBody body = userRequest.body();
+    if (body != null) {
+        MediaType contentType = body.contentType();
+        if (contentType != null) {
+            requestBuilder.header("Content-Type", contentType.toString());
+        }
+
+        long contentLength = body.contentLength();
+        if (contentLength != -1) {
+            requestBuilder.header("Content-Length", Long.toString(contentLength));
+            requestBuilder.removeHeader("Transfer-Encoding");
+        } else {
+            requestBuilder.header("Transfer-Encoding", "chunked");
+            requestBuilder.removeHeader("Content-Length");
+        }
+    }
+
+    if (userRequest.header("Host") == null) {
+        requestBuilder.header("Host", hostHeader(userRequest.url(), false));
+    }
+
+    if (userRequest.header("Connection") == null) {
+        // 开启TCP连接后不会立马关闭连接，而是存活一段时间
+        requestBuilder.header("Connection", "Keep-Alive"); 
+    }
+
+    boolean transparentGzip = false;
+    if (userRequest.header("Accept-Encoding") == null && userRequest.header("Range") == null) {
+        transparentGzip = true;
+        requestBuilder.header("Accept-Encoding", "gzip");
+    }
+
+    List<Cookie> cookies = cookieJar.loadForRequest(userRequest.url());
+    if (!cookies.isEmpty()) {
+        requestBuilder.header("Cookie", cookieHeader(cookies));
+    }
+
+    if (userRequest.header("User-Agent") == null) {
+        requestBuilder.header("User-Agent", Version.userAgent());
+    }
+// ------------------主要构建完整的请求头 end------------------------
+
+    // 调用下一个拦截器
+    Response networkResponse = chain.proceed(requestBuilder.build());
+    
+    // 响应头， 如果没有自定义配置cookieJar == null，则什么都不做
+    // 将服务器返回来的Response转化为开发者使用的Response（类似于解压的过程）
+    HttpHeaders.receiveHeaders(cookieJar, userRequest.url(), networkResponse.headers());
+    // 构建Response
+    Response.Builder responseBuilder = networkResponse.newBuilder()
+            .request(userRequest);
+    /**
+     * 是否转换为解压Response
+     * 条件：
+     *  1.判断服务器是否支持gzip压缩格式
+     *  2.判断服务器响应是否使用gzip压缩
+     *  3.是否有响应体
+     */
+    if (transparentGzip
+            && "gzip".equalsIgnoreCase(networkResponse.header("Content-Encoding"))
+            && HttpHeaders.hasBody(networkResponse)) {
+        // 转换成解压数据源
+        GzipSource responseBody = new GzipSource(networkResponse.body().source());
+        Headers strippedHeaders = networkResponse.headers().newBuilder()
+                .removeAll("Content-Encoding")
+                .removeAll("Content-Length")
+                .build();
+        responseBuilder.headers(strippedHeaders);
+        String contentType = networkResponse.header("Content-Type");
+        responseBuilder.body(new RealResponseBody(contentType, -1L, Okio.buffer(responseBody)));
+    }
+
+    return responseBuilder.build();
+}
+```
+具体讲解大部分都在代码中说明，简单来说明一下此拦截器的作用：
+
+    1. 负责将用户构建的一个Request请求转换为能够进行网络访问的请求
+    2. 将这个符合网络请求的Resquest进行网络请求（即调用下一个拦截器）
+    3. 将网络请求回来的响应Response转化为用户可用的Response（解压）
+## CacheInterceptor
+此拦截器是用来缓存请求Request和响应Response数据的拦截器，此拦截器起作用需要用户调用
+new OkHttpClient.Builder().cache(new Cache(new File(getExternalCacheDir()), 100 * 1024 * 1024)) 来设置缓存路径和缓存的大小。
