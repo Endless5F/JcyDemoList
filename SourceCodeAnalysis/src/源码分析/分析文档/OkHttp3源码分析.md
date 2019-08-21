@@ -531,13 +531,13 @@ public Response intercept(Chain chain) throws IOException {
         // 开启TCP连接后不会立马关闭连接，而是存活一段时间
         requestBuilder.header("Connection", "Keep-Alive"); 
     }
-
+     // 如果我们没有指定编码的格式，默认使用gzip
     boolean transparentGzip = false;
     if (userRequest.header("Accept-Encoding") == null && userRequest.header("Range") == null) {
         transparentGzip = true;
         requestBuilder.header("Accept-Encoding", "gzip");
     }
-
+    // 把之前的cookie存在header里
     List<Cookie> cookies = cookieJar.loadForRequest(userRequest.url());
     if (!cookies.isEmpty()) {
         requestBuilder.header("Cookie", cookieHeader(cookies));
@@ -551,7 +551,7 @@ public Response intercept(Chain chain) throws IOException {
     // 调用下一个拦截器
     Response networkResponse = chain.proceed(requestBuilder.build());
     
-    // 响应头， 如果没有自定义配置cookieJar == null，则什么都不做
+    // 响应头， 如果没有自定义配置cookieJar == null，则什么都不做，有则保存新的cookie
     // 将服务器返回来的Response转化为开发者使用的Response（类似于解压的过程）
     HttpHeaders.receiveHeaders(cookieJar, userRequest.url(), networkResponse.headers());
     // 构建Response
@@ -589,3 +589,760 @@ public Response intercept(Chain chain) throws IOException {
 ## CacheInterceptor
 此拦截器是用来缓存请求Request和响应Response数据的拦截器，此拦截器起作用需要用户调用
 new OkHttpClient.Builder().cache(new Cache(new File(getExternalCacheDir()), 100 * 1024 * 1024)) 来设置缓存路径和缓存的大小。
+
+在看拦截器的源码之前我们先来了解几个概念：
+
+1. Cache类中的 InternalCache （内部缓存）
+2. DiskLruCache 硬盘缓存
+3. OkHttp使用Okio处理各种流操作(替代Io流)：Okio中有两个关键的接口，Sink和Source，这两个接口都继承了Closeable接口；而Sink可以简单的看做OutputStream，Source可以简单的看做InputStream。而这两个接口都是支持读写超时设置的。
+
+**DiskLruCache**
+
+DiskLruCache是JakeWharton大神的杰作，它采用的是LRU算法，通过LRU算法对缓存进行管理，以最近最少使用作为管理的依据，删除最近最少使用的数据，保留最近最常用的数据。
+
+    DiskLruCache主要知识点：
+        1. 简单使用
+        2. journal(日志)文件的生成
+        3. journal的介绍
+        4. 写入缓存
+        5. 读取缓存
+        6. 删除缓存
+        7.其它API
+
+一. 简单使用
+```
+// demo例子：
+    File directory = getExternalCacheDir();
+    int appVersion = 1;
+    int valueCount = 1;
+    long maxSize = 10 * 1024;
+    
+    /*
+     * 参数说明：
+     *  File directory：缓存目录。
+     *  int appVersion：应用版本号。
+     *  int valueCount：一个key对应的缓存文件的数目
+     *      ，如果我们传入的参数大于1，那么缓存文件后缀就是 .0 ， .1等。
+     *  long maxSize：缓存容量上限。
+     */
+    DiskLruCache diskLruCache = DiskLruCache.open(directory, appVersion, valueCount, maxSize);
+
+    // 构建写入缓存 Editor
+    DiskLruCache.Editor editor = diskLruCache.edit(String.valueOf(System.currentTimeMillis()));
+    BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(editor.newOutputStream(0));
+    Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.scenery);
+    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, bufferedOutputStream);
+
+    editor.commit();
+    diskLruCache.flush();
+    diskLruCache.close();
+```
+这个就是DiskLruCache的大致使用流程，简单看一下其文件创建:
+
+二. 文件创建过程
+```
+public final class DiskLruCache implements Closeable {
+    
+     public static DiskLruCache open(File directory, int appVersion, int valueCount, long maxSize) throws IOException {
+        if (maxSize <= 0) {
+          throw new IllegalArgumentException("maxSize <= 0");
+        }
+        if (valueCount <= 0) {
+          throw new IllegalArgumentException("valueCount <= 0");
+        }
+    
+        File backupFile = new File(directory, JOURNAL_FILE_BACKUP);
+        //如果备份文件存在
+        if (backupFile.exists()) {
+          File journalFile = new File(directory, JOURNAL_FILE);
+          // 如果journal文件存在，则把备份文件journal.bkp是删了
+          if (journalFile.exists()) {
+            backupFile.delete();
+          } else {
+            //如果journal文件不存在，则将备份文件命名为journal
+            renameTo(backupFile, journalFile, false);
+          }
+        }
+    
+        DiskLruCache cache = new DiskLruCache(directory, appVersion, valueCount, maxSize);
+        
+        //判断journal文件是否存在
+        if (cache.journalFile.exists()) {
+          //如果日志文件以及存在
+          try {
+            // 
+            /**
+             * 读取journal文件，根据记录中不同的操作类型进行相应的处理。
+             * 通过读取journal文件的每一行，然后封装成entry对象，放到LinkedHashMap集合中。
+             *  并且根据每一行不同的开头，设置entry的值。也就是说通过读取这个文件，
+             *  我们把所有的在本地缓存的文件的key都保存到了集合中，这样我们用的时候就可以通过集合来操作了。
+             */
+            cache.readJournal();
+            // 该方法主要用来计算当前的缓存总容量，并删除非法缓存记录以及该记录对应的文件。
+            cache.processJournal();
+            cache.journalWriter = new BufferedWriter(
+                new OutputStreamWriter(new FileOutputStream(cache.journalFile, true), Util.US_ASCII));
+            return cache;
+          } catch (IOException journalIsCorrupt) {
+            System.out.println("DiskLruCache " + directory + " is corrupt: " + journalIsCorrupt.getMessage() + ", removing");
+            cache.delete();
+          }
+        }
+    
+        //创建新的缓存目录
+        directory.mkdirs();
+        cache = new DiskLruCache(directory, appVersion, valueCount, maxSize);
+        //调用新的方法建立新的journal文件
+        cache.rebuildJournal();
+        return cache;
+      }
+}
+```
+open方法，围绕着journal文件的创建和读写来展开的，那么journal文件是什么呢？
+
+三. journal的介绍
+
+我们如果去打开缓存目录，就会发现除了缓存文件，还会发现一个journal文件，journal文件用来记录缓存的操作记录的，如下所示：
+
+        libcore.io.DiskLruCache
+        1
+        100
+        2
+     
+        CLEAN 3400330d1dfc7f3f7f4b8d4d803dfcf6 832 21054
+        DIRTY 335c4c6028171cfddfbaae1a9c313c52
+        CLEAN 335c4c6028171cfddfbaae1a9c313c52 3934 2342
+        REMOVE 335c4c6028171cfddfbaae1a9c313c52
+        DIRTY 1ab96a171faeeee38496d8b330771a7a
+        CLEAN 1ab96a171faeeee38496d8b330771a7a 1600 234
+        READ 335c4c6028171cfddfbaae1a9c313c52
+        READ 3400330d1dfc7f3f7f4b8d4d803dfcf6
+
+我们来分析下这个文件的内容：
+
+* 第一行：libcore.io.DiskLruCache，固定字符串。
+* 第二行：1，DiskLruCache源码版本号。
+* 第三行：1，App的版本号，通过open()方法传入进去的。
+* 第四行：1，每个key对应几个文件，一般为1.
+* 第五行：空行
+* 第六行及后续行：缓存操作记录。
+
+而源码中有4冲命令的记录：
+```
+/*
+ * DIRTY 表示一个entry正在被写入。
+ *  写入分两种情况，如果成功会紧接着写入一行CLEAN的记录；
+ *  如果失败，会增加一行REMOVE记录。注意单独只有DIRTY状态的记录是非法的。
+ */ 
+private static final String DIRTY = "DIRTY";
+private static final String REMOVE = "REMOVE";
+
+// READ就是说明有一次读取的记录。
+private static final String READ = "READ";
+
+// CLEAN的后面还记录了文件的长度，注意可能会一个key对应多个文件，那么就会有多个数字。
+// 当手动调用remove(key)方法的时候也会写入一条REMOVE记录。
+private static final String CLEAN = "CLEAN";
+```
+四. 写入缓存
+
+需要调用DiskLruCache的edit()方法来获取实例，接口如下所示：
+
+    public Editor edit(String key) throws IOException （用法详见一. 简单使用）
+    
+可以看到，edit()方法接收一个参数key，这个key将会成为缓存文件的文件名，因为图片URL中可能包含一些特殊字符，这些字符有可能在命名文件时是不合法的。因此这里的参数key一般都会进行MD5编码，编码后的字符串肯定是唯一的，并且只会包含0-F这样的字符，完全符合文件的命名规则。
+
+五. 读取缓存
+
+读取的方法要比写入简单一些，主要是借助DiskLruCache的get()方法实现的，接口如下所示：
+    
+    // 返回一个缓存文件快照，包含缓存文件大小，输入流等信息。
+    public synchronized Snapshot get(String key) throws IOException
+    
+该方法最终返回一个缓存文件快照，包含缓存文件大小，输入流等信息。利用这个快照我们就可以读取缓存文件了。只需要调用它的getInputStream()方法就可以得到缓存文件的输入流了。同样地，getInputStream()方法也需要传一个index参数，这里传入0就好。
+
+六. 删除缓存
+
+移除缓存主要是借助DiskLruCache的remove()方法实现的，接口如下所示：
+
+    public synchronized boolean remove(String key) throws IOException
+    
+用法虽然简单，但是你要知道，这个方法我们并不应该经常去调用它。因为你完全不需要担心缓存的数据过多从而占用SD卡太多空间的问题，DiskLruCache会根据我们在调用open()方法时设定的缓存最大值来自动删除多余的缓存。只有你确定某个key对应的缓存内容已经过期，需要从网络获取最新数据的时候才应该调用remove()方法来移除缓存。
+
+七. 其它API
+
+    size() ：返回当前缓存路径下所有缓存数据的总字节数，以byte为单位
+    flush() ：将内存中的操作记录同步到日志文件（也就是journal文件）当中
+        注：并不是每次写入缓存都要调用一次flush()方法的，频繁地调用并不会带来任何好处，
+        只会额外增加同步journal文件的时间。比较标准的做法就是在Activity的onPause()方法中去调用一次flush()方法就可以了。
+    close() ：将DiskLruCache关闭掉，是和open()方法对应的一个方法。
+        注：关闭掉了之后就不能再调用DiskLruCache中任何操作缓存数据的方法，通常只应该在Activity的onDestroy()方法中去调用close()方法。
+    delete() ：将所有的缓存数据全部删除，比如说手动清理缓存功能
+
+**InternalCache**
+```
+// Cache类：
+    Cache(File directory, long maxSize, FileSystem fileSystem) {
+        this.internalCache = new InternalCache() {
+            // 1.获取缓存的响应数据
+            public Response get(Request request) throws IOException {
+                return Cache.this.get(request);
+            }
+
+            public CacheRequest put(Response response) throws IOException {
+                // 2.保存请求回来的响应数据
+                return Cache.this.put(response);
+            }
+
+            public void remove(Request request) throws IOException {
+                // 3.通过请求移除保存的响应数据
+                Cache.this.remove(request);
+            }
+
+            public void update(Response cached, Response network) {
+                // 4.更新缓存的响应数据
+                Cache.this.update(cached, network);
+            }
+
+            public void trackConditionalCacheHit() {
+                Cache.this.trackConditionalCacheHit();
+            }
+
+            public void trackResponse(CacheStrategy cacheStrategy) {
+                Cache.this.trackResponse(cacheStrategy);
+            }
+        };
+        // 硬盘缓存 DiskLruCache
+        this.cache = DiskLruCache.create(fileSystem, directory, 201105, 2, maxSize);
+    }
+```
+我们主要了解InternalCache的get和put方法，我们先看一下其put保存请求回来的响应Response数据，从上面代码我们能看到put方法实际上调用的是Cache类的put ：
+
+一. put方法分析：
+```
+// Cache类：
+    @Nullable
+    CacheRequest put(Response response) {
+        // 获取请求方法
+        String requestMethod = response.request().method();
+        if (HttpMethod.invalidatesCache(response.request().method())) {
+            try {
+                this.remove(response.request());
+            } catch (IOException var6) {
+            }
+
+            return null;
+        // 如果不是GET请求时返回的response，则不进行缓存
+        } else if (!requestMethod.equals("GET")) { 
+            return null;
+        } else if (HttpHeaders.hasVaryAll(response)) {
+            return null;
+        } else {
+            // 把response封装在Cache.Entry中，调用DiskLruCache的edit()返回editor
+            Cache.Entry entry = new Cache.Entry(response);
+            Editor editor = null;
+
+            try {
+                 // cache 从Cache类的构造方法中可以看出cache实际上就是 DiskLruCache
+                 // 把url进行 md5()，并转换成十六进制格式
+                // 将转换后的key作为DiskLruCache内部LinkHashMap的键值
+                editor = this.cache.edit(key(response.request().url()));
+                if (editor == null) {
+                    return null;
+                } else {
+                    // 用editor提供的Okio的sink对文件进行写入
+                    entry.writeTo(editor);
+                    // 利用CacheRequestImpl写入body
+                    return new Cache.CacheRequestImpl(editor);
+                }
+            } catch (IOException var7) {
+                this.abortQuietly(editor);
+                return null;
+            }
+        }
+    }
+```
+根据上面的代码发现，OkHttp只针对GET请求时返回的response进行缓存。官方解释：非GET请求下返回的response也可以进行缓存，但是这样做的复杂性高，且效益低。 在获取DiskLruCache.Editor对象editor后，调用writeTo()把url、请求方法、响应首部字段等写入缓存，然后返回一个CacheRequestImpl实例，在CacheInterceptor的intercept()方法内部调用cacheWritingResponse()写入body，最后调用CacheRequestImpl的close()完成提交（实际内部调用了Editor # commit() ）。
+
+接下来我们看一下edit和writeTo内部实现：
+```
+// DiskLruCache 类：
+    public @Nullable Editor edit(String key) throws IOException {
+        return edit(key, ANY_SEQUENCE_NUMBER);
+    }
+
+    synchronized Editor edit(String key, long expectedSequenceNumber) throws IOException {
+        //内部主要是利用FileSystem处理文件，如果这里出现了异常，
+        //在最后会构建新的日志文件，如果文件已存在，则替换
+        initialize();
+        //检测缓存是否已关闭
+        checkNotClosed();
+        //检测是否为有效key
+        validateKey(key);
+        //lruEntries是LinkHashMap的实例，先查找lruEntries是否存在
+        Entry entry = lruEntries.get(key);
+     
+        if (expectedSequenceNumber != ANY_SEQUENCE_NUMBER && (entry == null
+            || entry.sequenceNumber != expectedSequenceNumber)) {
+            return null; // Snapshot is stale.
+        }
+
+        //如果有Editor在操作entry，返回null
+        if (entry != null && entry.currentEditor != null) {
+        return null; 
+        }
+        //如果需要，进行clean操作
+        if (mostRecentTrimFailed || mostRecentRebuildFailed) {    
+        executor.execute(cleanupRunnable);
+        return null;
+        }
+
+        // 把当前key在对应文件中标记DIRTY状态，表示正在修改，
+        //清空日志缓冲区，防止泄露
+        journalWriter.writeUtf8(DIRTY).writeByte(' ').writeUtf8(key).writeByte('\n');
+        journalWriter.flush();
+
+        if (hasJournalErrors) {
+        return null; // 如果日志文件不能编辑
+        }
+    
+        //为请求的url创建一个新的DiskLruCache.Entry实例
+        //并放入lruEntries中
+        if (entry == null) {
+        entry = new Entry(key);
+        lruEntries.put(key, entry);
+        }
+    
+        Editor editor = new Editor(entry);
+        entry.currentEditor = editor;
+        return editor;
+    }
+    
+// Cache.Entry类：
+    public void writeTo(Editor editor) throws IOException {
+        BufferedSink sink = Okio.buffer(editor.newSink(0));
+        // 以下都是利用sink进行写入操作
+        sink.writeUtf8(this.url).writeByte(10);
+        sink.writeUtf8(this.requestMethod).writeByte(10);
+        sink.writeDecimalLong((long) this.varyHeaders.size()).writeByte(10);
+        int i = 0;
+
+        int size;
+        for (size = this.varyHeaders.size(); i < size; ++i) {
+            sink.writeUtf8(this.varyHeaders.name(i)).writeUtf8(": ").writeUtf8(this.varyHeaders.value(i)).writeByte(10);
+        }
+
+        sink.writeUtf8((new StatusLine(this.protocol, this.code, this.message)).toString()).writeByte(10);
+        sink.writeDecimalLong((long) (this.responseHeaders.size() + 2)).writeByte(10);
+        i = 0;
+
+        for (size = this.responseHeaders.size(); i < size; ++i) {
+            sink.writeUtf8(this.responseHeaders.name(i)).writeUtf8(": ").writeUtf8(this.responseHeaders.value(i)).writeByte(10);
+        }
+
+        sink.writeUtf8(SENT_MILLIS).writeUtf8(": ").writeDecimalLong(this.sentRequestMillis).writeByte(10);
+        sink.writeUtf8(RECEIVED_MILLIS).writeUtf8(": ").writeDecimalLong(this.receivedResponseMillis).writeByte(10);
+        if (this.isHttps()) {
+            sink.writeByte(10);
+            sink.writeUtf8(this.handshake.cipherSuite().javaName()).writeByte(10);
+            this.writeCertList(sink, this.handshake.peerCertificates());
+            this.writeCertList(sink, this.handshake.localCertificates());
+            sink.writeUtf8(this.handshake.tlsVersion().javaName()).writeByte(10);
+        }
+
+        sink.close();
+    }
+```
+接下来我们再看一看Cache.Entry构造方法：
+```
+    Entry(Response response) {
+        this.url = response.request().url().toString();
+        this.varyHeaders = HttpHeaders.varyHeaders(response);
+        this.requestMethod = response.request().method();
+        this.protocol = response.protocol();
+        this.code = response.code();
+        this.message = response.message();
+        this.responseHeaders = response.headers();
+        this.handshake = response.handshake();
+        this.sentRequestMillis = response.sentRequestAtMillis();
+        this.receivedResponseMillis = response.receivedResponseAtMillis();
+    }
+```
+我们发现Cache.Entry构造方法中并没有Response的body(),那么我们的body是在哪缓存的呢，其实上面就有说明，其实Cache类的put方法有一个返回值 CacheRequest ，而CacheRequest正是后面用来缓存Response的body的关键，后续再详细介绍。
+
+二. get方法分析：
+```
+// Cache类：
+    @Nullable
+    Response get(Request request) {
+        //把url转换成key
+        String key = key(request.url());
+        DiskLruCache.Snapshot snapshot;
+        Entry entry;
+        try {
+            //通过DiskLruCache的get()根据具体的key获取DiskLruCache.Snapshot实例
+            snapshot = cache.get(key);
+            if (snapshot == null) {
+                return null;
+            }
+        } catch (IOException e) {
+            // Give up because the cache cannot be read.
+            return null;
+        }
+
+        try {
+            //通过snapshot.getSource()获取一个Okio的Source
+            entry = new Entry(snapshot.getSource(ENTRY_METADATA));
+        } catch (IOException e) {
+            Util.closeQuietly(snapshot);
+            return null;
+        }
+
+        //根据snapshot获取缓存中的response
+        Response response = entry.response(snapshot);
+
+        if (!entry.matches(request, response)) {
+            Util.closeQuietly(response.body());
+            return null;
+        }
+
+        return response;
+    }
+    
+// DiskLruCache类：
+    public synchronized Snapshot get(String key) throws IOException {
+        initialize();
+
+        checkNotClosed();
+        validateKey(key);
+        //从lruEntries查找entry，
+        Entry entry = lruEntries.get(key);
+        if (entry == null || !entry.readable) return null;
+
+        //得到Entry的快照值snapshot
+        Snapshot snapshot = entry.snapshot();
+        if (snapshot == null) return null;
+
+        redundantOpCount++;
+        journalWriter.writeUtf8(READ).writeByte(' ').writeUtf8(key).writeByte('\n');
+
+        //如果redundantOpCount超过2000，且超过lruEntries的大小时，进行清理操作
+        if (journalRebuildRequired()) {
+            executor.execute(cleanupRunnable);
+        }
+
+        return snapshot;
+    }
+
+//DiskLruCache.Entry类：
+    Snapshot snapshot() {
+        if (!Thread.holdsLock(DiskLruCache.this)) throw new AssertionError();
+
+        Source[] sources = new Source[valueCount];
+        // Defensive copy since these can be zeroed out.
+        long[] lengths = this.lengths.clone();
+        try {
+            //遍历已缓存的文件，生成相应的sources
+            for (int i = 0; i < valueCount; i++) {
+                sources[i] = fileSystem.source(cleanFiles[i]);
+            }
+            //创建Snapshot并返回
+            return new Snapshot(key, sequenceNumber, sources, lengths);
+        } catch (FileNotFoundException e) {
+            // A file must have been deleted manually!
+            for (int i = 0; i < valueCount; i++) {
+                if (sources[i] != null) {
+                    Util.closeQuietly(sources[i]);
+                } else {
+                    break;
+                }
+            }
+            // Since the entry is no longer valid, remove it so the metadata is accurate (i.e. 
+            // the cache
+            // size.)
+            try {
+                removeEntry(this);
+            } catch (IOException ignored) {
+            }
+            return null;
+        }
+    }
+```
+相比于put过程，get过程相对简单点。DiskLruCache.Snapshot是DiskLruCache.Entry的一个快照值，内部封装了DiskLruCache.Entry对应文件的Source，简单的说：根据条件从DiskLruCache.Entry找到相应的缓存文件，并生成Source，封装在Snapshot内部，然后通过snapshot.getSource()获取Source，对缓存文件进行读取操作。
+
+总结：：经过分析InternalCache我们知道，Cache只是一个上层的执行者，内部真正的缓存是由DiskLruCache实现的。在DiskLruCache里面通过FileSystem，基于Okio的Sink/Source对文件进行流操作。
+
+**intercept**
+
+接下来我们回到CacheInterceptor的拦截器方法intercept中继续分析：
+```
+    // 我们从RealCall的getResponseWithInterceptorChain()方法中，
+    // 在add(new CacheInterceptor(client.internalCache()));时可知
+    // intercept方法中的cache为Cache类中的InternalCache
+    @Override
+    public Response intercept(Chain chain) throws IOException {
+        // 如果配置了缓存：优先从缓存中读取Response
+        Response cacheCandidate = cache != null
+                ? cache.get(chain.request()) // 我们熟悉的get方法，获取缓存
+                : null;
+
+        long now = System.currentTimeMillis();
+        // 缓存策略，该策略通过某种规则来判断缓存是否有效
+        CacheStrategy strategy =
+                new CacheStrategy.Factory(now, chain.request(), cacheCandidate).get();
+        Request networkRequest = strategy.networkRequest;
+        Response cacheResponse = strategy.cacheResponse;
+
+        if (cache != null) {
+            cache.trackResponse(strategy);
+        }
+
+        if (cacheCandidate != null && cacheResponse == null) {
+            closeQuietly(cacheCandidate.body());
+        }
+
+        // 如果根据缓存策略strategy禁止使用网络，并且缓存无效，直接返回空的Response
+        if (networkRequest == null && cacheResponse == null) {
+            return new Response.Builder()
+                    .request(chain.request())
+                    .protocol(Protocol.HTTP_1_1)
+                    .code(504)
+                    .message("Unsatisfiable Request (only-if-cached)")
+                    .body(Util.EMPTY_RESPONSE)
+                    .sentRequestAtMillis(-1L)
+                    .receivedResponseAtMillis(System.currentTimeMillis())
+                    .build();
+        }
+
+        // 如果根据缓存策略strategy禁止使用网络，且有缓存则直接使用缓存
+        if (networkRequest == null) {
+            return cacheResponse.newBuilder()
+                    .cacheResponse(stripBody(cacheResponse))
+                    .build();
+        }
+
+        Response networkResponse = null;
+        try { // 执行下一个拦截器，发起网路请求
+            networkResponse = chain.proceed(networkRequest);
+        } finally {
+            // If we're crashing on I/O or otherwise, don't leak the cache body.
+            if (networkResponse == null && cacheCandidate != null) {
+                closeQuietly(cacheCandidate.body());
+            }
+        }
+
+        // 如果我们也有缓存响应，那么我们正在进行条件获取。
+        if (cacheResponse != null) {
+             // 并且服务器返回304状态码（说明缓存还没过期或服务器资源没修改）
+            if (networkResponse.code() == HTTP_NOT_MODIFIED) {
+                // 构建缓存数据
+                Response response = cacheResponse.newBuilder()
+                        .headers(combine(cacheResponse.headers(), networkResponse.headers()))
+                        .sentRequestAtMillis(networkResponse.sentRequestAtMillis())
+                       .receivedResponseAtMillis(networkResponse.receivedResponseAtMillis())
+                        .cacheResponse(stripBody(cacheResponse))
+                        .networkResponse(stripBody(networkResponse))
+                        .build();
+                networkResponse.body().close();
+
+                // Update the cache after combining headers but before stripping the
+                // Content-Encoding header (as performed by initContentStream()).
+                cache.trackConditionalCacheHit();
+                cache.update(cacheResponse, response);
+                return response;
+            } else {
+                closeQuietly(cacheResponse.body());
+            }
+        }
+        // 如果网络资源已经修改：使用网络响应返回的最新数据
+        Response response = networkResponse.newBuilder()
+                .cacheResponse(stripBody(cacheResponse))
+                .networkResponse(stripBody(networkResponse))
+                .build();
+        // 将最新的数据缓存起来
+        if (cache != null) {
+            if (HttpHeaders.hasBody(response) && CacheStrategy.isCacheable(response,
+                    networkRequest)) {
+                // 我们熟悉的put 写入缓存操作
+                CacheRequest cacheRequest = cache.put(response);
+                // 写入Response的body
+                return cacheWritingResponse(cacheRequest, response);
+            }
+
+            if (HttpMethod.invalidatesCache(networkRequest.method())) {
+                try {
+                    cache.remove(networkRequest);
+                } catch (IOException ignored) {
+                    // The cache cannot be written.
+                }
+            }
+        }
+
+        return response;
+    }
+```
+简单的总结一下上面的代码都做了些什么： 
+
+1. 如果在初始化OkhttpClient的时候配置缓存，则从缓存中取caceResponse 
+2. 将当前请求request和caceResponse 构建一个CacheStrategy对象 
+3. CacheStrategy这个策略对象将根据相关规则来决定caceResponse和Request是否有效，如果无效则分别将caceResponse和request设置为null 
+4. 经过CacheStrategy的处理(步骤3），如果request和caceResponse都置空，直接返回一个状态码为504，且body为Util.EMPTY_RESPONSE的空Respone对象 
+5. 经过CacheStrategy的处理(步骤3），resquest 为null而cacheResponse不为null，则直接返回cacheResponse对象 
+6. 执行下一个拦截器发起网路请求， 
+7. 如果服务器资源没有过期（状态码304）且存在缓存，则返回缓存 
+8. 将网络返回的最新的资源（networkResponse）缓存到本地，然后返回networkResponse. 
+
+我们上面还遗留了一个Response的body的缓存没有分析，那么我们看一看cacheWritingResponse方法的实现：
+```
+// CacheInterceptor类：
+    private Response cacheWritingResponse(final CacheRequest cacheRequest, Response response)throws IOException {
+        // 有些应用会返回空体;为了兼容性，我们将其视为空缓存请求。
+        if (cacheRequest == null) return response;
+        Sink cacheBodyUnbuffered = cacheRequest.body();
+        if (cacheBodyUnbuffered == null) return response;
+        // 获取response.body()的BufferedSource
+        final BufferedSource source = response.body().source();
+        // 构建用来存储response.body()的BufferedSink
+        final BufferedSink cacheBody = Okio.buffer(cacheBodyUnbuffered);
+        // 注意：用于真正写入Response的body
+        Source cacheWritingSource = new Source() {
+            boolean cacheRequestClosed;
+
+            @Override
+            public long read(Buffer sink, long byteCount) throws IOException {
+                long bytesRead;
+                try {
+                    // 从byteCount个字段到sink中并删除
+                    bytesRead = source.read(sink, byteCount);
+                } catch (IOException e) {
+                    if (!cacheRequestClosed) {
+                        cacheRequestClosed = true;
+                        cacheRequest.abort(); // Failed to write a complete cache response.
+                    }
+                    throw e;
+                }
+
+                if (bytesRead == -1) {
+                    if (!cacheRequestClosed) {
+                        cacheRequestClosed = true;
+                        cacheBody.close(); // 缓存response的body完成
+                    }
+                    return -1; // 写完返回-1
+                }
+                // 将读到sink中的source(response的body数据)拷贝到cacheBody中
+                sink.copyTo(cacheBody.buffer(), sink.size() - bytesRead, bytesRead);
+                cacheBody.emitCompleteSegments();
+                return bytesRead;
+            }
+
+            @Override
+            public Timeout timeout() {
+                return source.timeout();
+            }
+
+            @Override
+            public void close() throws IOException {
+                if (!cacheRequestClosed
+                        && !discard(this, HttpCodec.DISCARD_STREAM_TIMEOUT_MILLIS, MILLISECONDS)) {
+                    cacheRequestClosed = true;
+                    cacheRequest.abort();
+                }
+                source.close();
+            }
+        };
+
+        String contentType = response.header("Content-Type");
+        long contentLength = response.body().contentLength();
+        return response.newBuilder()
+                .body(new RealResponseBody(contentType, contentLength, Okio.buffer(cacheWritingSource))) // 注意最后一个参数，后面会说明
+                .build();
+    }
+```
+从这段代码中可能会有些疑惑，source是如何在cacheWritingSource这个内部类的read方法中缓存完成的，那么我们就要看cacheWritingSource被传递到哪里，并且被谁所调用的read方法啦。我们从最后的return可以看出来cacheWritingSource被封装到Response返回啦，我们上面讲过整个的拦截器链最终会将Response返回到异步请求的回调onResponse方法中或者作为同步请求的返回值。那么我们最终对Response的调用也就只有Response的body()的string()方法啦。那么我们来研究一下这个方法都干了什么？
+```
+// ResponseBody ==> 通过调用Response.body()获取
+    public final String string() throws IOException {
+        BufferedSource source = source();
+        try {
+            Charset charset = Util.bomAwareCharset(source, charset());
+            // 从source中读取结果字符串
+            return source.readString(charset);
+        } finally {
+            Util.closeQuietly(source);
+        }
+    }
+```
+ResponseBody其实只是一个抽象类，而其实现类为RealResponseBody，从RealResponseBody中发现source是从其构造方法中初始化的：
+```
+// RealResponseBody类：
+    private final BufferedSource source;
+
+    public RealResponseBody(
+            @Nullable String contentTypeString, long contentLength, BufferedSource source) {
+        this.contentTypeString = contentTypeString;
+        this.contentLength = contentLength;
+        this.source = source;
+    }
+```
+那么我们的RealResponseBody是什么时候初始化的呢？我们现在在讨论的是缓存的Response，因此缓存Response肯定是从我们缓存拦截器CacheInterceptor返回来的，所以我们上面cacheWritingResponse方法中的返回值Response在构建过程中，其实就是初始化RealResponseBody的地方。因此我们此时的source就是我们在cacheWritingResponse方法的返回值传入的Okio.buffer(cacheWritingSource)。而Okio.buffer(cacheWritingSource)方法返回的是RealBufferedSource类（并传入cacheWritingSource），因此Response.body().string()方法里
+source.readString(charset)调用的实际上就是RealBufferedSource类的readString方法。
+```
+// RealBufferedSource类
+    
+    public final Buffer buffer = new Buffer();
+    public final Source source;
+    // 终于看到我们想看到的source，此source就是传进来的cacheWritingSource（用来写入Response的body缓存的匿名内部类）
+    RealBufferedSource(Source source) {
+        if (source == null) throw new NullPointerException("source == null");
+        this.source = source;
+    }
+    
+    @Override
+    public String readString(Charset charset) throws IOException {
+        if (charset == null) throw new IllegalArgumentException("charset == null");
+        // 写入全部，
+        buffer.writeAll(source);
+        return buffer.readString(charset);
+    }
+    
+// Buffer类，在RealBufferedSource类的成员函数中初始化
+    @Override
+    public long writeAll(Source source) throws IOException {
+        if (source == null) throw new IllegalArgumentException("source == null");
+        long totalBytesRead = 0;
+        // 关注此处的for循环，如果read != -1 则一直轮询，
+        // 因此一直执行cacheWritingSource的read写入Response的body数据，直到写完返回-1
+        for (long readCount; (readCount = source.read(this, Segment.SIZE)) != -1; ) {
+            totalBytesRead += readCount;
+        }
+        return totalBytesRead;
+    }
+```
+总结一下：
+
+1. CacheInterceptor的intercept方法中会将最新Response缓存（执行方法：cacheWritingResponse）
+2. cacheWritingResponse方法内部有一个匿名内部类（cacheWritingSource）来真正用来写入Response 的body缓存。
+3. 由于cacheWritingResponse方法回来Response（其中ResponseBody包含Okio.buffer(cacheWritingSource)，即BufferedSource）给缓存拦截器，而缓存拦截器一直往上面的拦截器传递，直到返回到同步请求的返回值或者异步请求的onResponse方法中。
+4. 在我们调用Response.body().string()方法时，触发BufferedSource（实际上是RealBufferedSource）的readString。
+5. 而readString会调用Buffer的writeAll（传入cacheWritingSource），进行for循环来执行第2步中所有的匿名内部类（cacheWritingSource）中的read方法写入Response缓存
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+https://juejin.im/post/5a6da6e7f265da3e303cbcb6
+
+https://www.jianshu.com/p/5bcdcfe9e05c
