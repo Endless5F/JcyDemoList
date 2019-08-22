@@ -1088,6 +1088,9 @@ private static final String CLEAN = "CLEAN";
 
         long now = System.currentTimeMillis();
         // 缓存策略，该策略通过某种规则来判断缓存是否有效
+        // 1. 根据Request和之前缓存的Response得到CacheStrategy
+        // 2. 根据CacheStrategy决定是请求网络还是直接返回缓存
+        // 3. 如果2中决定请求网络，则在这一步将返回的网络响应和本地缓存对比，对本地缓存进行增删改操作
         CacheStrategy strategy =
                 new CacheStrategy.Factory(now, chain.request(), cacheCandidate).get();
         Request networkRequest = strategy.networkRequest;
@@ -1326,13 +1329,454 @@ source.readString(charset)调用的实际上就是RealBufferedSource类的readSt
 4. 在我们调用Response.body().string()方法时，触发BufferedSource（实际上是RealBufferedSource）的readString。
 5. 而readString会调用Buffer的writeAll（传入cacheWritingSource），进行for循环来执行第2步中所有的匿名内部类（cacheWritingSource）中的read方法写入Response缓存
 
+## ConnectInterceptor
+在执行完CacheInterceptor之后会执行下一个拦截器——ConnectInterceptor，那么我们来看一下其intercept方法中的源码：
+```
+    @Override
+    public Response intercept(Chain chain) throws IOException {
+        RealInterceptorChain realChain = (RealInterceptorChain) chain;
+        Request request = realChain.request();
+        // 从拦截器链里得到StreamAllocation对象
+        // 此StreamAllocation对象实际上是拦截器链的第二个参数，是在第一个拦截器中初始化的
+        StreamAllocation streamAllocation = realChain.streamAllocation();
 
+        // We need the network to satisfy this request. Possibly for validating a conditional GET.
+        boolean doExtensiveHealthChecks = !request.method().equals("GET");
+        /**
+         * 用来编码Request，解码Response
+         *  它有对应的两个子类， Http1Codec和Http2Codec， 分别对应Http1.1协议以及Http2.0协议，本文主要学习前者。
+         *  在Http1Codec中主要包括两个重要的属性，即source和sink，它们分别封装了socket的输入和输出，
+         *  CallServerInterceptor正是利用HttpCodec提供的I/O操作完成网络通信。
+         * */
+        HttpCodec httpCodec = streamAllocation.newStream(client, chain, doExtensiveHealthChecks);
+        // 获取RealConnetion，实际网络Io传输对象（实际上此步很简单，只是返回上一步代码中获取到的connection）
+        RealConnection connection = streamAllocation.connection();
+        // 执行下一个拦截器
+        return realChain.proceed(request, streamAllocation, httpCodec, connection);
+    }
+```
+这个拦截器东西就这么多？哈哈，那是想多了，这个拦截器中的东西可都藏的深，有料的很呀。我们分别来看一下HttpCodec和RealConnection的获取过程吧。
+```
+// StreamAllocation类：
+    public HttpCodec newStream(OkHttpClient client, Interceptor.Chain chain, boolean doExtensiveHealthChecks) {
+        //1. 获取设置的连接超时时间，读写超时的时间，以及是否进行重连。 
+        int connectTimeout = chain.connectTimeoutMillis();
+        int readTimeout = chain.readTimeoutMillis();
+        int writeTimeout = chain.writeTimeoutMillis();
+        int pingIntervalMillis = client.pingIntervalMillis();
+        boolean connectionRetryEnabled = client.retryOnConnectionFailure();
 
+        try {
+            // 2. 获取健康可用的连接
+            RealConnection resultConnection = findHealthyConnection(connectTimeout, readTimeout,
+                    writeTimeout, pingIntervalMillis, connectionRetryEnabled,
+                    doExtensiveHealthChecks);
+            //3. 通过ResultConnection初始化，对请求以及结果 编解码的类（分http 1.1 和http 2.0）。
+            // 这里主要是初始化，在后面一个拦截器才用到这相关的东西。
+            HttpCodec resultCodec = resultConnection.newCodec(client, chain, this);
 
+            synchronized (connectionPool) {
+                codec = resultCodec;
+                // 返回HttpCodec
+                return resultCodec;
+            }
+        } catch (IOException e) {
+            throw new RouteException(e);
+        }
+    }
+```
+从上面代码中来看，这个方法好像就做了两件事：
 
+1. 调用findHealthyConnection获取一个RealConnection对象。 
+2. 通过获取到的RealConnection来生成一个HttpCodec对象并返回之。
 
+那么我们接着看findHealthyConnection方法：
+```
+// StreamAllocation类：
+    private RealConnection findHealthyConnection(int connectTimeout, int readTimeout,
+            int writeTimeout, int pingIntervalMillis,boolean connectionRetryEnabled,
+                            boolean doExtensiveHealthChecks) throws IOException {
+        while (true) {
+            // 获取RealConnection对象
+            RealConnection candidate = findConnection(connectTimeout, readTimeout, writeTimeout,
+                    pingIntervalMillis, connectionRetryEnabled);
 
+            // 如果这是一个全新的连接，我们可以跳过广泛的健康检查。
+            synchronized (connectionPool) {
+                if (candidate.successCount == 0) {
+                    // 直接返回
+                    return candidate;
+                }
+            }
 
+            /**
+             * 对链接池中不健康的链接做销毁处理
+             *  不健康的RealConnection条件为如下几种情况：
+             *      RealConnection对象 socket没有关闭
+             *      socket的输入流没有关闭
+             *      socket的输出流没有关闭
+             *      http2时连接没有关闭
+             * */
+            if (!candidate.isHealthy(doExtensiveHealthChecks)) {
+                // 销毁资源（该方法中会调用deallocate(解除分配)方法
+                //  获取需要释放的Socket连接，并执行closeQuietly方法关闭该Socket）
+                noNewStreams();
+                continue;
+            }
+
+            return candidate;
+        }
+    }
+```
+代码中可以看出获取RealConnection对象的操作又交给了findConnection方法：
+```
+// StreamAllocation类：
+    private RealConnection findConnection(int connectTimeout, int readTimeout, 
+            int writeTimeout,int pingIntervalMillis
+            , boolean connectionRetryEnabled) throws IOException {
+        boolean foundPooledConnection = false;
+        RealConnection result = null;
+        Route selectedRoute = null;
+        Connection releasedConnection;
+        Socket toClose;
+        // 1. 同步线程池，来获取里面的连接
+        synchronized (connectionPool) {
+            // 2. 做些判断，是否已经释放，是否编解码类为空，是否用户已经取消
+            if (released) throw new IllegalStateException("released");
+            if (codec != null) throw new IllegalStateException("codec != null");
+            if (canceled) throw new IOException("Canceled");
+
+            // (尝试复用)尝试使用已分配的连接。我们需要在这里小心，因为我们已经分配的连接可能已被限制创建新流。
+            releasedConnection = this.connection;
+            toClose = releaseIfNoNewStreams();
+            if (this.connection != null) {
+                // We had an already-allocated connection and it's good.
+                result = this.connection;
+                releasedConnection = null;
+            }
+            if (!reportedAcquired) {
+                // If the connection was never reported acquired, don't report it as released!
+                releasedConnection = null;
+            }
+
+            if (result == null) {
+                /**
+                 * 4. 尝试在连接池中获取一个连接，get方法中会直接调用，注意最后一个参数为空
+                 *
+                 * Internal 是一个抽象类，而该类的实现则在OkHttpClient的static{}静态代码块中（为一匿名内部类）
+                 *  而其get方法实际上会调onnectionPool连接池中的get方法使用一个for循环，在连接池里面，寻找合格的连接
+                 *  而合格的连接会通过，StreamAllocation中的acquire方法，更新connection的值。
+                 * */
+                Internal.instance.get(connectionPool, address, this, null);
+                if (connection != null) {
+                    foundPooledConnection = true;
+                    result = connection;
+                } else {
+                    selectedRoute = route;
+                }
+            }
+        }
+        closeQuietly(toClose);
+
+        if (releasedConnection != null) {
+            eventListener.connectionReleased(call, releasedConnection);
+        }
+        if (foundPooledConnection) {
+            eventListener.connectionAcquired(call, result);
+        }
+        if (result != null) {
+            // 如果我们找到已经分配或池化的连接，我们就完成了。
+            return result;
+        }
+
+        // 如果我们需要选择路线，请选择一个。这是一个阻止操作。
+        boolean newRouteSelection = false;
+        if (selectedRoute == null && (routeSelection == null || !routeSelection.hasNext())) {
+            newRouteSelection = true;
+            // 对于线路Route的选择，可以深究一下这个RouteSeletor
+            routeSelection = routeSelector.next();
+        }
+        //5. 继续线程池同步下去获取连接
+        synchronized (connectionPool) {
+            if (canceled) throw new IOException("Canceled");
+
+            if (newRouteSelection) {
+                // 6. 现在我们有了一组IP地址(线路Route)，再次尝试从池中获取连接。
+                List<Route> routes = routeSelection.getAll();
+                for (int i = 0, size = routes.size(); i < size; i++) {
+                    Route route = routes.get(i);
+                    Internal.instance.get(connectionPool, address, this, route);
+                    if (connection != null) {
+                        foundPooledConnection = true;
+                        result = connection;
+                        this.route = route;
+                        break;
+                    }
+                }
+            }
+            // 没有找到
+            if (!foundPooledConnection) {
+                if (selectedRoute == null) {
+                    selectedRoute = routeSelection.next();
+                }
+                
+                // 创建连接并立即将其分配给此分配。这时可能异步cancel（）会中断我们即将进行的握手。
+                route = selectedRoute;
+                refusedStreamCount = 0;
+                // 7. 如果前面这么寻找，都没在连接池中找到可用的连接，那么就新建一个
+                result = new RealConnection(connectionPool, selectedRoute);
+                // 更新connection，即RealConnection
+                acquire(result, false);
+            }
+        }
+
+        // 如果我们第二次发现了汇集连接，我们就完成了。
+        if (foundPooledConnection) {
+            eventListener.connectionAcquired(call, result);
+            return result;
+        }
+
+        /**
+         * 8. 做TCP + TLS握手。这是一个阻止操作。
+            调用RealConnection的connect方法打开一个Socket链接
+         *  这里就是就是连接的操作了，终于找到连接的正主了，这里会调用RealConnection的连接方法，进行连接操作。
+         *     如果是普通的http请求，会使用Socket进行连接
+         *     如果是https，会进行相应的握手，建立通道的操作。
+         * */
+        result.connect(connectTimeout, readTimeout, writeTimeout, pingIntervalMillis,
+                connectionRetryEnabled, call, eventListener);
+        routeDatabase().connected(result.route());
+
+        Socket socket = null;
+        synchronized (connectionPool) {
+            reportedAcquired = true;
+
+            // 9. 最后就是同步加到 连接池里面了
+            Internal.instance.put(connectionPool, result);
+
+            // 最后加了一个多路复用的判断，这个是http2才有的
+            // 如果另外的多路复用连接在同时创建，则释放此连接，用另外的链接
+            if (result.isMultiplexed()) {
+                socket = Internal.instance.deduplicate(connectionPool, address, this);
+                result = connection;
+            }
+        }
+        closeQuietly(socket);
+
+        eventListener.connectionAcquired(call, result);
+        return result;
+    }
+```
+这段代码有点多，具体讲解在代码注释当中，简单总结一下：
+
+1. 首先做了点判断是否已取消、编码codec是否为空等
+2. 复用连接，能复用则复用
+3. 若第2步不能复用，则从连接池ConnectionPool中获取一个
+4. 若第3步获取的connection不为空，则返回
+5. 若第3步获取的connection为空则继续从连接池中获取连接(此次和第3步的区别为，第二次传Route参数)，若返回不为空则返回
+6. 若前5步依旧没有获取到可用的connection，则重新创建一个，并放入连接池ConnectionPool中
+7. 最终调用RealConnection的connect方法打开一个Socket链接，已供下一个拦截器使用
+
+接下来我们继续了解一下RealConnection的connect连接操作：
+```
+// RealConnection类：
+    public void connect(int connectTimeout, int readTimeout, int writeTimeout,
+                        int pingIntervalMillis, boolean connectionRetryEnabled, Call call,
+                        EventListener eventListener) {
+        // protocol（连接协议）是用来检查此连接是否已经建立
+        if (protocol != null) throw new IllegalStateException("already connected");
+
+        RouteException routeException = null;
+        // ConnectionSpec指定了Socket连接的一些配置
+        List<ConnectionSpec> connectionSpecs = route.address().connectionSpecs();
+        // 连接规格选择器（用于选择连接，比如：隧道连接和Socket连接）
+        ConnectionSpecSelector connectionSpecSelector = new ConnectionSpecSelector(connectionSpecs);
+
+        if (route.address().sslSocketFactory() == null) {
+            if (!connectionSpecs.contains(ConnectionSpec.CLEARTEXT)) {
+                throw new RouteException(new UnknownServiceException(
+                        "CLEARTEXT communication not enabled for client"));
+            }
+            String host = route.address().url().host();
+            if (!Platform.get().isCleartextTrafficPermitted(host)) {
+                throw new RouteException(new UnknownServiceException(
+                        "CLEARTEXT communication to " + host + " not permitted by network " +
+                                "security policy"));
+            }
+        }
+
+        while (true) {
+            try {
+                // 是否执行隧道连接，requiresTunnel()方法实现其实很简单：判断address的sslSocketFactory是否为空并且proxy代理类型是否为Http
+                if (route.requiresTunnel()) {
+                    connectTunnel(connectTimeout, readTimeout, writeTimeout, call, eventListener);
+                    if (rawSocket == null) {
+                        // We were unable to connect the tunnel but properly closed down our
+                        // resources.
+                        break;
+                    }
+                } else {
+                    // 执行Socket连接
+                    connectSocket(connectTimeout, readTimeout, call, eventListener);
+                }
+                // 建立协议
+                establishProtocol(connectionSpecSelector, pingIntervalMillis, call, eventListener);
+                eventListener.connectEnd(call, route.socketAddress(), route.proxy(), protocol);
+                break;
+            } catch (IOException e) {
+                closeQuietly(socket);
+                closeQuietly(rawSocket);
+                socket = null;
+                rawSocket = null;
+                source = null;
+                sink = null;
+                handshake = null;
+                protocol = null;
+                http2Connection = null;
+
+                eventListener.connectFailed(call, route.socketAddress(), route.proxy(), null, e);
+
+                if (routeException == null) {
+                    routeException = new RouteException(e);
+                } else {
+                    routeException.addConnectException(e);
+                }
+
+                if (!connectionRetryEnabled || !connectionSpecSelector.connectionFailed(e)) {
+                    throw routeException;
+                }
+            }
+        }
+
+        if (route.requiresTunnel() && rawSocket == null) {
+            ProtocolException exception = new ProtocolException("Too many tunnel connections " +
+                    "attempted: "
+                    + MAX_TUNNEL_ATTEMPTS);
+            throw new RouteException(exception);
+        }
+
+        if (http2Connection != null) {
+            synchronized (connectionPool) {
+                allocationLimit = http2Connection.maxConcurrentStreams();
+            }
+        }
+    }
+    
+    /**
+     * 是否所有工作都是通过代理隧道构建HTTPS连接。这里的问题是代理服务器可以发出认证质询，然后关闭连接。
+     */
+    private void connectTunnel(int connectTimeout, int readTimeout, int writeTimeout
+        , Call call,EventListener eventListener) throws IOException {
+        //1、创建隧道请求对象
+        Request tunnelRequest = createTunnelRequest();
+        HttpUrl url = tunnelRequest.url();
+        //for循环： MAX_TUNNEL_ATTEMPTS == 21
+        for (int i = 0; i < MAX_TUNNEL_ATTEMPTS; i++) {
+            //2、打开socket链接
+            connectSocket(connectTimeout, readTimeout, call, eventListener);
+            //3、请求开启隧道并返回tunnelRequest(开启隧道会用到Socket连接中的sink和source)
+            tunnelRequest = createTunnel(readTimeout, writeTimeout, tunnelRequest, url);
+            //4、成功开启了隧道，跳出while循环
+            if (tunnelRequest == null) break;
+
+            // 隧道未开启成功，关闭相关资源，继续while循环    
+            closeQuietly(rawSocket);
+            rawSocket = null;
+            sink = null;
+            source = null;
+            eventListener.connectEnd(call, route.socketAddress(), route.proxy(), null);
+        }
+    }
+
+    /**
+     * 完成在原始套接字上构建完整HTTP或HTTPS连接所需的所有工作。
+     */
+    private void connectSocket(int connectTimeout, int readTimeout, Call call,
+                               EventListener eventListener) throws IOException {
+        Proxy proxy = route.proxy();
+        Address address = route.address();
+        //1、初始化Socket
+        rawSocket = proxy.type() == Proxy.Type.DIRECT || proxy.type() == Proxy.Type.HTTP
+                ? address.socketFactory().createSocket()
+                : new Socket(proxy);// 使用SOCKS的代理服务器
+        
+        eventListener.connectStart(call, route.socketAddress(), proxy);
+        rawSocket.setSoTimeout(readTimeout);
+        try {
+            //2、打开socket链接
+            Platform.get().connectSocket(rawSocket, route.socketAddress(), connectTimeout);
+        } catch (ConnectException e) {
+            ConnectException ce = new ConnectException("Failed to connect to " + route.socketAddress());
+            ce.initCause(e);
+            throw ce;
+        }
+        
+        try {
+            // 注意：Sink可以简单的看做OutputStream，Source可以简单的看做InputStream
+            // 而这里的sink和source，被用于打开隧道连接和最后一个拦截器用于真正的网络请求发送和获取响应
+            source = Okio.buffer(Okio.source(rawSocket));
+            sink = Okio.buffer(Okio.sink(rawSocket));
+        } catch (NullPointerException npe) {
+            if (NPE_THROW_WITH_NULL.equals(npe.getMessage())) {
+                throw new IOException(npe);
+            }
+        }
+    }
+    
+    private Request createTunnel(int readTimeout, int writeTimeout, Request tunnelRequest,
+                                 HttpUrl url) throws IOException {
+        // 拼接CONNECT命令
+        String requestLine = "CONNECT " + Util.hostHeader(url, true) + " HTTP/1.1";
+        while (true) {//又一个while循环
+            //对应http/1.1 编码HTTP请求并解码HTTP响应
+            Http1Codec tunnelConnection = new Http1Codec(null, null, source, sink);
+            //发送CONNECT，请求打开隧道链接，
+            tunnelConnection.writeRequest(tunnelRequest.headers(), requestLine);
+            //完成链接
+            tunnelConnection.finishRequest();
+            //构建response，操控的是inputStream流
+            Response response = tunnelConnection.readResponseHeaders(false)
+                    .request(tunnelRequest)
+                    .build();
+
+            switch (response.code()) {
+                case HTTP_OK:
+                    return null;
+                case HTTP_PROXY_AUTH://表示服务器要求对客户端提供访问证书，进行代理认证
+                    //进行代理认证
+                    tunnelRequest = route.address().proxyAuthenticator().authenticate(route,
+                            response);
+                    //代理认证不通过
+                    if (tunnelRequest == null)
+                        throw new IOException("Failed to authenticate with proxy");
+
+                    //代理认证通过，但是响应要求close，则关闭TCP连接此时客户端无法再此连接上发送数据
+                    if ("close".equalsIgnoreCase(response.header("Connection"))) {
+                        return tunnelRequest;
+                    }
+                    break;
+
+            }
+        }
+    }
+```
+**什么是隧道呢？** 隧道技术（Tunneling）是HTTP的用法之一，使用隧道传递的数据（或负载）可以是不同协议的数据帧或包，或者简单的来说隧道就是利用一种网络协议来传输另一种网络协议的数据。比如A主机和B主机的网络而类型完全相同都是IPv6的网，而链接A和B的是IPv4类型的网络,A和B为了通信，可以使用隧道技术，数据包经过Ipv4数据的多协议路由器时，将IPv6的数据包放入IPv4数据包；然后将包裹着IPv6数据包的IPv4数据包发送给B，当数据包到达B的路由器，原来的IPv6数据包被剥离出来发给B。 
+
+SSL隧道：SSL隧道的初衷是为了通过防火墙来传输加密的SSL数据，此时隧道的作用就是将非HTTP的流量（SSL流量）传过防火墙到达指定的服务器。
+
+**怎么打开隧道？** HTTP提供了一个CONNECT方法 ,它是HTTP/1.1协议中预留给能够将连接改为管道方式的代理服务器，该方法就是用来建议一条web隧道。客户端发送一个CONNECT请求给隧道网关请求打开一条TCP链接，当隧道打通之后，客户端通过HTTP隧道发送的所有数据会转发给TCP链接，服务器响应的所有数据会通过隧道发给客户端。 
+（注：以来内容来源参考《计算机网络第五版》和《HTTP权威指南》第八章的有关内容，想深入了解的话可以查阅之。） 
+关于CONNECT在HTTP 的首部的内容格式，可以简单如下表示： CONNECT hostname:port HTTP/1.1 
+
+这部分就不深入分析啦，感兴趣的小伙伴自行查询吧。
+
+## ConnectionPool
+在整个OkHttp的流程中，我们在哪里看到过ConnectionPool的身影呢？
+1. 在OKHttpClient.Builder的构造方法里面，对ConnectionPool进行了初始化
+2. 我们还在StreamAllocation的newStream方法看到过ConnectionPool。
+3. StreamAllocation在调用findConnection方法寻找一个可以使用Connection，这里也涉及到ConnectionPool。findConnection方法在寻找Connection时，首先会尝试复用StreamAllocation本身的Connection,如果这个Connection不可用的话，那么就会去ConnectionPool去寻找合适的Connection。
+
+总的来说，ConnectionPool负责所有的连接，包括连接的复用，以及无用连接的清理。OkHttp会将客户端和服务端所有的连接都抽象为Connection（实际实现类为RealConnection），而ConnectionPool就是为了管理所有Connection而设计的，其实际作用：在其时间允许的范围内复用Connection，并对其清理回收。
 
 
 
@@ -1346,3 +1790,5 @@ source.readString(charset)调用的实际上就是RealBufferedSource类的readSt
 https://juejin.im/post/5a6da6e7f265da3e303cbcb6
 
 https://www.jianshu.com/p/5bcdcfe9e05c
+
+https://www.jianshu.com/p/c963617ea6bc
