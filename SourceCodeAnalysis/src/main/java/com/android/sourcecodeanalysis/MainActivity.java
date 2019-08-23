@@ -24,6 +24,8 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.net.ssl.SSLPeerUnverifiedException;
+
 import static java.net.HttpURLConnection.HTTP_NOT_MODIFIED;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -36,5 +38,3 @@ public class MainActivity extends Activity {
 
     }
 }
-
-

@@ -398,10 +398,12 @@ public Response intercept(Chain chain) throws IOException {
     // 1. 初始化一个socket连接流对象
     streamAllocation = new StreamAllocation(
             client.connectionPool(), createAddress(request.url()), callStackTrace);
-
+    // 计数器
     int followUpCount = 0;
     Response priorResponse = null;
-    while (true) { // 开启死循环，用于执行第一个拦截器或者请求的失败重连
+    // 开启死循环，用于执行第一个拦截器或者请求的失败重连
+    while (true) {
+        // 如果请求已经被取消了，释放连接池的资源
         if (canceled) {
             streamAllocation.release();
             throw new IOException("Canceled");
@@ -412,8 +414,9 @@ public Response intercept(Chain chain) throws IOException {
         try {
             // 2. 执行下一个拦截器，即BridgeInterceptor
             response = ((RealInterceptorChain) chain).proceed(request, streamAllocation, null, null);
+            // 先不释放链接，因为可能要复用
             releaseConnection = false;
-        } catch (RouteException e) {
+        } catch (RouteException e) { // 连接地址失败的异常
             /**
              * 3. 如果有异常，判断是否要恢复
              * 不在继续连接的情况：
@@ -432,11 +435,14 @@ public Response intercept(Chain chain) throws IOException {
             releaseConnection = false;
             continue;
         } catch (IOException e) {
+            // 判断网络请求是否已经开始
             boolean requestSendStarted = !(e instanceof ConnectionShutdownException);
+            // 判断是否能够恢复，也就是是否要重试
             if (!recover(e, requestSendStarted, request)) throw e;
             releaseConnection = false;
             continue;
         } finally {
+            // 释放连接
             if (releaseConnection) {
                 streamAllocation.streamFailed(null);
                 streamAllocation.release();
@@ -452,10 +458,17 @@ public Response intercept(Chain chain) throws IOException {
                     .build();
         }
         /**
-         * 4. 来检查是否需要进行重定向操作
+         * 4. 根据返回结果response，来检查是否需要进行重定向操作
+         *      或者是否需要继续完善请求，例如证书验证等等
          * 是否需要进行请求重定向，是根据http请求的响应码来决定的，
          * 因此，在followUpRequest方法中，将会根据响应userResponse，获取到响应码，
          * 并从连接池StreamAllocation中获取连接，然后根据当前连接，得到路由配置参数Route。
+         *
+         * followUpCount是用来记录我们发起网络请求的次数的
+         *  为什么我们发起一个网络请求，可能okhttp会发起多次呢？
+         *      例如：https的证书验证，我们需要经过：发起 -> 验证 ->响应，
+         *      三个步骤需要发起至少两次的请求，或者我们的网络请求被重定向，
+         *      在我们第一次请求得到了新的地址后，再向新的地址发起网络请求。
          * */
         Request followUp = followUpRequest(response);
 
@@ -473,22 +486,25 @@ public Response intercept(Chain chain) throws IOException {
             streamAllocation.release();
             throw new ProtocolException("Too many follow-up requests: " + followUpCount);
         }
-
+        // 如果body内容只能发送一次，释放连接
         if (followUp.body() instanceof UnrepeatableRequestBody) {
             streamAllocation.release();
             throw new HttpRetryException("Cannot retry streamed HTTP body", response.code());
         }
         // 7. 检查重定向（失败重连）请求，和当前的请求，是否为同一个连接
         if (!sameConnection(response, followUp.url())) {
+            // 释放之前你的url地址连接
             streamAllocation.release();
+            // 创建新的网络请求封装对象StreamAllocation
             streamAllocation = new StreamAllocation(
                     client.connectionPool(), createAddress(followUp.url()), callStackTrace);
         } else if (streamAllocation.codec() != null) {
             throw new IllegalStateException("Closing the body of " + response
                     + " didn't close its backing stream. Bad interceptor?");
         }
-
+        // 更新下一次的网络请求对象
         request = followUp;
+        // 保存上一次的请求结果
         priorResponse = response;
     }
 }
@@ -1776,12 +1792,230 @@ SSL隧道：SSL隧道的初衷是为了通过防火墙来传输加密的SSL数�
 2. 我们还在StreamAllocation的newStream方法看到过ConnectionPool。
 3. StreamAllocation在调用findConnection方法寻找一个可以使用Connection，这里也涉及到ConnectionPool。findConnection方法在寻找Connection时，首先会尝试复用StreamAllocation本身的Connection,如果这个Connection不可用的话，那么就会去ConnectionPool去寻找合适的Connection。
 
-总的来说，ConnectionPool负责所有的连接，包括连接的复用，以及无用连接的清理。OkHttp会将客户端和服务端所有的连接都抽象为Connection（实际实现类为RealConnection），而ConnectionPool就是为了管理所有Connection而设计的，其实际作用：在其时间允许的范围内复用Connection，并对其清理回收。
+总的来说，ConnectionPool负责所有的连接，包括连接的复用，以及无用连接的清理。OkHttp会将客户端和服务端所有的连接都抽象为Connection（实际实现类为RealConnection），而ConnectionPool就是为了管理所有Connection而设计的，其实际作用：在其时间允许的范围内复用Connection，并对其清理回收。外部通过调用get方法来获取一个可以使用Connection对象,通过put方法添加一个新的连接。
 
+**get方法**
+```
+// ConnectionPool类：
+    //  一个线性 collection，支持在两端插入和移除元素。
+    // 名称 Deque 是“double ended queue（双端队列）”的缩写
+    private final Deque<RealConnection> connections = new ArrayDeque<>();
 
+    @Nullable
+    RealConnection get(Address address, StreamAllocation streamAllocation, Route route) {
+        assert (Thread.holdsLock(this));
+        // 遍历connections
+        for (RealConnection connection : connections) {
+            // 查看该connection是否符合条件
+            if (connection.isEligible(address, route)) {
+                streamAllocation.acquire(connection, true);
+                return connection;
+            }
+        }
+        return null;
+    }
+    
+// RealConnection类：
+    // 此连接承载的当前流
+    public final List<Reference<StreamAllocation>> allocations = new ArrayList<>();
 
+    public boolean isEligible(Address address, @Nullable Route route) {
+        // 当前Connection拥有的StreamAllocation是否超过的限制
+        if (allocations.size() >= allocationLimit || noNewStreams) return false;
 
+        // 地址的非主机（host）字段是否重叠（一样）
+        if (!Internal.instance.equalsNonHost(this.route.address(), address)) return false;
 
+        // 主机（host）是否完全匹配
+        if (address.url().host().equals(this.route().address().url().host())) {
+            return true;
+        }
+
+        // 此时我们没有主机名匹配。但是，如果满足我们的连接合并要求，我们仍然可以提供请求。
+
+        // 1. 此连接必须是HTTP / 2。
+        if (http2Connection == null) return false;
+
+        // 2. 路由必须共享IP地址。这要求我们为两个主机提供DNS地址，这只发生在路由规划之后。我们无法合并使用代理的连接，因为代理不告诉我们源服务器的IP地址。
+        if (route == null) return false;
+        if (route.proxy().type() != Proxy.Type.DIRECT) return false;
+        if (this.route.proxy().type() != Proxy.Type.DIRECT) return false;
+        if (!this.route.socketAddress().equals(route.socketAddress())) return false;
+
+        // 3. 此连接的服务器证书必须涵盖新主机。
+        if (route.address().hostnameVerifier() != OkHostnameVerifier.INSTANCE) return false;
+        if (!supportsUrl(address.url())) return false;
+
+        // 4. 证书固定必须与主机匹配。
+        try {
+            address.certificatePinner().check(address.url().host(), handshake().peerCertificates());
+        } catch (SSLPeerUnverifiedException e) {
+            return false;
+        }
+
+        return true;
+    }
+    
+// StreamAllocation类：
+    public void acquire(RealConnection connection, boolean reportedAcquired) {
+        assert (Thread.holdsLock(connectionPool));
+        if (this.connection != null) throw new IllegalStateException();
+        // 保留连接
+        this.connection = connection;
+        this.reportedAcquired = reportedAcquired;
+        // 将此分配流add进allocations中，用于RealConnection.isEligible方法判断当前Connection拥有的StreamAllocation是否超过的限制
+        connection.allocations.add(new StreamAllocationReference(this, callStackTrace));
+    }
+```
+简单总结一下：
+
+1. isEligible方法（判断遍历的连接是否符合条件，即是否可复用）：
+    
+        1.如果这个 Connection 已经分配的数量(即 拥有的StreamAllocation)超过了分配限制或者被标记 则不符合。
+        2.接着调用 equalsNonHost，主要是判断 Address 中非主机（host）字段是否重叠（一样），如果有不同的则不符合。
+        3.然后就是判断 host 是否相同，如果相同(并且1和2也符合)那么对于当前的Address来说，这个Connection 便是可重用的。
+        4.如果1、2、3都不符合，则若依旧满足某些条件，此连接仍可复用，具体满足的条件查看上面代码注解
+2. acquire方法（StreamAllocation类）：
+
+        1.保存遍历connections获取的可重用的连接
+        2.将此StreamAllocation类的弱引用StreamAllocationReference添加add进此重用连接，判断当前Connection拥有的StreamAllocation是否超过的限制
+        3.此方法保留的连接将被用于findConnection方法（上面ConnectInterceptor部分有说明）
+
+**put方法**
+```
+    void put(RealConnection connection) {
+        assert (Thread.holdsLock(this));
+        // 是否开启异步的清理任务
+        if (!cleanupRunning) {
+            cleanupRunning = true;
+            executor.execute(cleanupRunnable);
+        }
+        // add进connections
+        connections.add(connection);
+    }
+```
+put方法很简单，直接将Connection对象添加到connections双端队列。不过这里有一个地方需要注意，就是如果cleanupRunning为false，就会想线程池里面添加一个cleanupRunnable，这里的目的进行清理操作。此清理操作马上就分析。
+
+**cleanup：清理无用的连接**
+```
+    private final Runnable cleanupRunnable = new Runnable() {
+        @Override
+        public void run() {
+            // 这个cleanupRunnable是一个死循环的任务，只要cleanup方法不返回-1，就会一直执行。
+            while (true) {
+                // 调用cleanup查找并清理无用连接（返回以纳米为单位的持续时间）
+                long waitNanos = cleanup(System.nanoTime());
+                if (waitNanos == -1) return;
+                // 当cleanup方法没有返回-1，当前的Runnable就会进入睡眠状态。
+                if (waitNanos > 0) {
+                    long waitMillis = waitNanos / 1000000L;
+                    waitNanos -= (waitMillis * 1000000L);
+                    synchronized (ConnectionPool.this) {
+                        try {
+                            // 等待上一次cleanup计算出的最长空闲的连接距离驱逐到期的时间
+                            ConnectionPool.this.wait(waitMillis, (int) waitNanos);
+                        } catch (InterruptedException ignored) {
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+    /**
+     * 对此池执行维护，如果超出保持活动限制或空闲连接限制，则驱逐已空闲的连接最长。
+     * 返回以纳米为单位的持续时间，直到下一次调用此方法为止。 如果不需要进一步清理，则返回 -1。
+     */
+    long cleanup(long now) {
+        int inUseConnectionCount = 0;
+        int idleConnectionCount = 0;
+        RealConnection longestIdleConnection = null;
+        long longestIdleDurationNs = Long.MIN_VALUE;
+
+        // 找到要驱逐的连接，或下次驱逐到期的时间。
+        synchronized (this) {
+            for (Iterator<RealConnection> i = connections.iterator(); i.hasNext(); ) {
+                RealConnection connection = i.next();
+
+                // 如果正在使用该连接，请跳过继续搜索。
+                // 用于清理可能泄露的StreamAllocation并返回正在使用此连接的 StreamAllocation的数量
+                if (pruneAndGetAllocationCount(connection, now) > 0) {
+                    inUseConnectionCount++;
+                    continue;
+                }
+                // 空闲连接记住
+                idleConnectionCount++;
+
+                long idleDurationNs = now - connection.idleAtNanos;
+                // 判断是否是最长空闲时间的连接
+                if (idleDurationNs > longestIdleDurationNs) {
+                    longestIdleDurationNs = idleDurationNs;
+                    longestIdleConnection = connection;
+                }
+            }
+            // 若当前Connection已经超过了最大的空闲时间
+            // 或者空闲连接数大于最大空闲连接数量，应该被回收
+            if (longestIdleDurationNs >= this.keepAliveDurationNs
+                    || idleConnectionCount > this.maxIdleConnections) {
+                // 将其从列表中删除，然后在下面（同步块的外部）将其关闭。
+                connections.remove(longestIdleConnection);
+            } else if (idleConnectionCount > 0) {
+                // 返回保活时长 - 最长空闲时间的连接当前存活的时间（即该连接还有多久需要被清理）
+                return keepAliveDurationNs - longestIdleDurationNs;
+            } else if (inUseConnectionCount > 0) {
+                // 所有连接都在使用中。说明所有连接都需要至少是保活时长才会被清理
+                return keepAliveDurationNs;
+            } else {
+                // 无连接，空闲或正在使用中。
+                cleanupRunning = false;
+                return -1;
+            }
+        }
+        // 3. 关闭连接的socket
+        // 代码执行到此处说明此Connection已经超过了最大的空闲时间，应该被回收
+        closeQuietly(longestIdleConnection.socket());
+
+        // 继续清理
+        return 0;
+    }
+    
+    private int pruneAndGetAllocationCount(RealConnection connection, long now) {
+        List<Reference<StreamAllocation>> references = connection.allocations;
+        // 遍历当前RealConnection中保存的StreamAllocation的弱引用
+        for (int i = 0; i < references.size(); ) {
+            Reference<StreamAllocation> reference = references.get(i);
+            // 若StreamAllocation的弱引用不为空，则跳过继续
+            if (reference.get() != null) {
+                i++;
+                continue;
+            }
+            
+            // 若StreamAllocation的弱引用为空
+            StreamAllocation.StreamAllocationReference streamAllocRef =
+                    (StreamAllocation.StreamAllocationReference) reference;
+            String message = "A connection to " + connection.route().address().url()
+                    + " was leaked. Did you forget to close a response body?";
+            Platform.get().logCloseableLeak(message, streamAllocRef.callStackTrace);
+            // 则需要移除该位置的引用
+            references.remove(i);
+            connection.noNewStreams = true;
+
+            // 若references为空，即该连接已经没有了StreamAllocation使用，则该连接可以被清理
+            if (references.isEmpty()) {
+                connection.idleAtNanos = now - keepAliveDurationNs;
+                return 0;
+            }
+        }
+
+        return references.size();
+    }
+```
+逻辑总结：
+1. 遍历所有的连接，对每个连接调用 pruneAndGetAllocationCount 判断其是否闲置的连接。如果是正在使用中，则直接遍历一下个。
+2. 对于闲置的连接，判断是否是当前空闲时间最长的。
+3. 对于当前空闲时间最长的连接，如果其超过了设定的最长空闲时间（5分钟）或者是最大的空闲连接的数量（5个），则清理此连接。否则计算下次需要清理的时间，这样 cleanupRunnable 中的循环变会睡眠相应的时间，醒来后继续清理。
+
+## CallServerInterceptor
 
 
 
