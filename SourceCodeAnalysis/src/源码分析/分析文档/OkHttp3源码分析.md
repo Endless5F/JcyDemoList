@@ -352,13 +352,13 @@ final class AsyncCall extends NamedRunnable {
     }
     
 // RetryAndFollowUpInterceptor类：
-@Override
+    @Override
     public Response intercept(Chain chain) throws IOException {
         Request request = chain.request();
         RealInterceptorChain realChain = (RealInterceptorChain) chain;
         Call call = realChain.call();
         EventListener eventListener = realChain.eventListener();
-        // 初始化分类流：OkHtpp请求的各种组件的封装类
+        // 初始化分配流对象：OkHtpp请求的各种组件的封装类
         StreamAllocation streamAllocation = new StreamAllocation(client.connectionPool(),
                 createAddress(request.url()), call, eventListener, callStackTrace);
         this.streamAllocation = streamAllocation;
@@ -395,7 +395,7 @@ final class AsyncCall extends NamedRunnable {
 public Response intercept(Chain chain) throws IOException {
     // 获取我们构建的请求
     Request request = chain.request();
-    // 1. 初始化一个socket连接流对象
+    // 1. 初始化一个socket连接分配流对象
     streamAllocation = new StreamAllocation(
             client.connectionPool(), createAddress(request.url()), callStackTrace);
     // 计数器
@@ -612,7 +612,7 @@ new OkHttpClient.Builder().cache(new Cache(new File(getExternalCacheDir()), 100 
 2. DiskLruCache 硬盘缓存
 3. OkHttp使用Okio处理各种流操作(替代Io流)：Okio中有两个关键的接口，Sink和Source，这两个接口都继承了Closeable接口；而Sink可以简单的看做OutputStream，Source可以简单的看做InputStream。而这两个接口都是支持读写超时设置的。
 
-**DiskLruCache**
+**DiskLruCache（此算法和OkHttp(大概是重写了部分)有些许不同，原理一致）**
 
 DiskLruCache是JakeWharton大神的杰作，它采用的是LRU算法，通过LRU算法对缓存进行管理，以最近最少使用作为管理的依据，删除最近最少使用的数据，保留最近最常用的数据。
 
@@ -1088,6 +1088,7 @@ private static final String CLEAN = "CLEAN";
 
 总结：：经过分析InternalCache我们知道，Cache只是一个上层的执行者，内部真正的缓存是由DiskLruCache实现的。在DiskLruCache里面通过FileSystem，基于Okio的Sink/Source对文件进行流操作。
 
+![](https://user-gold-cdn.xitu.io/2019/8/24/16cc2ae68eaf384e?w=240&h=240&f=png&s=36805)
 **intercept**
 
 接下来我们回到CacheInterceptor的拦截器方法intercept中继续分析：
@@ -1344,6 +1345,346 @@ source.readString(charset)调用的实际上就是RealBufferedSource类的readSt
 3. 由于cacheWritingResponse方法回来Response（其中ResponseBody包含Okio.buffer(cacheWritingSource)，即BufferedSource）给缓存拦截器，而缓存拦截器一直往上面的拦截器传递，直到返回到同步请求的返回值或者异步请求的onResponse方法中。
 4. 在我们调用Response.body().string()方法时，触发BufferedSource（实际上是RealBufferedSource）的readString。
 5. 而readString会调用Buffer的writeAll（传入cacheWritingSource），进行for循环来执行第2步中所有的匿名内部类（cacheWritingSource）中的read方法写入Response缓存
+
+![](https://user-gold-cdn.xitu.io/2019/8/24/16cc2ab62a98e7d2?w=240&h=240&f=png&s=24472)
+
+## RealConnection
+RealConnection是Connection的实现类，Realconnection封装了底层Socket连接，同时使用 OKio（square公司的另一个独立的开源项目） 来进行鱼服务器交互数据的读写。首先看下它的成员属性：
+```
+    private final ConnectionPool connectionPool;
+    private final Route route;
+
+    //下面这些字段，通过connect()方法开始初始化，并且绝对不会再次赋值
+ 
+    private Socket rawSocket; //底层Tcp Socket
+
+    private Socket socket;  //应用层socket
+    //握手（处理三次握手）
+    private Handshake handshake;
+    //协议
+    private Protocol protocol;
+    // http2的链接
+    private Http2Connection http2Connection;
+    //通过source和sink，与服务器交互的输入输出流
+    private BufferedSource source;
+    private BufferedSink sink;
+
+    //下面这个字段是 属于表示链接状态的字段，并且有connectPool统一管理
+    //如果noNewStreams被设为true，则noNewStreams一直为true，不会被改变，并且表示这个链接不会再创建新的stream流
+    public boolean noNewStreams;
+
+    //成功的次数
+    public int successCount;
+    
+    //此链接可以承载最大并发流的限制，如果不超过限制，可以随意增加
+    public int allocationLimit = 1;
+    
+    // allocations是关联StreamAllocation,它用来统计在一个连接上建立了哪些流，
+    // 通过StreamAllocation的acquire方法和release方法可以将一个allcation对方添加到链表或者移除链表
+    public final List<Reference<StreamAllocation>> allocations = new ArrayList<>();
+```
+从其成员属性中可以看出，RealConnection中持有Socket连接，并且会保留有sink和source用来与服务器交互的输入输出流。因此如果拥有了一个RealConnection就代表了我们已经跟服务器有了一条通信链路（Socket链路）。并且三次握手也是实现在这个类中，其具体实现是在其connect方法中，此方法我们放到ConnectInterceptor拦截器中进行分析。
+
+当使用OkHttp请求URL时，RealConnection的作用如下:
+
+1. 它使用URL并配置了OkHttpClient来创建一个地址。这个地址指定我们如何连接到webserver。
+它试图从连接池检索具有该地址的连接。
+2. 如果它没有在连接池中找到连接，它会选择要尝试的路由。这通常意味着发出DNS请求以获取服务器的IP地址。然后在必要时选择TLS版本和代理服务器。
+3. 如果是新的路由，它可以通过构建直接套接字连接、TLS隧道(HTTP代理上的HTTPS)或TLS连接来连接。它会在必要的时候建立握手。
+4. 它发送HTTP请求并读取响应。
+5. 如果连接有问题，OkHttp将选择另一个路由并再次尝试。这允许OkHttp在服务器地址的子集不可用时恢复。当池连接过时或尝试的TLS版本不受支持时，这点也很有受用。
+
+## StreamAllocation
+**HTTP的版本背景：**
+
+HTTP的版本从最初的1.0版本，到后续的1.1版本，再到后续的google推出的SPDY,后来再推出2.0版本，http协议越来越完善。(ps:okhttp也是根据2.0和1.1/1.0作为区分，实现了两种连接机制)这里要说下http2.0和http1.0,1.1的主要区别，2.0解决了老版本(1.1和1.0)最重要两个问题：连接无法复用和head of line blocking (HOL)问题.2.0使用多路复用的技术，多个stream可以共用一个socket连接，每个tcp连接都是通过一个socket来完成的，socket对应一个host和port，如果有多个stream(也就是多个request)都是连接在一个host和port上，那么它们就可以共同使用同一个socket,这样做的好处就是可以减少TCP的一个三次握手的时间。在OKHttp里面，记录一次连接的是RealConnection，这个负责连接，在这个类里面用socket来连接，用HandShake来处理握手。
+
+**3个概念：请求、连接、流**
+
+我们要明白HTTP通信执行网络"请求"需要在"连接"上建立一个新的"流",我们将StreamAllocation称之流的桥梁，它负责为一次"请求"寻找"连接"并建立"流"，从而完成远程通信。所以说StreamAllocation与"请求"、"连接"、"流"都有关。
+
+StreamAllocation的注释也详细讲述了，Connection是建立在Socket之上的物流通信信道，而Stream则是代表逻辑的流，至于Call是对一次请求过程的封装。之前也说过一个Call可能会涉及多个流(比如重定向或者auth认证等情况)。如果StreamAllocation要想解决上述问题，需要两个步骤，一是寻找连接，二是获取流。所以StreamAllocation里面应该包含一个Stream(OKHttp里面的流是HttpCodec)；还应该包含连接Connection。如果想找到合适的连接，还需要一个连接池ConnectionPool属性。所以应该有一个获取流的方法在StreamAllocation里面是newStream()；找到合适的流的方法findConnection()；还应该有完成请求任务的之后finish()的方法来关闭流对象，还有终止和取消等方法，以及释放资源的方法。
+
+我们先来看一下其成员属性：
+```
+    /**
+     * 地址指定一个webserver(如github.com)和连接到该服务器所需的所有静态配置:端口号、HTTPS设置和首选网络协议(如HTTP/2或SPDY)。
+     * 共享相同地址的url也可以共享相同的底层TCP套接字连接。共享连接具有显著的性能优势:
+     *  更低的延迟、更高的吞吐量(由于TCP启动缓慢)和节约的电量。OkHttp使用ConnectionPool自动重用HTTP/1.x的连接和HTTP/2和SPDY的多路连接。
+     */
+    public final Address address; // 地址
+    /**
+     * 路由提供了实际连接到web服务器所需的动态信息。这是要尝试的特定IP地址(由DNS查询发现)、
+     *  要使用的确切代理服务器(如果使用的是ProxySelector)以及要协商的TLS版本(用于HTTPS连接)。
+     *
+     * 一个地址可能有很多路由线路。例如，托管在多个数据中心中的web服务器可能在其DNS响应中产生多个IP地址。
+     * */
+    private Route route; // 路由
+    private final ConnectionPool connectionPool;  // 连接池
+    private final Object callStackTrace; // 日志
+
+    private final RouteSelector routeSelector; // 路由选择器
+    private int refusedStreamCount;  // 拒绝的次数
+    private RealConnection connection;  // 连接
+    private boolean released;  // 是否已经被释放
+    private boolean canceled  // 是否被取消了
+    private HttpCodec codec; // 连接所需要的流
+```
+从其成员属性中其实就可以看出StreamAllocation实际上就是，OkHtpp请求的各种组件的封装类。StreamAllocation相关的： 1.找到合适的连接 2.获取流的方法newStream() 3.找到合适的流的方法findConnection()我们都放在ConnectInterceptor拦截器中分析。
+
+## HttpCodec
+从StreamAllocation中我们已经提过HttpCodec其实就是“请求、连接、流”中的流，而HttpCodec只是接口，其两个实现类分别为Http1Codec和Http2Codec，分别对应Http1.1协议以及Http2.0协议。我们本文主要看一看Http1Codec：
+```
+    // 配置此流的客户端。对于HTTPS代理隧道，可以为null。
+    final OkHttpClient client;
+    // 拥有此流的流分配。对于HTTPS代理隧道，可以为null。
+    final StreamAllocation streamAllocation;
+    // 与服务器交互的输入输出流
+    final BufferedSource source;
+    final BufferedSink sink;
+    // 当前流的状态，STATE_IDLE：空闲连接已准备好写入请求标头
+    int state = STATE_IDLE;
+    // 标题限制，HEADER_LIMIT：256 * 1024
+    private long headerLimit = HEADER_LIMIT;
+    
+    public Http1Codec(OkHttpClient client
+            , StreamAllocation streamAllocation, BufferedSource source, BufferedSink sink) {
+        this.client = client;
+        this.streamAllocation = streamAllocation;
+        this.source = source;
+        this.sink = sink;
+    }
+```
+从Http1Codec的成员和构造方法可以看出，在初始化Http1Codec时就已经将与服务器交互的sink和source传入，用于最后一个拦截器CallServerInterceptor真正的发送请求和获取响应。
+
+## ConnectionPool
+在整个OkHttp的流程中，我们在哪里看到过ConnectionPool的身影呢？
+1. 在OKHttpClient.Builder的构造方法里面，对ConnectionPool进行了初始化
+2. 我们还在StreamAllocation的newStream方法看到过ConnectionPool。
+3. StreamAllocation在调用findConnection方法寻找一个可以使用Connection，这里也涉及到ConnectionPool。findConnection方法在寻找Connection时，首先会尝试复用StreamAllocation本身的Connection,如果这个Connection不可用的话，那么就会去ConnectionPool去寻找合适的Connection。
+
+总的来说，ConnectionPool负责所有的连接，包括连接的复用，以及无用连接的清理。OkHttp会将客户端和服务端所有的连接都抽象为Connection（实际实现类为RealConnection），而ConnectionPool就是为了管理所有Connection而设计的，其实际作用：在其时间允许的范围内复用Connection，并对其清理回收。外部通过调用get方法来获取一个可以使用Connection对象,通过put方法添加一个新的连接。
+
+**get方法**
+```
+// ConnectionPool类：
+    //  一个线性 collection，支持在两端插入和移除元素。
+    // 名称 Deque 是“double ended queue（双端队列）”的缩写
+    private final Deque<RealConnection> connections = new ArrayDeque<>();
+
+    @Nullable
+    RealConnection get(Address address, StreamAllocation streamAllocation, Route route) {
+        assert (Thread.holdsLock(this));
+        // 遍历connections
+        for (RealConnection connection : connections) {
+            // 查看该connection是否符合条件
+            if (connection.isEligible(address, route)) {
+                streamAllocation.acquire(connection, true);
+                return connection;
+            }
+        }
+        return null;
+    }
+    
+// RealConnection类：
+    // 此连接承载的当前流
+    public final List<Reference<StreamAllocation>> allocations = new ArrayList<>();
+
+    public boolean isEligible(Address address, @Nullable Route route) {
+        // 当前Connection拥有的StreamAllocation是否超过的限制
+        if (allocations.size() >= allocationLimit || noNewStreams) return false;
+
+        // 地址的非主机（host）字段是否重叠（一样）
+        if (!Internal.instance.equalsNonHost(this.route.address(), address)) return false;
+
+        // 主机（host）是否完全匹配
+        if (address.url().host().equals(this.route().address().url().host())) {
+            return true;
+        }
+
+        // 此时我们没有主机名匹配。但是，如果满足我们的连接合并要求，我们仍然可以提供请求。
+
+        // 1. 此连接必须是HTTP / 2。
+        if (http2Connection == null) return false;
+
+        // 2. 路由必须共享IP地址。这要求我们为两个主机提供DNS地址，这只发生在路由规划之后。我们无法合并使用代理的连接，因为代理不告诉我们源服务器的IP地址。
+        if (route == null) return false;
+        if (route.proxy().type() != Proxy.Type.DIRECT) return false;
+        if (this.route.proxy().type() != Proxy.Type.DIRECT) return false;
+        if (!this.route.socketAddress().equals(route.socketAddress())) return false;
+
+        // 3. 此连接的服务器证书必须涵盖新主机。
+        if (route.address().hostnameVerifier() != OkHostnameVerifier.INSTANCE) return false;
+        if (!supportsUrl(address.url())) return false;
+
+        // 4. 证书固定必须与主机匹配。
+        try {
+            address.certificatePinner().check(address.url().host(), handshake().peerCertificates());
+        } catch (SSLPeerUnverifiedException e) {
+            return false;
+        }
+
+        return true;
+    }
+    
+// StreamAllocation类：
+    public void acquire(RealConnection connection, boolean reportedAcquired) {
+        assert (Thread.holdsLock(connectionPool));
+        if (this.connection != null) throw new IllegalStateException();
+        // 保留连接
+        this.connection = connection;
+        this.reportedAcquired = reportedAcquired;
+        // 将此分配流add进allocations中，用于RealConnection.isEligible方法判断当前Connection拥有的StreamAllocation是否超过的限制
+        connection.allocations.add(new StreamAllocationReference(this, callStackTrace));
+    }
+```
+简单总结一下：
+
+1. isEligible方法（判断遍历的连接是否符合条件，即是否可复用）：
+    
+        1.如果这个 Connection 已经分配的数量(即 拥有的StreamAllocation)超过了分配限制或者被标记 则不符合。
+        2.接着调用 equalsNonHost，主要是判断 Address 中非主机（host）字段是否重叠（一样），如果有不同的则不符合。
+        3.然后就是判断 host 是否相同，如果相同(并且1和2也符合)那么对于当前的Address来说，这个Connection 便是可重用的。
+        4.如果1、2、3都不符合，则若依旧满足某些条件，此连接仍可复用，具体满足的条件查看上面代码注解
+2. acquire方法（StreamAllocation类）：
+
+        1.保存遍历connections获取的可重用的连接
+        2.将此StreamAllocation类的弱引用StreamAllocationReference添加add进此重用连接，判断当前Connection拥有的StreamAllocation是否超过的限制
+        3.此方法保留的连接将被用于findConnection方法（上面ConnectInterceptor部分有说明）
+
+**put方法**
+```
+    void put(RealConnection connection) {
+        assert (Thread.holdsLock(this));
+        // 是否开启异步的清理任务
+        if (!cleanupRunning) {
+            cleanupRunning = true;
+            executor.execute(cleanupRunnable);
+        }
+        // add进connections
+        connections.add(connection);
+    }
+```
+put方法很简单，直接将Connection对象添加到connections双端队列。不过这里有一个地方需要注意，就是如果cleanupRunning为false，就会想线程池里面添加一个cleanupRunnable，这里的目的进行清理操作。此清理操作马上就分析。
+
+**cleanup：清理无用的连接**
+```
+    private final Runnable cleanupRunnable = new Runnable() {
+        @Override
+        public void run() {
+            // 这个cleanupRunnable是一个死循环的任务，只要cleanup方法不返回-1，就会一直执行。
+            while (true) {
+                // 调用cleanup查找并清理无用连接（返回以纳米为单位的持续时间）
+                long waitNanos = cleanup(System.nanoTime());
+                if (waitNanos == -1) return;
+                // 当cleanup方法没有返回-1，当前的Runnable就会进入睡眠状态。
+                if (waitNanos > 0) {
+                    long waitMillis = waitNanos / 1000000L;
+                    waitNanos -= (waitMillis * 1000000L);
+                    synchronized (ConnectionPool.this) {
+                        try {
+                            // 等待上一次cleanup计算出的最长空闲的连接距离驱逐到期的时间
+                            ConnectionPool.this.wait(waitMillis, (int) waitNanos);
+                        } catch (InterruptedException ignored) {
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+    /**
+     * 对此池执行维护，如果超出保持活动限制或空闲连接限制，则驱逐已空闲的连接最长。
+     * 返回以纳米为单位的持续时间，直到下一次调用此方法为止。 如果不需要进一步清理，则返回 -1。
+     */
+    long cleanup(long now) {
+        int inUseConnectionCount = 0;
+        int idleConnectionCount = 0;
+        RealConnection longestIdleConnection = null;
+        long longestIdleDurationNs = Long.MIN_VALUE;
+
+        // 找到要驱逐的连接，或下次驱逐到期的时间。
+        synchronized (this) {
+            for (Iterator<RealConnection> i = connections.iterator(); i.hasNext(); ) {
+                RealConnection connection = i.next();
+
+                // 如果正在使用该连接，请跳过继续搜索。
+                // 用于清理可能泄露的StreamAllocation并返回正在使用此连接的 StreamAllocation的数量
+                if (pruneAndGetAllocationCount(connection, now) > 0) {
+                    inUseConnectionCount++;
+                    continue;
+                }
+                // 空闲连接记住
+                idleConnectionCount++;
+
+                long idleDurationNs = now - connection.idleAtNanos;
+                // 判断是否是最长空闲时间的连接
+                if (idleDurationNs > longestIdleDurationNs) {
+                    longestIdleDurationNs = idleDurationNs;
+                    longestIdleConnection = connection;
+                }
+            }
+            // 若当前Connection已经超过了最大的空闲时间
+            // 或者空闲连接数大于最大空闲连接数量，应该被回收
+            if (longestIdleDurationNs >= this.keepAliveDurationNs
+                    || idleConnectionCount > this.maxIdleConnections) {
+                // 将其从列表中删除，然后在下面（同步块的外部）将其关闭。
+                connections.remove(longestIdleConnection);
+            } else if (idleConnectionCount > 0) {
+                // 返回保活时长 - 最长空闲时间的连接当前存活的时间（即该连接还有多久需要被清理）
+                return keepAliveDurationNs - longestIdleDurationNs;
+            } else if (inUseConnectionCount > 0) {
+                // 所有连接都在使用中。说明所有连接都需要至少是保活时长才会被清理
+                return keepAliveDurationNs;
+            } else {
+                // 无连接，空闲或正在使用中。
+                cleanupRunning = false;
+                return -1;
+            }
+        }
+        // 3. 关闭连接的socket
+        // 代码执行到此处说明此Connection已经超过了最大的空闲时间，应该被回收
+        closeQuietly(longestIdleConnection.socket());
+
+        // 继续清理
+        return 0;
+    }
+    
+    private int pruneAndGetAllocationCount(RealConnection connection, long now) {
+        List<Reference<StreamAllocation>> references = connection.allocations;
+        // 遍历当前RealConnection中保存的StreamAllocation的弱引用
+        for (int i = 0; i < references.size(); ) {
+            Reference<StreamAllocation> reference = references.get(i);
+            // 若StreamAllocation的弱引用不为空，则跳过继续
+            if (reference.get() != null) {
+                i++;
+                continue;
+            }
+            
+            // 若StreamAllocation的弱引用为空
+            StreamAllocation.StreamAllocationReference streamAllocRef =
+                    (StreamAllocation.StreamAllocationReference) reference;
+            String message = "A connection to " + connection.route().address().url()
+                    + " was leaked. Did you forget to close a response body?";
+            Platform.get().logCloseableLeak(message, streamAllocRef.callStackTrace);
+            // 则需要移除该位置的引用
+            references.remove(i);
+            connection.noNewStreams = true;
+
+            // 若references为空，即该连接已经没有了StreamAllocation使用，则该连接可以被清理
+            if (references.isEmpty()) {
+                connection.idleAtNanos = now - keepAliveDurationNs;
+                return 0;
+            }
+        }
+
+        return references.size();
+    }
+```
+逻辑总结：
+1. 遍历所有的连接，对每个连接调用 pruneAndGetAllocationCount 判断其是否闲置的连接。如果是正在使用中，则直接遍历一下个。
+2. 对于闲置的连接，判断是否是当前空闲时间最长的。
+3. 对于当前空闲时间最长的连接，如果其超过了设定的最长空闲时间（5分钟）或者是最大的空闲连接的数量（5个），则清理此连接。否则计算下次需要清理的时间，这样 cleanupRunnable 中的循环变会睡眠相应的时间，醒来后继续清理。
 
 ## ConnectInterceptor
 在执行完CacheInterceptor之后会执行下一个拦截器——ConnectInterceptor，那么我们来看一下其intercept方法中的源码：
@@ -1775,6 +2116,26 @@ source.readString(charset)调用的实际上就是RealBufferedSource类的readSt
             }
         }
     }
+    
+    private void establishProtocol(ConnectionSpecSelector connectionSpecSelector) throws IOException {
+        //如果不是ssl
+        if (route.address().sslSocketFactory() == null) {
+            protocol = Protocol.HTTP_1_1;
+            socket = rawSocket;
+            return;
+        }
+        //如果是sll
+        connectTls(connectionSpecSelector);
+        //如果是HTTP2
+        if (protocol == Protocol.HTTP_2) {
+            socket.setSoTimeout(0); // HTTP/2 connection timeouts are set per-stream.
+            http2Connection = new Http2Connection.Builder(true)
+                    .socket(socket, route.address().url().host(), source, sink)
+                    .listener(this)
+                    .build();
+            http2Connection.start();
+        }
+    }
 ```
 **什么是隧道呢？** 隧道技术（Tunneling）是HTTP的用法之一，使用隧道传递的数据（或负载）可以是不同协议的数据帧或包，或者简单的来说隧道就是利用一种网络协议来传输另一种网络协议的数据。比如A主机和B主机的网络而类型完全相同都是IPv6的网，而链接A和B的是IPv4类型的网络,A和B为了通信，可以使用隧道技术，数据包经过Ipv4数据的多协议路由器时，将IPv6的数据包放入IPv4数据包；然后将包裹着IPv6数据包的IPv4数据包发送给B，当数据包到达B的路由器，原来的IPv6数据包被剥离出来发给B。 
 
@@ -1786,243 +2147,340 @@ SSL隧道：SSL隧道的初衷是为了通过防火墙来传输加密的SSL数�
 
 这部分就不深入分析啦，感兴趣的小伙伴自行查询吧。
 
-## ConnectionPool
-在整个OkHttp的流程中，我们在哪里看到过ConnectionPool的身影呢？
-1. 在OKHttpClient.Builder的构造方法里面，对ConnectionPool进行了初始化
-2. 我们还在StreamAllocation的newStream方法看到过ConnectionPool。
-3. StreamAllocation在调用findConnection方法寻找一个可以使用Connection，这里也涉及到ConnectionPool。findConnection方法在寻找Connection时，首先会尝试复用StreamAllocation本身的Connection,如果这个Connection不可用的话，那么就会去ConnectionPool去寻找合适的Connection。
+## CallServerInterceptor
+在Okhttp拦截器链上CallServerInterceptor拦截器是最后一个拦截器，该拦截器前面的拦截器ConnectInterceptor主要负责打开TCP链接。而CallServerInterceptor的主要功能就是—向服务器发送请求，并最终返回Response对象供客户端使用。
 
-总的来说，ConnectionPool负责所有的连接，包括连接的复用，以及无用连接的清理。OkHttp会将客户端和服务端所有的连接都抽象为Connection（实际实现类为RealConnection），而ConnectionPool就是为了管理所有Connection而设计的，其实际作用：在其时间允许的范围内复用Connection，并对其清理回收。外部通过调用get方法来获取一个可以使用Connection对象,通过put方法添加一个新的连接。
-
-**get方法**
+>小知识点：100-continue 是用于客户端在发送 post 数据给服务器时，征询服务器是否处理 post 的数据，如果不处理，客户端则不上传 post 数据，正常情况下服务器收到请求后，返回 100 或错误码。
 ```
-// ConnectionPool类：
-    //  一个线性 collection，支持在两端插入和移除元素。
-    // 名称 Deque 是“double ended queue（双端队列）”的缩写
-    private final Deque<RealConnection> connections = new ArrayDeque<>();
+    @Override
+    public Response intercept(Chain chain) throws IOException {
+        RealInterceptorChain realChain = (RealInterceptorChain) chain;
+        // 获取http请求流（于上一个拦截器创建）
+        HttpCodec httpCodec = realChain.httpStream();
+        StreamAllocation streamAllocation = realChain.streamAllocation();
+        RealConnection connection = (RealConnection) realChain.connection();
+        Request request = realChain.request();
 
-    @Nullable
-    RealConnection get(Address address, StreamAllocation streamAllocation, Route route) {
-        assert (Thread.holdsLock(this));
-        // 遍历connections
-        for (RealConnection connection : connections) {
-            // 查看该connection是否符合条件
-            if (connection.isEligible(address, route)) {
-                streamAllocation.acquire(connection, true);
-                return connection;
+        long sentRequestMillis = System.currentTimeMillis();
+
+        realChain.eventListener().requestHeadersStart(realChain.call());
+        // 向服务器发送请求
+        httpCodec.writeRequestHeaders(request);
+        realChain.eventListener().requestHeadersEnd(realChain.call(), request);
+
+        Response.Builder responseBuilder = null;
+        // 检测是否有请求body
+        if (HttpMethod.permitsRequestBody(request.method()) && request.body() != null) {
+            // 如果请求中有“Expect：100-continue”标头，请在发送请求正文之前等待“HTTP / 1.1 100 继续”响应。
+            // 如果我们没有得到它，请返回我们所做的事情（例如4xx响应）而不传输请求体。
+            if ("100-continue".equalsIgnoreCase(request.header("Expect"))) {
+                httpCodec.flushRequest();
+                realChain.eventListener().responseHeadersStart(realChain.call());
+                // 构建responseBuilder对象
+                responseBuilder = httpCodec.readResponseHeaders(true);
+            }
+
+            if (responseBuilder == null) {
+                // 如果满足“Expect：100-continue”期望，请向服务器发送请求body
+                realChain.eventListener().requestBodyStart(realChain.call());
+                long contentLength = request.body().contentLength();
+                CountingSink requestBodyOut =
+                        new CountingSink(httpCodec.createRequestBody(request, contentLength));
+                BufferedSink bufferedRequestBody = Okio.buffer(requestBodyOut);
+                // 写入请求体到bufferedRequestBody中
+                request.body().writeTo(bufferedRequestBody);
+                // 将所有缓冲的字节推送到其最终目标，并释放此接收器保存的资源。
+                bufferedRequestBody.close();
+                realChain.eventListener()
+                        .requestBodyEnd(realChain.call(), requestBodyOut.successfulCount);
+            } else if (!connection.isMultiplexed()) {
+                // 如果未满足“Expect：100-continue”期望，则阻止重用HTTP / 1 连接。否则，我们仍然有义务将请求正文传输给使连接保持一致状态。
+                streamAllocation.noNewStreams();
             }
         }
-        return null;
-    }
-    
-// RealConnection类：
-    // 此连接承载的当前流
-    public final List<Reference<StreamAllocation>> allocations = new ArrayList<>();
+        // 实际是调用了 sink.flush(), 来刷数据
+        httpCodec.finishRequest();
+        // 读取响应头信息，状态码等
+        if (responseBuilder == null) {
+            realChain.eventListener().responseHeadersStart(realChain.call());
+            responseBuilder = httpCodec.readResponseHeaders(false);
+        }
+        // 构建Response, 写入本次Request，握手情况，请求时间，得到的结果时间
+        Response response = responseBuilder
+                .request(request)
+                .handshake(streamAllocation.connection().handshake())
+                .sentRequestAtMillis(sentRequestMillis)
+                .receivedResponseAtMillis(System.currentTimeMillis())
+                .build();
 
-    public boolean isEligible(Address address, @Nullable Route route) {
-        // 当前Connection拥有的StreamAllocation是否超过的限制
-        if (allocations.size() >= allocationLimit || noNewStreams) return false;
+        int code = response.code();
+        if (code == 100) {
+            // 服务器发送了100-continue，即使我们没有请求。也再次尝试阅读实际的回复
+            responseBuilder = httpCodec.readResponseHeaders(false);
 
-        // 地址的非主机（host）字段是否重叠（一样）
-        if (!Internal.instance.equalsNonHost(this.route.address(), address)) return false;
+            response = responseBuilder
+                    .request(request)
+                    .handshake(streamAllocation.connection().handshake())
+                    .sentRequestAtMillis(sentRequestMillis)
+                    .receivedResponseAtMillis(System.currentTimeMillis())
+                    .build();
 
-        // 主机（host）是否完全匹配
-        if (address.url().host().equals(this.route().address().url().host())) {
-            return true;
+            code = response.code();
         }
 
-        // 此时我们没有主机名匹配。但是，如果满足我们的连接合并要求，我们仍然可以提供请求。
-
-        // 1. 此连接必须是HTTP / 2。
-        if (http2Connection == null) return false;
-
-        // 2. 路由必须共享IP地址。这要求我们为两个主机提供DNS地址，这只发生在路由规划之后。我们无法合并使用代理的连接，因为代理不告诉我们源服务器的IP地址。
-        if (route == null) return false;
-        if (route.proxy().type() != Proxy.Type.DIRECT) return false;
-        if (this.route.proxy().type() != Proxy.Type.DIRECT) return false;
-        if (!this.route.socketAddress().equals(route.socketAddress())) return false;
-
-        // 3. 此连接的服务器证书必须涵盖新主机。
-        if (route.address().hostnameVerifier() != OkHostnameVerifier.INSTANCE) return false;
-        if (!supportsUrl(address.url())) return false;
-
-        // 4. 证书固定必须与主机匹配。
-        try {
-            address.certificatePinner().check(address.url().host(), handshake().peerCertificates());
-        } catch (SSLPeerUnverifiedException e) {
-            return false;
+        realChain.eventListener()
+                .responseHeadersEnd(realChain.call(), response);
+        // 通过状态码判断以及是否webSocket判断，是否返回一个空的body
+        if (forWebSocket && code == 101) {
+            // Connection is upgrading, but
+            // we need to ensure interceptors see a non-null
+            // response body.
+            response = response.newBuilder()
+                    .body(Util.EMPTY_RESPONSE)
+                    .build();
+        } else {
+            response = response.newBuilder()
+                    // 返回读取响应正文的流，并构建客户端可用的RealResponseBody
+                    .body(httpCodec.openResponseBody(response))
+                    .build();
+        }
+        // 如果设置了连接 close ,断开连接
+        if ("close".equalsIgnoreCase(response.request().header("Connection"))
+                || "close".equalsIgnoreCase(response.header("Connection"))) {
+            streamAllocation.noNewStreams();
+        }
+        // HTTP 204(no content) 代表响应报文中包含若干首部和一个状态行，但是没有实体的主体内容。
+        // HTTP 205(reset content) 表示响应执行成功，重置页面（Form表单），方便用户下次输入
+        // 这里做了同样的处理，就是抛出协议异常。
+        if ((code == 204 || code == 205) && response.body().contentLength() > 0) {
+            throw new ProtocolException(
+                    "HTTP " + code + " had non-zero Content-Length: " + response.body().contentLength());
         }
 
-        return true;
-    }
-    
-// StreamAllocation类：
-    public void acquire(RealConnection connection, boolean reportedAcquired) {
-        assert (Thread.holdsLock(connectionPool));
-        if (this.connection != null) throw new IllegalStateException();
-        // 保留连接
-        this.connection = connection;
-        this.reportedAcquired = reportedAcquired;
-        // 将此分配流add进allocations中，用于RealConnection.isEligible方法判断当前Connection拥有的StreamAllocation是否超过的限制
-        connection.allocations.add(new StreamAllocationReference(this, callStackTrace));
+        return response;
     }
 ```
-简单总结一下：
-
-1. isEligible方法（判断遍历的连接是否符合条件，即是否可复用）：
-    
-        1.如果这个 Connection 已经分配的数量(即 拥有的StreamAllocation)超过了分配限制或者被标记 则不符合。
-        2.接着调用 equalsNonHost，主要是判断 Address 中非主机（host）字段是否重叠（一样），如果有不同的则不符合。
-        3.然后就是判断 host 是否相同，如果相同(并且1和2也符合)那么对于当前的Address来说，这个Connection 便是可重用的。
-        4.如果1、2、3都不符合，则若依旧满足某些条件，此连接仍可复用，具体满足的条件查看上面代码注解
-2. acquire方法（StreamAllocation类）：
-
-        1.保存遍历connections获取的可重用的连接
-        2.将此StreamAllocation类的弱引用StreamAllocationReference添加add进此重用连接，判断当前Connection拥有的StreamAllocation是否超过的限制
-        3.此方法保留的连接将被用于findConnection方法（上面ConnectInterceptor部分有说明）
-
-**put方法**
+从CallServerInterceptor拦截器的代码中看到OkHttp是通过HttpCodec来发送请求与获取响应的，那么我们分别来看一看这两步操作：
+1. 发送请求
 ```
-    void put(RealConnection connection) {
-        assert (Thread.holdsLock(this));
-        // 是否开启异步的清理任务
-        if (!cleanupRunning) {
-            cleanupRunning = true;
-            executor.execute(cleanupRunnable);
-        }
-        // add进connections
-        connections.add(connection);
+// Http1Codec类：
+    @Override
+    public void writeRequestHeaders(Request request) throws IOException {
+        // 返回请求状态行，如“GET / HTTP / 1.1”。
+        String requestLine = RequestLine.get(
+                request, streamAllocation.connection().route().proxy().type());
+        // 写入请求
+        writeRequest(request.headers(), requestLine);
     }
-```
-put方法很简单，直接将Connection对象添加到connections双端队列。不过这里有一个地方需要注意，就是如果cleanupRunning为false，就会想线程池里面添加一个cleanupRunnable，这里的目的进行清理操作。此清理操作马上就分析。
-
-**cleanup：清理无用的连接**
-```
-    private final Runnable cleanupRunnable = new Runnable() {
-        @Override
-        public void run() {
-            // 这个cleanupRunnable是一个死循环的任务，只要cleanup方法不返回-1，就会一直执行。
-            while (true) {
-                // 调用cleanup查找并清理无用连接（返回以纳米为单位的持续时间）
-                long waitNanos = cleanup(System.nanoTime());
-                if (waitNanos == -1) return;
-                // 当cleanup方法没有返回-1，当前的Runnable就会进入睡眠状态。
-                if (waitNanos > 0) {
-                    long waitMillis = waitNanos / 1000000L;
-                    waitNanos -= (waitMillis * 1000000L);
-                    synchronized (ConnectionPool.this) {
-                        try {
-                            // 等待上一次cleanup计算出的最长空闲的连接距离驱逐到期的时间
-                            ConnectionPool.this.wait(waitMillis, (int) waitNanos);
-                        } catch (InterruptedException ignored) {
-                        }
-                    }
-                }
-            }
-        }
-    };
 
     /**
-     * 对此池执行维护，如果超出保持活动限制或空闲连接限制，则驱逐已空闲的连接最长。
-     * 返回以纳米为单位的持续时间，直到下一次调用此方法为止。 如果不需要进一步清理，则返回 -1。
+     * 通过OkIO的Sink对象（该对象可以看做Socket的OutputStream对象）来向服务器发送请求的。
      */
-    long cleanup(long now) {
-        int inUseConnectionCount = 0;
-        int idleConnectionCount = 0;
-        RealConnection longestIdleConnection = null;
-        long longestIdleDurationNs = Long.MIN_VALUE;
-
-        // 找到要驱逐的连接，或下次驱逐到期的时间。
-        synchronized (this) {
-            for (Iterator<RealConnection> i = connections.iterator(); i.hasNext(); ) {
-                RealConnection connection = i.next();
-
-                // 如果正在使用该连接，请跳过继续搜索。
-                // 用于清理可能泄露的StreamAllocation并返回正在使用此连接的 StreamAllocation的数量
-                if (pruneAndGetAllocationCount(connection, now) > 0) {
-                    inUseConnectionCount++;
-                    continue;
-                }
-                // 空闲连接记住
-                idleConnectionCount++;
-
-                long idleDurationNs = now - connection.idleAtNanos;
-                // 判断是否是最长空闲时间的连接
-                if (idleDurationNs > longestIdleDurationNs) {
-                    longestIdleDurationNs = idleDurationNs;
-                    longestIdleConnection = connection;
-                }
-            }
-            // 若当前Connection已经超过了最大的空闲时间
-            // 或者空闲连接数大于最大空闲连接数量，应该被回收
-            if (longestIdleDurationNs >= this.keepAliveDurationNs
-                    || idleConnectionCount > this.maxIdleConnections) {
-                // 将其从列表中删除，然后在下面（同步块的外部）将其关闭。
-                connections.remove(longestIdleConnection);
-            } else if (idleConnectionCount > 0) {
-                // 返回保活时长 - 最长空闲时间的连接当前存活的时间（即该连接还有多久需要被清理）
-                return keepAliveDurationNs - longestIdleDurationNs;
-            } else if (inUseConnectionCount > 0) {
-                // 所有连接都在使用中。说明所有连接都需要至少是保活时长才会被清理
-                return keepAliveDurationNs;
-            } else {
-                // 无连接，空闲或正在使用中。
-                cleanupRunning = false;
-                return -1;
-            }
+    public void writeRequest(Headers headers, String requestLine) throws IOException {
+        if (state != STATE_IDLE) throw new IllegalStateException("state: " + state);
+        sink.writeUtf8(requestLine).writeUtf8("\r\n");
+        for (int i = 0, size = headers.size(); i < size; i++) {
+            sink.writeUtf8(headers.name(i))
+                    .writeUtf8(": ")
+                    .writeUtf8(headers.value(i))
+                    .writeUtf8("\r\n");
         }
-        // 3. 关闭连接的socket
-        // 代码执行到此处说明此Connection已经超过了最大的空闲时间，应该被回收
-        closeQuietly(longestIdleConnection.socket());
-
-        // 继续清理
-        return 0;
-    }
-    
-    private int pruneAndGetAllocationCount(RealConnection connection, long now) {
-        List<Reference<StreamAllocation>> references = connection.allocations;
-        // 遍历当前RealConnection中保存的StreamAllocation的弱引用
-        for (int i = 0; i < references.size(); ) {
-            Reference<StreamAllocation> reference = references.get(i);
-            // 若StreamAllocation的弱引用不为空，则跳过继续
-            if (reference.get() != null) {
-                i++;
-                continue;
-            }
-            
-            // 若StreamAllocation的弱引用为空
-            StreamAllocation.StreamAllocationReference streamAllocRef =
-                    (StreamAllocation.StreamAllocationReference) reference;
-            String message = "A connection to " + connection.route().address().url()
-                    + " was leaked. Did you forget to close a response body?";
-            Platform.get().logCloseableLeak(message, streamAllocRef.callStackTrace);
-            // 则需要移除该位置的引用
-            references.remove(i);
-            connection.noNewStreams = true;
-
-            // 若references为空，即该连接已经没有了StreamAllocation使用，则该连接可以被清理
-            if (references.isEmpty()) {
-                connection.idleAtNanos = now - keepAliveDurationNs;
-                return 0;
-            }
-        }
-
-        return references.size();
+        sink.writeUtf8("\r\n");
+        state = STATE_OPEN_REQUEST_BODY;
     }
 ```
-逻辑总结：
-1. 遍历所有的连接，对每个连接调用 pruneAndGetAllocationCount 判断其是否闲置的连接。如果是正在使用中，则直接遍历一下个。
-2. 对于闲置的连接，判断是否是当前空闲时间最长的。
-3. 对于当前空闲时间最长的连接，如果其超过了设定的最长空闲时间（5分钟）或者是最大的空闲连接的数量（5个），则清理此连接。否则计算下次需要清理的时间，这样 cleanupRunnable 中的循环变会睡眠相应的时间，醒来后继续清理。
+我们知道HTTP支持post,delete,get,put等方法，而post，put等方法是需要请求体的（在Okhttp中用RequestBody来表示）。所以接着writeRequestHeaders之后Okhttp对请求体也做了响应的处理，从上面分析处我们也知道请求体是通过RequestBody的writeTo方法发送出去的(实际上是调用bufferedRequestBody对象的write方法，RequestBody的实例可能是FormBody或者是自定义的ReqeustBody)：
+```
+// 使用post简单示例：
+        // 构建RequestBody（FormBody是RequestBody实现类）
+        FormBody.Builder formBody = new FormBody.Builder();
+        if(mParams != null && !mParams.isEmpty()) {
+            for (Map.Entry<String,String> entry: mParams.entrySet()) {
+                formBody.add(entry.getKey(),entry.getValue());
+            }
+        }
+        // 构建RequestBody并将传入的参数保存在FormBody的encodedNames和encodedValues两个成员集合内
+        RequestBody form = formBody.build();
+        // 添加请求头
+        Request.Builder builder = new Request.Builder();
+        if(mHeader != null && !mHeader.isEmpty()) {
+            for (Map.Entry<String,String> entry: mHeader.entrySet()) {
+                builder.addHeader(entry.getKey(),entry.getValue());
+            }
+        }
+        // 创建请求的Request 对象
+        final Request request = builder
+                .post(form)
+                .url(mUrl)
+                .build();
+        Call call = getOkHttpClient().newCall(request);
+        call.enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                sendFailure();
+                LoggerUtil.d("onFailure :  "+e.getMessage());
+            }
 
-## CallServerInterceptor
+            @Override
+            public void onResponse(Call call, Response response) {
+                responseProcess(response);
+            }
+        });
+    
+//  FormBody类 —— 写入请求体：
+    @Override
+    public void writeTo(BufferedSink sink) throws IOException {
+        writeOrCountBytes(sink, false);
+    }
 
 
+    private long writeOrCountBytes(@Nullable BufferedSink sink, boolean countBytes) {
+        long byteCount = 0L;
+
+        Buffer buffer;
+        if (countBytes) {
+            buffer = new Buffer();
+        } else {
+            buffer = sink.buffer();
+        }
+        // 将请求体写入sink的缓存
+        for (int i = 0, size = encodedNames.size(); i < size; i++) {
+            if (i > 0) buffer.writeByte('&');
+            buffer.writeUtf8(encodedNames.get(i));
+            buffer.writeByte('=');
+            buffer.writeUtf8(encodedValues.get(i));
+        }
+
+        if (countBytes) {
+            byteCount = buffer.size();
+            buffer.clear();
+        }
+
+        return byteCount;
+    }
+```
+可以看出请求体是通过writeTo方法写入sink缓存内，最后会通过bufferedRequestBody.close();方法将请求体发送到服务器并释放资源（拦截器逻辑中有说明）。
+
+2. 获取响应信息
+```
+// Http1Codec类：
+    @Override
+    public Response.Builder readResponseHeaders(boolean expectContinue) throws IOException {
+        if (state != STATE_OPEN_REQUEST_BODY && state != STATE_READ_RESPONSE_HEADERS) {
+            throw new IllegalStateException("state: " + state);
+        }
+
+        try {
+            // HTTP响应状态行，如“HTTP / 1.1 200 OK”
+            StatusLine statusLine = StatusLine.parse(readHeaderLine());
+
+            Response.Builder responseBuilder = new Response.Builder()
+                    .protocol(statusLine.protocol) // http协议版本
+                    .code(statusLine.code) // http响应状态码
+                    .message(statusLine.message) // http的message :like "OK" or "Not Modified"
+                    .headers(readHeaders()); // 读取响应报头
+
+            if (expectContinue && statusLine.code == HTTP_CONTINUE) {
+                return null;
+            } else if (statusLine.code == HTTP_CONTINUE) {
+                state = STATE_READ_RESPONSE_HEADERS;
+                return responseBuilder;
+            }
+
+            state = STATE_OPEN_RESPONSE_BODY;
+            return responseBuilder;
+        } catch (EOFException e) {
+            // 服务器在发送响应之前结束流。
+            IOException exception =
+                    new IOException("unexpected end of stream on " + streamAllocation);
+            exception.initCause(e);
+            throw exception;
+        }
+    }
+
+    private String readHeaderLine() throws IOException {
+        // 通过source读取
+        String line = source.readUtf8LineStrict(headerLimit);
+        headerLimit -= line.length();
+        return line;
+    }
+    
+    public Headers readHeaders() throws IOException {
+        Headers.Builder headers = new Headers.Builder();
+        // 读取响应报头数据，响应报头和响应正文数据之间是有空行分隔开的，当读取到的数据为空行时表示响应报头读取完毕
+        for (String line; (line = readHeaderLine()).length() != 0; ) {
+            Internal.instance.addLenient(headers, line);
+        }
+        return headers.build();
+    }
+```
+可以看出上面代码只是获取了响应头部分的数据，我们再来看一下读取响应正文的代码：
+```
+// CallServerInterceptor#intercept：
+    response = response.newBuilder()
+        // 上面分析时说明过此处为构建客户端可用的响应体RealResponseBody
+        .body(httpCodec.openResponseBody(response))
+      .build();
+
+// Http1Codec类：
+    @Override
+    public ResponseBody openResponseBody(Response response) throws IOException {
+        streamAllocation.eventListener.responseBodyStart(streamAllocation.call);
+        String contentType = response.header("Content-Type");
+        // 判断是否有响应体（可从响应头信息中判断）
+        if (!HttpHeaders.hasBody(response)) {
+            Source source = newFixedLengthSource(0);
+            return new RealResponseBody(contentType, 0, Okio.buffer(source));
+        }
+        // 有响应体，根据不同情况，构造对应的Socket的InputStream的Source对象（用于后面获取响应体）
+        
+        if ("chunked".equalsIgnoreCase(response.header("Transfer-Encoding"))) {
+            Source source = newChunkedSource(response.request().url());
+            return new RealResponseBody(contentType, -1L, Okio.buffer(source));
+        }
+
+        long contentLength = HttpHeaders.contentLength(response);
+        if (contentLength != -1) {
+            Source source = newFixedLengthSource(contentLength);
+            return new RealResponseBody(contentType, contentLength, Okio.buffer(source));
+        }
+
+        return new RealResponseBody(contentType, -1L, Okio.buffer(newUnknownLengthSource()));
+    }
+```
+逻辑很简单，openResponseBody将Socket的输入流InputStream对象交给OkIo的Source对象(在本篇博文中只需简单的将Sink作为Socket的输入流，Source作为Socket的输入流看待即可），然后封装成RealResponseBody（该类是ResponseBody的子类）作为Response的body。那么我们怎么通过这个body来获取服务器发送过来的字符串呢？我们上面在分析缓存拦截器时提到过，我们获取网络数据最后一步其实就是通过调用ResponseBody.string()方法：
+```
+// ResponseBody类：
+    public final String string() throws IOException {
+        BufferedSource source = source();
+        try {
+            Charset charset = Util.bomAwareCharset(source, charset());
+            //InputStream 读取数据
+            return source.readString(charset);
+        } finally {
+            Util.closeQuietly(source);
+        }
+    }
+```
+在此处调用source.readString不仅来读取服务器的数据还需要缓存通过缓存拦截器缓存响应体(具体详看上方分析的缓存拦截器CacheInterceptor)。需要注意的是该方法最后调用closeQuietly来关闭了当前请求的InputStream输入流，所以string()方法只能调用一次,再次调用的话会报错，毕竟输入流已经关闭了。
+
+至此，经历一周的时间，终于分析完整个流程，不过实际上还有一部分没有去深入了解，比如：路由、路由选择器、连接规格选择器等等，留待后续研究吧。
 
 
+![](https://user-gold-cdn.xitu.io/2019/8/24/16cc2a8642da6e6d?w=220&h=220&f=png&s=35322)
+
+**参考链接：**
+
+https://blog.csdn.net/chunqiuwei/column/info/16213
 
 https://juejin.im/post/5a6da6e7f265da3e303cbcb6
 
 https://www.jianshu.com/p/5bcdcfe9e05c
 
 https://www.jianshu.com/p/c963617ea6bc
+
+https://www.jianshu.com/p/6166d28983a2
+
+...
+
+<font color=#ff0000>（注：若有什么地方阐述有误，敬请指正。欢迎指点交流）</font>
