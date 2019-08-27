@@ -1,18 +1,13 @@
 package com.android.baselibrary.util;
 
-import com.android.baselibrary.util.MainHandlerUtil;
 import com.android.baselibrary.util.log.LoggerUtil;
 
-import org.litepal.util.LogUtil;
-
-import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import okhttp3.Cache;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.FormBody;
@@ -25,11 +20,11 @@ import okhttp3.logging.HttpLoggingInterceptor;
 /**
  * @author jiaochengyun.ex
  */
-public class OkHttpUtil {
+public class OkHttpUtils {
 
     /**
-     *  初始化OkHttp实例
-     * */
+     * 初始化OkHttp实例
+     */
     private static final class OkHttpHolder {
         private static final OkHttpClient.Builder BUILDER = new OkHttpClient.Builder();
 
@@ -38,10 +33,11 @@ public class OkHttpUtil {
             // 日志显示级别
             HttpLoggingInterceptor.Level level = HttpLoggingInterceptor.Level.BODY;
             // 新建log拦截器
-            HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor(new HttpLoggingInterceptor.Logger() {
+            HttpLoggingInterceptor loggingInterceptor =
+                    new HttpLoggingInterceptor(new HttpLoggingInterceptor.Logger() {
                 @Override
                 public void log(String message) {
-                    LoggerUtil.i("OkHttpClient", "OkHttp====Message:" + message);
+                    LoggerUtil.d("OkHttpClient", "OkHttp====Message:" + message);
                 }
             });
             loggingInterceptor.setLevel(level);
@@ -61,7 +57,7 @@ public class OkHttpUtil {
 
     /**
      * 获取OkHttp实例
-     * */
+     */
     public static OkHttpClient getOkHttpClient() {
         return OkHttpHolder.OK_HTTP_CLIENT;
     }
@@ -73,13 +69,13 @@ public class OkHttpUtil {
     private final HashMap<String, String> mParams;
 
     /**
-     * @param url 请求url
-     * @param header 请求头
-     * @param params 请求参数
+     * @param url     请求url
+     * @param header  请求头
+     * @param params  请求参数
      * @param success 请求成功回调
      * @param failure 请求失败回调
-     * */
-    private OkHttpUtil(String url, HashMap<String, String> header
+     */
+    private OkHttpUtils(String url, HashMap<String, String> header
             , HashMap<String, String> params, ISuccess success, IFailure failure) {
         mUrl = url;
         mHeader = header;
@@ -110,7 +106,7 @@ public class OkHttpUtil {
         }
 
         public final OkHttpUtilBuilder params(HashMap<String, String> params) {
-            params.putAll(params);
+            this.params.putAll(params);
             return this;
         }
 
@@ -129,25 +125,28 @@ public class OkHttpUtil {
             return this;
         }
 
-        public final OkHttpUtil build() {
-            return new OkHttpUtil(url, header, params, success, failure);
+        public final OkHttpUtils build() {
+            return new OkHttpUtils(url, header, params, success, failure);
         }
     }
 
     /**
      * get请求
-     * */
-    public void get() {
+     *
+     * @param isNeedMainLooper 返回结果时是否需要在主线程中返回
+     */
+    public void get(final boolean isNeedMainLooper) {
         if (mParams != null && !mParams.isEmpty()) {
             mUrl = appendParams(mUrl, mParams);
         }
         // 添加请求头
         Request.Builder builder = new Request.Builder();
-        if(mHeader != null && !mHeader.isEmpty()) {
-            for (Map.Entry<String,String> entry: mHeader.entrySet()) {
-                builder.addHeader(entry.getKey(),entry.getValue());
+        if (mHeader != null && !mHeader.isEmpty()) {
+            for (Map.Entry<String, String> entry : mHeader.entrySet()) {
+                builder.addHeader(entry.getKey(), entry.getValue());
             }
         }
+        LoggerUtil.d("url ====" + mUrl);
         // 创建请求的Request 对象
         Request request = builder
                 .url(mUrl)
@@ -157,20 +156,35 @@ public class OkHttpUtil {
         call.enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                sendFailure();
-                LoggerUtil.d("onFailure :  "+e.getMessage());
+                if (call.isCanceled()) {
+                    LoggerUtil.d("call is cancel");
+                } else {
+                    sendFailure(isNeedMainLooper);
+                }
+                LoggerUtil.d("onFailure :  " + e.getMessage());
             }
 
             @Override
             public void onResponse(Call call, Response response) {
-                responseProcess(response);
+                if (call.isCanceled()) {
+                    LoggerUtil.d("call is cancel");
+                } else {
+                    responseProcess(response, isNeedMainLooper);
+                }
             }
         });
     }
 
     /**
+     * 取消请求
+     */
+    public static void cancel() {
+        getOkHttpClient().dispatcher().cancelAll();
+    }
+
+    /**
      * 拼接参数到 Url
-     * */
+     */
     private static String appendParams(String url, Map<String, String> params) {
         if (params == null || params.isEmpty()) {
             return url;
@@ -191,7 +205,7 @@ public class OkHttpUtil {
 
     /**
      * 设置编码
-     * */
+     */
     private static String encode(String str) {
         try {
             return URLEncoder.encode(str, "utf-8");
@@ -203,20 +217,22 @@ public class OkHttpUtil {
 
     /**
      * post请求
-     * */
-    public void post() {
+     *
+     * @param isNeedMainLooper 返回结果时是否需要在主线程中返回
+     */
+    public void post(final boolean isNeedMainLooper) {
         FormBody.Builder formBody = new FormBody.Builder();
-        if(mParams != null && !mParams.isEmpty()) {
-            for (Map.Entry<String,String> entry: mParams.entrySet()) {
-                formBody.add(entry.getKey(),entry.getValue());
+        if (mParams != null && !mParams.isEmpty()) {
+            for (Map.Entry<String, String> entry : mParams.entrySet()) {
+                formBody.add(entry.getKey(), entry.getValue());
             }
         }
         RequestBody form = formBody.build();
         // 添加请求头
         Request.Builder builder = new Request.Builder();
-        if(mHeader != null && !mHeader.isEmpty()) {
-            for (Map.Entry<String,String> entry: mHeader.entrySet()) {
-                builder.addHeader(entry.getKey(),entry.getValue());
+        if (mHeader != null && !mHeader.isEmpty()) {
+            for (Map.Entry<String, String> entry : mHeader.entrySet()) {
+                builder.addHeader(entry.getKey(), entry.getValue());
             }
         }
         // 创建请求的Request 对象
@@ -228,74 +244,98 @@ public class OkHttpUtil {
         call.enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                sendFailure();
-                LoggerUtil.d("onFailure :  "+e.getMessage());
+                if (call.isCanceled()) {
+                    LoggerUtil.d("call is cancel");
+                } else {
+                    sendFailure(isNeedMainLooper);
+                }
+
+                LoggerUtil.d("onFailure :  " + e.getMessage());
             }
 
             @Override
             public void onResponse(Call call, Response response) {
-                responseProcess(response);
+                if (call.isCanceled()) {
+                    LoggerUtil.d("call is cancel");
+                } else {
+                    responseProcess(response, isNeedMainLooper);
+                }
+
             }
         });
     }
 
     /**
      * 处理OkHttp响应逻辑
+     *
      * @param response 请求回来的响应体
-     * */
-    private void responseProcess(Response response) {
+     */
+    private void responseProcess(Response response, boolean isNeedMainLooper) {
         if (response != null && response.code() == 200) {
             if (response.body() != null) {
                 try {
-                    sendSuccess(response.body().string());
+                    sendSuccess(response.body().string(), isNeedMainLooper);
                 } catch (IOException e) {
                     e.printStackTrace();
-                    sendFailure();
-                    LoggerUtil.d("onFailure :  "+e.getMessage());
+                    sendFailure(isNeedMainLooper);
+                    LoggerUtil.d("onFailure :  " + e.getMessage());
                 }
             } else {
-                sendFailure();
+                sendFailure(isNeedMainLooper);
                 LoggerUtil.d("onFailure :  response.body() == null");
             }
         } else {
-            sendFailure();
-            LoggerUtil.d("onFailure : response == null or response.code() == "+response.code());
+            sendFailure(isNeedMainLooper);
+            LoggerUtil.d("onFailure : response == null or response.code() == " + response.code() + ",msg = " + response.message());
         }
     }
 
     /**
-     * 回调成功-返回数据（主线程）
-     * */
-    private void sendSuccess(final String data) {
+     * 回调成功-返回数据（）
+     *
+     * @param isNeedMainLooper 返回结果时是否需要在主线程中返回
+     */
+    private void sendSuccess(final String data, boolean isNeedMainLooper) {
         if (mSuccess != null) {
-            MainHandlerUtil.getInstance().post(new Runnable() {
-                @Override
-                public void run() {
-                    mSuccess.onSuccess(data);
-                }
-            });
+            if (isNeedMainLooper) {
+                MainHandlerUtil.getInstance().post(new Runnable() {
+                    @Override
+                    public void run() {
+                        mSuccess.onSuccess(data);
+                    }
+                });
+            } else {
+                mSuccess.onSuccess(data);
+            }
+
         }
     }
 
     /**
-     * 回调失败（主线程）
-     * */
-    private void sendFailure() {
+     * 回调失败（）
+     *
+     * @param isNeedMainLooper 返回结果时是否需要在主线程中返回
+     */
+    private void sendFailure(boolean isNeedMainLooper) {
         if (mFailure != null) {
-            MainHandlerUtil.getInstance().post(new Runnable() {
-                @Override
-                public void run() {
-                    mFailure.onFailure();
-                }
-            });
+            if (isNeedMainLooper) {
+                MainHandlerUtil.getInstance().post(new Runnable() {
+                    @Override
+                    public void run() {
+                        mFailure.onFailure();
+                    }
+                });
+            } else {
+                mFailure.onFailure();
+            }
         }
     }
 
-    public static interface ISuccess {
+    public interface ISuccess {
         void onSuccess(String response);
     }
 
-    public static interface IFailure {
+    public interface IFailure {
         void onFailure();
     }
 }

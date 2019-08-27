@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="MousePanel">
+        <attr name="clickStartTime" format="integer" />
+        <attr name="dragStartTime" format="integer" />
+        <attr name="areaLockFlag" format="boolean" />
+        <attr name="debugMode" format="boolean" />
+        <attr name="horizontally" format="string" />
+        <attr name="vertically" format="string" />
+        <attr name="swamp" format="float" />
+    </declare-styleable>
+
+    <declare-styleable name="CustomTextSeekBar">
+        <attr name="seekTitle" format="string" />
+        <attr name="seekStart" format="integer" />
+        <attr name="seekEnd" format="integer" />
+        <attr name="seekMax" format="integer" />
+        <attr name="seekInitProgress" format="integer" />
+        <attr name="isMarkProgress" format="boolean" />
+    </declare-styleable>
+
+</resources>
