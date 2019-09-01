@@ -612,9 +612,9 @@ new OkHttpClient.Builder().cache(new Cache(new File(getExternalCacheDir()), 100 
 2. DiskLruCache 硬盘缓存
 3. OkHttp使用Okio处理各种流操作(替代Io流)：Okio中有两个关键的接口，Sink和Source，这两个接口都继承了Closeable接口；而Sink可以简单的看做OutputStream，Source可以简单的看做InputStream。而这两个接口都是支持读写超时设置的。
 
-**DiskLruCache（此算法和OkHttp(大概是重写了部分)有些许不同，原理一致）**
+### DiskLruCache
 
-DiskLruCache是JakeWharton大神的杰作，它采用的是LRU算法，通过LRU算法对缓存进行管理，以最近最少使用作为管理的依据，删除最近最少使用的数据，保留最近最常用的数据。
+DiskLruCache是JakeWharton大神的杰作，它采用的是LRU算法，通过LRU算法对缓存进行管理，以最近最少使用作为管理的依据，删除最近最少使用的数据，保留最近最常用的数据。（此算法和OkHttp(大概是重写了部分)有些许不同，原理一致）
 
     DiskLruCache主要知识点：
         1. 简单使用
@@ -795,7 +795,7 @@ private static final String CLEAN = "CLEAN";
         注：关闭掉了之后就不能再调用DiskLruCache中任何操作缓存数据的方法，通常只应该在Activity的onDestroy()方法中去调用close()方法。
     delete() ：将所有的缓存数据全部删除，比如说手动清理缓存功能
 
-**InternalCache**
+### InternalCache
 ```
 // Cache类：
     Cache(File directory, long maxSize, FileSystem fileSystem) {
@@ -1089,7 +1089,7 @@ private static final String CLEAN = "CLEAN";
 总结：：经过分析InternalCache我们知道，Cache只是一个上层的执行者，内部真正的缓存是由DiskLruCache实现的。在DiskLruCache里面通过FileSystem，基于Okio的Sink/Source对文件进行流操作。
 
 ![](https://user-gold-cdn.xitu.io/2019/8/24/16cc2ae68eaf384e?w=240&h=240&f=png&s=36805)
-**intercept**
+### intercept拦截
 
 接下来我们回到CacheInterceptor的拦截器方法intercept中继续分析：
 ```
