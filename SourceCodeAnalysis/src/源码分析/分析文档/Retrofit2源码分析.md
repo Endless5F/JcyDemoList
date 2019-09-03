@@ -81,7 +81,7 @@ call.enqueue(new Callback<ResultBean>() {
 8. 开发者在主线程处理返回数据
 ## 创建Retrofit
 
-### 1. retrofit的成员属性serviceMethodCacheServiceMethod
+### 1. retrofit的成员属性
 ```
     /**
      * ConcurrentHashMap：一个线程安全的、支持高效并发的HashMap;
@@ -91,7 +91,7 @@ call.enqueue(new Callback<ResultBean>() {
      * serviceMethodCache：主要是用于缓存ServiceMethod，比如说缓存ServiceMethod中一些网络请求的相关配置、网络请求的方法、数据转换器和网络请求适配器等等
      */
     private final Map<Method, ServiceMethod<?, ?>> serviceMethodCache = new ConcurrentHashMap<>();
-    // 请求网络的OkHttp工厂，用于生产OkHttpClient，Retrofit2中默认使用OkHttp
+    // Retrofit2中默认使用OkHttp，callFactory实际上就是OkHttpClient
     final okhttp3.Call.Factory callFactory;
     // 网络请求url的基地址
     final HttpUrl baseUrl;
@@ -250,6 +250,7 @@ get 方法会去调用findPlatform方法，通过Class.forName反射查找"andro
         }
 
         // 若请求网络工厂为空，会默认配置为 OkHttpClient
+        // "此处证时【retrofit的成员属性】中所说 callFactory 实际上就是OkHttpClient"
         okhttp3.Call.Factory callFactory = this.callFactory;
         if (callFactory == null) {
             callFactory = new OkHttpClient();
@@ -387,7 +388,7 @@ loadServiceMethod方法中首先在serviceMethodCache缓存中查找这个方法
 ```
 // ServiceMethod类：
     static <T> ServiceMethod<T> parseAnnotations(Retrofit retrofit, Method method) {
-        // 解析注解获得一个RequestFactory
+        // 解析注解获得一个RequestFactory（请求工厂，保存有跟请求相关的组件）
         RequestFactory requestFactory = RequestFactory.parseAnnotations(retrofit, method);
         // 获取方法返回类型
         Type returnType = method.getGenericReturnType();
@@ -405,7 +406,7 @@ loadServiceMethod方法中首先在serviceMethodCache缓存中查找这个方法
         return HttpServiceMethod.parseAnnotations(retrofit, method, requestFactory);
     }
     
-// RequestFactory类：
+// RequestFactory类(请求相关的所有组件，可用来构建OkHttp中的完整请求okhttp3.Request)：
     static RequestFactory parseAnnotations(Retrofit retrofit, Method method) {
         return new Builder(retrofit, method).build();
     }
@@ -865,13 +866,270 @@ return 返回了CallAdapter,其中adapt方法返回的是一个ExecutorCallbackC
 * CallAdapter以及CallAdapter.Factory
     1. 所有网络适配器都需要实现CallAdapter方法：
         * responseType 返回此适配器在将HTTP响应主体转换为Java 对象时使用的值类型。例如，{@code Call<User>}的响应类型是{@code User}
-        * adapt 返回此适配器适合的Call（包装OkHttpCall而生成）
+        * adapt 返回此适配器适合的Call的包装类T（即泛型类，包装OkHttpCall而生成）
     2. 所有网络适配器工厂都需要继承于CallAdapter.Factory
         * get 返回网络请求接口返回值类型的调用适配器，若此工厂无法处理，则返回null。
         * getParameterUpperBound 从{@code type}中提取{@code index}处的泛型参数的上限，比如：Map<String, ? extends Runnable>} 返回 Runnable
         * getRawType 从返回值类型中提取原始类类型。比如：Observable<List<T>> 返回 List<T>
+
+![](https://user-gold-cdn.xitu.io/2019/9/3/16cf7d15bdd8eabe?w=1395&h=1047&f=jpeg&s=256504)
 ## Retrofit同步请求execute方法
+Retrofit中的同步异步请求实际上很类似，只是异步请求最后会把回调方法交给【retrofit的Builder】中提到的回调执行器，来切换为主线程并处理回调。Retrofit中同步无论是哪种网络请求适配器，最后调用的都是OkHttpCall的execute()方法，例如：默认网络请求适配器工厂创建的适配器 adapt 适配后返回的ExecutorCallbackCall类：
+```
+// DefaultCallAdapterFactory.ExecutorCallbackCall类：
+    final Executor callbackExecutor; // 回调执行器
+    final Call<T> delegate; // 实际上为OkHttpCall
+
+    ExecutorCallbackCall(Executor callbackExecutor, Call<T> delegate) {
+      this.callbackExecutor = callbackExecutor;
+      this.delegate = delegate;
+    }
+
+    @Override
+    public Response<T> execute() throws IOException {
+        return delegate.execute(); // 执行OkHttpCall的execute()方法
+    }
+```
+从上面代码可以很明显看出，Retrofit同步请求最后调用的还是OkHttpCall的execute()方法：
+```
+// OkHttpCall类：
+    @Override
+    public Response<T> execute() throws IOException {
+        okhttp3.Call call;
+
+        synchronized (this) {
+            if (executed) throw new IllegalStateException("Already executed.");
+            executed = true; // 防止重复执行
+
+            ...
+
+            call = rawCall;
+            if (call == null) {
+                try {
+                    call = rawCall = createRawCall(); // 创建真实Call
+                } catch (IOException | RuntimeException | Error e) {
+                    throwIfFatal(e); //  Do not assign a fatal error to creationFailure.
+                    creationFailure = e;
+                    throw e;
+                }
+            }
+        }
+
+        if (canceled) {
+            call.cancel();
+        }
+        // 执行同步请求，并阻塞等待解析响应
+        return parseResponse(call.execute());
+    }
+    
+    // 创建真实Okhttp Call
+    private okhttp3.Call createRawCall() throws IOException {
+        // callFactory实际上为：OkHttpClient（【retrofit的Builder】处有说明）
+        // requestFactory请求工厂构建OkHttp中的Request（【Retrofit.create(通过动态代理生成请求对象)】有说明）
+        okhttp3.Call call = callFactory.newCall(requestFactory.create(args));
+        if (call == null) {
+            throw new NullPointerException("Call.Factory returned null.");
+        }
+        return call;
+    }
+```
+execute方法中首先判断当前call是否为空，为空则调用createRawCall方法创建一个Call,这个对象类型可以看到就是OkHttp中的Call类型，接着调用call.execute方法获得OkHttp返回的Response，最后再调用parseResponse方法解析响应结果返回。
+```
+// OkHttpCall类：
+    Response<T> parseResponse(okhttp3.Response rawResponse) throws IOException {
+        // 获得响应中的body
+        ResponseBody rawBody = rawResponse.body();
+
+        // 移除rawResponse中的body只包含状态（相当于空响应）
+        rawResponse = rawResponse.newBuilder()
+                .body(new NoContentResponseBody(rawBody.contentType(), rawBody.contentLength()))
+                .build();
+        // 获得响应中的响应码
+        int code = rawResponse.code();
+        // 响应码小于200大于300表示错误
+        if (code < 200 || code >= 300) {
+            try {
+                // Buffer the entire body to avoid future I/O.
+                ResponseBody bufferedBody = Utils.buffer(rawBody);
+                // 调用Response.error将body和rawResponse返回
+                return Response.error(bufferedBody, rawResponse);
+            } finally {
+                rawBody.close();
+            }
+        }
+        // 响应码为204或者205
+        if (code == 204 || code == 205) {
+            rawBody.close();
+            // 响应码为204或者205调用Response.success返回响应体为空
+            return Response.success(null, rawResponse);
+        }
+        // 将响应体body封装成一个ExceptionCatchingResponseBody对象
+        ExceptionCatchingResponseBody catchingBody = new ExceptionCatchingResponseBody(rawBody);
+        try {
+            // 调用responseConverter.convert方法转换响应结果(实际上就是gson解析数据)
+            T body = responseConverter.convert(catchingBody);
+            // 调用Response.success将转换好的body和rawResponse返回
+            return Response.success(body, rawResponse);
+        } catch (RuntimeException e) {
+            // 如果底层源引发异常，则传播该异常，而不是指示它是运行时异常。
+            catchingBody.throwIfCaught();
+            throw e;
+        }
+    }
+
+// 数据转化器，转换响应结果
+final class GsonResponseBodyConverter<T> implements Converter<ResponseBody, T> {
+    private final Gson gson;
+    private final TypeAdapter<T> adapter;
+
+    GsonResponseBodyConverter(Gson gson, TypeAdapter<T> adapter) {
+        this.gson = gson;
+        this.adapter = adapter;
+    }
+
+    @Override
+    public T convert(ResponseBody value) throws IOException {
+        JsonReader jsonReader = gson.newJsonReader(value.charStream());
+        try {
+            T result = adapter.read(jsonReader);
+            if (jsonReader.peek() != JsonToken.END_DOCUMENT) {
+                throw new JsonIOException("JSON document was not fully consumed.");
+            }
+            return result;
+        } finally {
+            value.close();
+        }
+    }
+}
+```
+parseResponse方法中:
+
+1. 首先将响应体和响应状态信息分离，响应体单独拿了出来进行解析。
+2. 然后判断响应码不在200到300之间及异常情况直接调用Response.error(bufferedBody, rawResponse)返回一个Retrofit中的Response.
+3. 返回码为204或者205表示响应成功但是没有响应体返回，所以调用Response.success传入的响应体为null。
+4. 最后其他正常情况就调用数据转换器responseConverter的convert方法转换响应，转换后的结果通过Response.success(body, rawResponse)返回Retrofit中完整的响应结果。
+
+Retrofit中的Response和OkHttpCall类似，都不是OkHttp中的，而相当于OkHttp中okhttp3.Response和okhttp3.Call的包装类，而Retrofit中的Response中的success和error实际上就是返回不同状态的Response。
+
+GsonResponseBodyConverter的convert方法实现就比较简单了，就是调用Gson中的方法了。通过构造中传入的Gson对象创建一个JsonReader并将响应体的字符流传入，最后调用TypeAdapter.read(jsonReader)将请求体解析得到对应实体类。
 ## Retrofit异步请求enqueue方法
+【Retrofit同步请求execute方法】里已经说了，同步异步请求实际上很类似，那么我们来看一下OkHttpCall的enqueue方法：
+```
+// OkHttpCall类：
+    @Override
+    public void enqueue(final Callback<T> callback) {
+        checkNotNull(callback, "callback == null");
+
+        okhttp3.Call call;
+        Throwable failure;
+
+        synchronized (this) {
+            if (executed) throw new IllegalStateException("Already executed.");
+            executed = true;
+
+            call = rawCall;
+            failure = creationFailure;
+            if (call == null && failure == null) {
+                try {
+                    // 创建OkHttp中的Call，同 同步请求
+                    call = rawCall = createRawCall();
+                } catch (Throwable t) {
+                    throwIfFatal(t);
+                    failure = creationFailure = t;
+                }
+            }
+        }
+
+        if (failure != null) {
+            callback.onFailure(this, failure);
+            return;
+        }
+        // 判断请求是否取消
+        if (canceled) {
+            call.cancel();
+        }
+        // 调用OkHttp中的call.enqueue
+        call.enqueue(new okhttp3.Callback() {
+            @Override // 响应成功
+            public void onResponse(okhttp3.Call call, okhttp3.Response rawResponse) {
+                Response<T> response;
+                try {
+                    // 返回成功解析Response（同 同步请求）
+                    response = parseResponse(rawResponse);
+                } catch (Throwable e) {
+                    throwIfFatal(e);
+                    callFailure(e);
+                    return;
+                }
+
+                try {
+                    // 调用callback.onResponse（成功回调）
+                    callback.onResponse(OkHttpCall.this, response);
+                } catch (Throwable t) {
+                    throwIfFatal(t);
+                    t.printStackTrace(); // TODO this is not great
+                }
+            }
+
+            @Override // 响应失败
+            public void onFailure(okhttp3.Call call, IOException e) {
+                // 处理失败
+                callFailure(e);
+            }
+
+            private void callFailure(Throwable e) {
+                try {
+                    // 调用callback.onFailure（失败回调）
+                    callback.onFailure(OkHttpCall.this, e);
+                } catch (Throwable t) {
+                    throwIfFatal(t);
+                    t.printStackTrace(); // TODO this is not great
+                }
+            }
+        });
+    }
+```
+OkHttpCall中的enqueue方法的逻辑和同步方法的逻辑类似，同样还是先创建OkHttp中的Call，再调用OkHttp中Call的enqueue方法，成功获得到OkHttp的返回结果后再同样通过parseResponse方法解析，解析之后回调callback.onResponse，若OkHttp返回失败则回调callback.onFailure。而在默认的网络请求适配器中会将请求的响应回调发送到主线程中：
+```
+// DefaultCallAdapterFactory.ExecutorCallbackCall类：
+    @Override
+    public void enqueue(final Callback<T> callback) {
+        checkNotNull(callback, "callback == null");
+
+        delegate.enqueue(new Callback<T>() {
+            @Override
+            public void onResponse(Call<T> call, final Response<T> response) {
+                // 回调执行器，【retrofit的Builder】说明，实际上为MainThreadExecutor
+                // 而MainThreadExecutor里包含一个在主线程的Handler
+                // 而MainThreadExecutor中的execute方法中，实际上调用了Handler的post方法将传入的Runnable发回主线程
+                callbackExecutor.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (delegate.isCanceled()) {
+                            callback.onFailure(ExecutorCallbackCall.this, new IOException(
+                                    "Canceled"));
+                        } else {
+                            callback.onResponse(ExecutorCallbackCall.this, response);
+                        }
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(Call<T> call, final Throwable t) {
+                // 同上
+                callbackExecutor.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        callback.onFailure(ExecutorCallbackCall.this, t);
+                    }
+                });
+            }
+        });
+    }
+```
+通过默认的网络请求适配器可以看出，不同适配器对最终的响应有不同的处理。
+
 ## Retrofit中的工厂设计模式
 ### 1. Converter
 
