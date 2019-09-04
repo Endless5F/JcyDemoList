@@ -1,5 +1,8 @@
 上一篇我们分析了主流的开源框架的源码的第一篇OkHttp3，现在我们来分析一下本系列第二篇——Retrofit2（源码以2.6.1版为准）。
 
+代理模式详情可参考本人第一篇文章：<a href="https://juejin.im/post/5cac6c0ef265da03761e6a88">Binder机制之AIDL</a>
+
+OkHttp的源码分析，可参考上一篇：<a href="https://juejin.im/post/5d5aa9a5e51d4561f64a0808">主流开源框架之OkHttp3深入了解</a>
 ## 基本了解
 
 ### 1. 概念了解：
@@ -302,6 +305,9 @@ get 方法会去调用findPlatform方法，通过Class.forName反射查找"andro
 baseUrl方法实现非常简单就是将baseUrl设置到Retrofit.Builder中，参数类型为String的方法将传入的字符串封装成了一个HttpUrl对象，调用对应重载方法，重载方法中调用pathSegments方法将url分割，然后判断url是否是以斜杠结尾，不是则抛出异常。
 
 至此，我们的Retrofit就构建完成了。
+
+
+![](https://user-gold-cdn.xitu.io/2019/9/4/16cfc44b2d3e0b20?w=500&h=447&f=png&s=139281)
 
 ## Retrofit.create(通过动态代理生成请求对象)
 ```
@@ -872,7 +878,7 @@ return 返回了CallAdapter,其中adapt方法返回的是一个ExecutorCallbackC
         * getParameterUpperBound 从{@code type}中提取{@code index}处的泛型参数的上限，比如：Map<String, ? extends Runnable>} 返回 Runnable
         * getRawType 从返回值类型中提取原始类类型。比如：Observable<List<T>> 返回 List<T>
 
-![](https://user-gold-cdn.xitu.io/2019/9/3/16cf7d15bdd8eabe?w=1395&h=1047&f=jpeg&s=256504)
+![](https://user-gold-cdn.xitu.io/2019/9/4/16cfc4bb6577044e?w=1370&h=1011&f=jpeg&s=255036)
 ## Retrofit同步请求execute方法
 Retrofit中的同步异步请求实际上很类似，只是异步请求最后会把回调方法交给【retrofit的Builder】中提到的回调执行器，来切换为主线程并处理回调。Retrofit中同步无论是哪种网络请求适配器，最后调用的都是OkHttpCall的execute()方法，例如：默认网络请求适配器工厂创建的适配器 adapt 适配后返回的ExecutorCallbackCall类：
 ```
@@ -1130,8 +1136,86 @@ OkHttpCall中的enqueue方法的逻辑和同步方法的逻辑类似，同样还
 ```
 通过默认的网络请求适配器可以看出，不同适配器对最终的响应有不同的处理。
 
-## Retrofit中的工厂设计模式
-### 1. Converter
+## Retrofit中的设计模式
+* 外观(门面)模式：Retrofit
+* 建造者模式：Retrofit、RequestFactory
+* 动态代理模式：Retrofit.create
+* 装饰模式：ExecutorCallbackCall(有人说此类是静态代理模式，个人见解更认为是装饰模式)
+* 适配器模式：CallAdapter
+* 工厂模式：CallAdapter.Factory(工厂方法模式)、Converter.Converter(工厂方法模式)、Platform(简单、静态工厂)
 
-### 2. CallAdapter
+**思考：**
 
+1. 静态代理模式和装饰模式的区别？
+2. 适配器模式与装饰模式的区别？
+	装饰与适配器都有一个别名叫做包装模式(Wrapper)，它们看似都是起到包装一个类或对象的作用，但是使用它们的目的很不一一样。适配器模式的意义是要将一个接口转变成另一个接口，它的目的是通过改变接口来达到重复使用的目的。 而装饰模式不是要改变被装饰对象的接口，而是恰恰要保持原有的接口，但是增强原有对象的功能，或者改变原有对象的处理方式而提升性能。
+
+```
+代理模式：为其他对象提供一种代理以控制对这个对象的访问。在某些情况下，一个对象不适合或者不能直接引用另一个对象，而代理对象可以在客户端和目标对象之间起到中介的作用。
+	抽象角色：通过接口或抽象类声明真实角色实现的业务方法。
+	代理角色：实现抽象角色，是真实角色的代理，通过真实角色的业务逻辑方法来实现抽象方法，并可以附加自己的操作。
+	真实角色：实现抽象角色，定义真实角色所要实现的业务逻辑，供代理角色调用。
+	注：代理模式职责清晰，真实的角色就是实现实际的业务逻辑，不用关心其他非本职责的事务，通过后期的代理完成一件完成事务，附带的结果就是编程简洁清晰。
+适配器模式：将一个类的接口适配成用户所期待的。一个适配允许通常因为接口不兼容而不能在一起工作的类工作在一起，做法是将类自己的接口包裹在一个已存在的类中。
+	类适配器：
+		public class Adaptee { // 源角色
+			public void SpecificRequest(){
+				System.out.println("需要适配的接口方法");
+			}
+		}
+		public interface Target { // 目标角色
+			void Request(); // 期待得到的接口
+		}
+		public class Adapter extends Adaptee implements Target { // 适配器角色
+			@Override
+			public void Request() {
+				SpecificRequest(); // 源角色需要适配的方法
+				System.out.println("被适配后的方法");
+			}
+
+
+			public static void main(String[] args) {
+				Target target = new Adapter();
+				target.Request();
+
+			}
+		}
+	对象适配器：
+		public class Adapter  implements  Target{
+			//通过组合的方式实现注入
+			private Adaptee adaptee; // 1
+		//	private Adaptee adaptee = new Adaptee(); // 2
+
+			public Adapter(Adaptee adaptee){
+				this.adaptee=adaptee;
+			}
+
+
+			@Override
+			public void Request() {
+				adaptee.SpecificRequest();
+				System.out.println("被适配后的方法");
+			}
+		}
+
+装饰模式：不必改变原类文件和使用继承的情况下，动态地扩展一个对象的功能(使得它比原来更“漂亮”，或者在功能上更强大)。它是通过创建一个包装对象，也就是装饰来包裹真实的对象。（java IO 流是典型的装饰模式。）
+	即作为原来的这个类的使用者还不应该感受到装饰前与装饰后有什么不同，即用法不变，否则就破坏了原有类的结构了，所以装饰器模式要做到对被装饰类的使用者透明，这是对装饰器模式的一个基本要求。
+```
+代理模式详情可参考本人第一篇文章：<a href="https://juejin.im/post/5cac6c0ef265da03761e6a88">Binder机制之AIDL</a>
+
+OkHttp的源码分析，可参考上一篇：<a href="https://juejin.im/post/5d5aa9a5e51d4561f64a0808">主流开源框架之OkHttp3深入了解</a>
+
+
+![](https://user-gold-cdn.xitu.io/2019/9/4/16cfc3f9d454cbf6?w=423&h=366&f=png&s=69663)
+
+**参考链接：**
+
+https://juejin.im/post/5d458a5b51882567b434dffd
+
+https://www.jianshu.com/p/abd144912e2a
+
+https://www.jianshu.com/p/fb8d21978e38
+
+...
+
+<font color="#ff0000">（注：若有什么地方阐述有误，敬请指正。）</font>
