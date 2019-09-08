@@ -66,8 +66,9 @@ dependencies {
     api 'org.greenrobot:eventbus:3.1.1'//@{proguard}
 
     api 'jp.wasabeef:glide-transformations:4.0.1'
-    api 'com.github.bumptech.glide:glide:4.8.0'
-    annotationProcessor 'com.github.bumptech.glide:compiler:4.7.1'
+    api 'com.github.bumptech.glide:glide:4.9.0'
+    api 'com.github.bumptech.glide:okhttp3-integration:4.9.0'
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.9.0'
     //Log
     api 'com.orhanobut:logger:2.1.1'
     //Loader依赖

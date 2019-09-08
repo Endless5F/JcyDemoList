@@ -18,11 +18,11 @@ import com.bumptech.glide.request.RequestOptions;
 public class MyAppGlideModule  extends AppGlideModule {
     @Override
     public boolean isManifestParsingEnabled() {
-        return false;
+        return false; // 告知Glide不需要再去 在AndroidManifest中查找是否有自定义GlideModule的实现类
     }
     @Override
     public void applyOptions(Context context, GlideBuilder builder) {
-        // 设置glide加载图片格式 PREFER_RGB_565
+        // 设置glide加载图片格式 PREFER_RGB_565（glide4.0开始默认图片加载格式为PREFER_ARGB_8888）
         builder.setDefaultRequestOptions(
                 new RequestOptions()
                         .format(DecodeFormat.PREFER_RGB_565)
