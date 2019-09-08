@@ -5,7 +5,7 @@
 
 1. glide的基本用法
 2. glide完整的加载流程
-3. glide的缓存机制
+3. glide的Target、Transformation
 
 ## 一、Glide的基本用法
 1. 添加Gradle依赖：
@@ -2609,9 +2609,9 @@ public class StringLoader<Data> implements ModelLoader<String, Data> {
     }
 ```
 通过上面代码了解到，数据解析的任务最后是通过DecodePath来执行的, 它内部有三个操作：
-* 调用 decodeResource 将源数据解析成资源
-* 调用 DecodeCallback.onResourceDecoded 处理资源
-* 调用 ResourceTranscoder.transcode 将资源转为目标资源
+* 调用 decodeResource 将源数据解析成资源(Bitmap)
+* 调用 DecodeCallback.onResourceDecoded 处理资源(CenterCrop、FitCenter等)
+* 调用 ResourceTranscoder.transcode 将资源转为目标资源(BitmapDrawable)
 
 我们分别来看一下这三个操作：
 
@@ -2676,7 +2676,7 @@ public class StringLoader<Data> implements ModelLoader<String, Data> {
         Resource<Z> transformed = decoded;
         // 若非从资源磁盘缓存中获取的数据源, 则对资源进行 transformation 操作
         if (dataSource != DataSource.RESOURCE_DISK_CACHE) {
-            // 根据类型获取转换器(例如：BitmapDrawableTransformation、BitmapTransformation等)
+            // 根据类型获取转换器(例如：CenterCrop、FitCenter等)
             appliedTransformation = decodeHelper.getTransformation(resourceSubClass);
             transformed = appliedTransformation.transform(glideContext, decoded, width, height);
         }
@@ -2731,7 +2731,7 @@ public class StringLoader<Data> implements ModelLoader<String, Data> {
         return result;
     }
 ```
-onResourceDecoded方法中，其主要的逻辑是根据我们设置的参数进行变化，也就是说，如果我们使用了 centerCrop 等参数，那么这里将会对其进行处理。这里的 Transformation 是一个接口，它的一系列的实现都是对应于 scaleType 等参数的。
+onResourceDecoded方法中，其主要的逻辑是根据我们设置的参数进行变化，也就是说，如果我们使用了 centerCrop 等参数，那么这里将会对其进行处理。这里的 Transformation 是一个接口，它的一系列的实现都是对应于 scaleType 等参数的，比如CenterCrop、FitCenter、CenterInside等都是实现了Transformation接口的缩放转换器。
 
 由于我们的目标格式为Drawable, 因此它的转换器为 BitmapDrawableTranscoder，而ResourceTranscoder.transcode这三步实际上使用 BitmapDrawableTranscoder 的 transcode() 方法返回 Resouces<BitmapDrawable>。
 
@@ -3243,11 +3243,82 @@ Transformation用来干什么？
     平常开发中，我们时常会对网络加载的图片进行处理，
     比如Glide自带centerCrop()，fitCenter()处理，自定义圆形，圆角，模糊处理等等都是通过Transformation完成。
 
+我们先来了解一下CenterCrop类的源码吧：
+```
+public class CenterCrop extends BitmapTransformation {
+    private static final String ID = "com.bumptech.glide.load.resource.bitmap.CenterCrop";
+    private static final byte[] ID_BYTES = ID.getBytes(CHARSET);
 
+    // 实现图形变换，主要是这个方法
+    @Override
+    protected Bitmap transform(
+            @NonNull BitmapPool pool, @NonNull Bitmap toTransform, int outWidth, int outHeight) {
+        return TransformationUtils.centerCrop(pool, toTransform, outWidth, outHeight);
+    }
 
+    // 重写epquals和hashcode方法，确保对象唯一性，以和其他的图片变换做区分
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof CenterCrop;
+    }
 
+    @Override
+    public int hashCode() {
+        return ID.hashCode();
+    }
 
+    // 可通过内部算法 重写此方法自定义图片缓存key
+    @Override
+    public void updateDiskCacheKey(@NonNull MessageDigest messageDigest) {
+        messageDigest.update(ID_BYTES);
+    }
+}
 
+```
+1. CenterCrop继承自BitmapTransformation的，这个是必须的。我们自定义Transformation也要继承这个类。因为整个图片变换功能都是建立在这个继承结构基础上的。
+2. 图像变换最重要的就是transform()方法，这个是我们自定义Transformation的关键方法，我们的处理逻辑都要在这个方法里实现。transform()方法中有四个参数。 
+    * pool，这个是Glide中的BitmapPool缓存池，用于对Bitmap对象进行重用，否则每次图片变换都重新创建Bitmap对象将会非常消耗内存。 
+    * toTransform，这个是原始图片的Bitmap对象，我们就是要对它来进行图片变换。 
+    * 图片变换后的宽度 
+    * 图片变换后的高度
+
+我们可以看到transform()的处理都在TransformationUtils中，那么我们看一下transform()方法的细节。
+```
+// TransformationUtils类：
+    public static Bitmap centerCrop(@NonNull BitmapPool pool, @NonNull Bitmap inBitmap, int width, int height) {
+        // 简单校验
+        if (inBitmap.getWidth() == width && inBitmap.getHeight() == height) {
+            return inBitmap;
+        }
+        // From ImageView/Bitmap.createScaledBitmap. 计算画布的缩放的比例以及偏移值
+        final float scale;
+        final float dx;
+        final float dy;
+        Matrix m = new Matrix();
+        if (inBitmap.getWidth() * height > width * inBitmap.getHeight()) {
+            scale = (float) height / (float) inBitmap.getHeight();
+            dx = (width - inBitmap.getWidth() * scale) * 0.5f;
+            dy = 0;
+        } else {
+            scale = (float) width / (float) inBitmap.getWidth();
+            dx = 0;
+            dy = (height - inBitmap.getHeight() * scale) * 0.5f;
+        }
+
+        m.setScale(scale, scale);
+        m.postTranslate((int) (dx + 0.5f), (int) (dy + 0.5f));
+        // 从Bitmap缓存池中尝试获取一个可重用的Bitmap对象
+        Bitmap result = pool.get(width, height, getNonNullConfig(inBitmap));
+        // 将原图Bitmap对象的alpha值复制到裁剪Bitmap对象上面
+        TransformationUtils.setAlpha(inBitmap, result);
+        // 裁剪Bitmap对象进行绘制，并将最终的结果进行返回
+        applyMatrix(inBitmap, result, m);
+        return result;
+    }
+```
+对于equals，hashCode，updateDiskCacheKey不太重要，最重要的方法就是transform()。
+
+若想要更多变换效果可以尝试自定义或者使用glide-transformations这个库，它实现了很多通用的图片变换效果，如裁剪变换、颜色变换、模糊变换等等，使得我们可以非常轻松地进行各种各样的图片变换。
 
 **参考链接：**
 
