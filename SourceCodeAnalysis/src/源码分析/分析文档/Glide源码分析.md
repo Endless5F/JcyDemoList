@@ -2298,7 +2298,7 @@ public class StringLoader<Data> implements ModelLoader<String, Data> {
                          @NonNull DataCallback<? super InputStream> callback) {
         long startTime = LogTime.getLogTime();
         try {
-            // 使用重定向加载数据
+            // 使用重定向加载数据，注意此处返回的是InputStream数据流
             InputStream result = loadDataWithRedirects(glideUrl.toURL(), 0, null,
                     glideUrl.getHeaders());
             // 加载完成，回调数据准备完毕
@@ -2364,7 +2364,7 @@ public class StringLoader<Data> implements ModelLoader<String, Data> {
         }
     }
 ```
-看到这，终于找到了网络通讯的代码，就是通过HttpUrlConnection来获取数据流并返回。当然也可以自定义使用OkHttp。
+看到这，终于找到了网络通讯的代码，就是通过HttpUrlConnection来获取数据流InputStream并返回。当然也可以自定义使用OkHttp。
 
 ### 6. 数据源的处理以及显示
 我们从HttpUrlFetcher类中的loadData方法中可以看到，当数据加载完成后会调用callback.onDataReady(result)，那callback是谁呢？我们是从SourceGenerator中开始加载的网络数据，那callback理所应当是SourceGenerator，因此我们看一下SourceGenerator的onDataReady(result)方法：
@@ -2555,11 +2555,11 @@ public class StringLoader<Data> implements ModelLoader<String, Data> {
 // DecodePath类：
     public Resource<Transcode> decode(DataRewinder<DataType> rewinder, int width
         , int height,@NonNull Options options,DecodeCallback<ResourceType> callback) throws GlideException {
-        // 调用 decodeResource 将源数据解析成中间资源
+        // 调用 decodeResource 将源数据(InputStream)解析成中间资源(Bitmap)
         Resource<ResourceType> decoded = decodeResource(rewinder, width, height, options);
-        // 调用 DecodeCallback.onResourceDecoded 处理中间资源
+        // 调用 DecodeCallback.onResourceDecoded 处理中间资源(处理成Drawable)
         Resource<ResourceType> transformed = callback.onResourceDecoded(decoded);
-        // 调用 ResourceTranscoder.transcode 将中间资源转为目标资源
+        // 调用 ResourceTranscoder.transcode 将中间资源转为目标资源(对应的Target)
         return transcoder.transcode(transformed, options);
     }
     
@@ -2587,7 +2587,7 @@ public class StringLoader<Data> implements ModelLoader<String, Data> {
                 DataType data = rewinder.rewindAndGet();
                 if (decoder.handles(data, options)) {
                     data = rewinder.rewindAndGet();
-                    // 调用 ResourceDecoder.decode 解析源数据
+                    // 调用 ResourceDecoder.decode 解析源数据InputStream
                     result = decoder.decode(data, width, height, options);
                 }
             } catch (IOException | RuntimeException | OutOfMemoryError e) {
@@ -2609,7 +2609,7 @@ public class StringLoader<Data> implements ModelLoader<String, Data> {
     }
 ```
 通过上面代码了解到，数据解析的任务最后是通过DecodePath来执行的, 它内部有三个操作：
-* 调用 decodeResource 将源数据解析成资源(Bitmap)
+* 调用 decodeResource 将源数据InputStream解析成资源(Bitmap)
 * 调用 DecodeCallback.onResourceDecoded 处理资源(CenterCrop、FitCenter等)
 * 调用 ResourceTranscoder.transcode 将资源转为目标资源(BitmapDrawable)
 
