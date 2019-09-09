@@ -87,6 +87,9 @@ public class MyAppGlideModule  extends AppGlideModule {
 5. Engine.load（启动加载）
 6. 数据源的处理以及显示
 
+先来一张时序图：
+
+![](https://user-gold-cdn.xitu.io/2019/9/9/16d1677e582e270b?w=4012&h=2282&f=jpeg&s=666814)
 ### 1. Glide.with(context)
 
 * with定义：Glide类中的静态方法，具有多个重载方法
@@ -1277,6 +1280,7 @@ placeholder(drawable)和placeholder(resourceId)这两个方法不能同时对pla
 
 系统定义了21个标志位，通过每个标志位代表RequestOptions对应属性的赋值与否，巧妙使用位运算，用一个int类型表示了21个bool逻辑(其实一个int最多能标识32个逻辑)。
 
+![](https://user-gold-cdn.xitu.io/2019/9/9/16d167d9230020e7?w=440&h=440&f=png&s=132534)
 ### 4. into(T) (即：RequestBuilder.into(T))
 * into定义：正常加载设置显示图片最后一步
 * into作用：构建网络请求对象 并 执行 该网络请求
@@ -2366,6 +2370,9 @@ public class StringLoader<Data> implements ModelLoader<String, Data> {
 ```
 看到这，终于找到了网络通讯的代码，就是通过HttpUrlConnection来获取数据流InputStream并返回。当然也可以自定义使用OkHttp。
 
+接下来你也许会这样(哈哈，我写时一开始也这样)：
+
+![](https://user-gold-cdn.xitu.io/2019/9/9/16d1680f5076feba?w=400&h=400&f=png&s=12500)
 ### 6. 数据源的处理以及显示
 我们从HttpUrlFetcher类中的loadData方法中可以看到，当数据加载完成后会调用callback.onDataReady(result)，那callback是谁呢？我们是从SourceGenerator中开始加载的网络数据，那callback理所应当是SourceGenerator，因此我们看一下SourceGenerator的onDataReady(result)方法：
 ```
@@ -2915,6 +2922,9 @@ private class CallResourceReady implements Runnable {
 
 至此，终于Glide一次完整的请求显示已经分析完成，不过这不过是Glide的最基础的流程，而Glide 支持Gif, 视频加载，二进制，Assets等操作, 可想而知其内部的处理了多少逻辑代码,如此复杂的流程, 嵌套了如此之多的回调，想想都很可怕，最后的解析资源部分大部分属于借鉴，主要其内部实现实在是复杂。
 
+整个流程走完啦，再根据时序图回忆一下吧：
+![](https://user-gold-cdn.xitu.io/2019/9/9/16d16793312112e9?w=4012&h=2282&f=jpeg&s=666814)
+
 ## Glide之Target
 * 什么是Target？
 * Target都有哪些实现类？
@@ -3320,6 +3330,10 @@ public class CenterCrop extends BitmapTransformation {
 
 若想要更多变换效果可以尝试自定义或者使用glide-transformations这个库，它实现了很多通用的图片变换效果，如裁剪变换、颜色变换、模糊变换等等，使得我们可以非常轻松地进行各种各样的图片变换。
 
+此分析未包含Glide的缓存部分，感兴趣的小伙伴先自己了解一下吧，实在是一入源码深似海呀！
+
+![](https://user-gold-cdn.xitu.io/2019/9/9/16d167aea71c09dd?w=500&h=500&f=png&s=186601)
+
 **参考链接：**
 
 https://www.jianshu.com/p/2f520af8461b
@@ -3335,3 +3349,5 @@ https://www.jianshu.com/p/043c3c1e127c
 https://blog.csdn.net/ApkCore/article/details/92016656
 
 https://blog.csdn.net/say_from_wen/article/details/81218948
+
+<font color="#ff0000">注：若有什么地方阐述有误，敬请指正。**期待您的点赞哦！！！**</font> 
