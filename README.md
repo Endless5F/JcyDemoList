@@ -1,4 +1,4 @@
-# android 开源框架库
+# android 开源学习库
 
 #### 项目介绍
 旨在简化开发流程，简化代码，以及工具和日常学习的使用
@@ -13,6 +13,10 @@ BaseLibrary：基类-子模块，本人总结的开发基Moudle，包括初始�
 CustomWidget：自定义组件，学习HenCoder练习项目集锦，以及自己的综合练习demo
 
 JavaLib：Java类库，目前主要为easyExcel读取（包括多语言文件生成）
+
+Kotlinlearn：Kotlin基础知识学习
+
+PerformanceAnalysis：性能分析与优化，比较系统的学习性能分析和优化
 
 SourceCodeAnalysis：源码分析，不仅包括源码分析，还包括本人所写的所有掘金文章留存
 
