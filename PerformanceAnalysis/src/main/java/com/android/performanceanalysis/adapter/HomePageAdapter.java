@@ -2,16 +2,20 @@ package com.android.performanceanalysis.adapter;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.Intent;
 import android.support.annotation.NonNull;
 import android.support.v4.util.SparseArrayCompat;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.TextView;
 
 import com.android.performanceanalysis.R;
+import com.android.performanceanalysis.activity.WebViewDemoList;
 import com.android.performanceanalysis.data.HomeData;
+import com.android.performanceanalysis.utils.LaunchTimerUtil;
 
 import java.util.List;
 
@@ -48,8 +52,26 @@ public class HomePageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         }
     }
 
+    /**
+     * App启动是否已经统计过
+     * 此处埋点为App启动的结束埋点，只有第一条真实数据展示App才算真正启动完成
+     */
+    private boolean isRecorded = false;
+
     @Override
-    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder viewHolder, int position) {
+    public void onBindViewHolder(@NonNull final RecyclerView.ViewHolder viewHolder, int position) {
+        if (position == 0 && !isRecorded) {
+            // 监听 itemView 绘制之前
+            viewHolder.itemView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+                @Override
+                public boolean onPreDraw() {
+                    // 启动时间测量：结束记录
+                    LaunchTimerUtil.endRecord();
+                    viewHolder.itemView.getViewTreeObserver().removeOnPreDrawListener(this);
+                    return true;
+                }
+            });
+        }
         int viewType = getItemViewType(position);
         if (mHeaderViews.get(viewType) != null) {
             HeadViewHolder headViewHolder = (HeadViewHolder) viewHolder;
@@ -76,7 +98,8 @@ public class HomePageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                 public void onClick(View v) {
                     switch (pos) {
                         case 1:
-
+                            Intent intent = new Intent(mContext, WebViewDemoList.class);
+                            mContext.startActivity(intent);
                             break;
                         case 2:
 

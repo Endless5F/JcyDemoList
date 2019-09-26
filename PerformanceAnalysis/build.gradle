@@ -49,4 +49,8 @@ dependencies {
     // kotlin 配置
     implementation "org.jetbrains.anko:anko:$anko_version"
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+
+    // leakcanary内存泄漏
+    debugImplementation 'com.squareup.leakcanary:leakcanary-android:1.6.1'
+    releaseImplementation 'com.squareup.leakcanary:leakcanary-android-no-op:1.6.1'
 }
