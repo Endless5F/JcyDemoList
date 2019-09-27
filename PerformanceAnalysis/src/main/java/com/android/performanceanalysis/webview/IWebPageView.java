@@ -1,4 +1,4 @@
-package com.android.performanceanalysis.webview.config;
+package com.android.performanceanalysis.webview;
 
 import android.content.Intent;
 import android.view.View;

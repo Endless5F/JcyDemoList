@@ -27,13 +27,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.android.performanceanalysis.R;
-import com.android.performanceanalysis.activity.MainActivity;
-import com.android.performanceanalysis.webview.config.FullscreenHolder;
-import com.android.performanceanalysis.webview.config.IWebPageView;
-import com.android.performanceanalysis.webview.config.MyJavascriptInterface;
-import com.android.performanceanalysis.webview.config.MyWebChromeClient;
-import com.android.performanceanalysis.webview.config.MyWebViewClient;
-import com.android.performanceanalysis.webview.config.WebProgress;
+import com.android.performanceanalysis.webview.widget.FullscreenHolder;
+import com.android.performanceanalysis.webview.impl.JavascriptInterfaceImpl;
+import com.android.performanceanalysis.webview.impl.WebChromeClientImpl;
+import com.android.performanceanalysis.webview.impl.WebViewClientImpl;
+import com.android.performanceanalysis.webview.widget.WebProgress;
 import com.android.performanceanalysis.webview.utils.CheckNetwork;
 import com.android.performanceanalysis.webview.utils.StatusBarUtil;
 import com.android.performanceanalysis.webview.utils.WebTools;
@@ -59,7 +57,7 @@ public class WebViewActivity extends AppCompatActivity implements IWebPageView {
     // 全屏时视频加载view
     private FrameLayout videoFullView;
     // 加载视频相关
-    private MyWebChromeClient mWebChromeClient;
+    private WebChromeClientImpl mWebChromeClient;
     // 网页链接
     private String mUrl;
     private Toolbar mTitleToolBar;
@@ -182,11 +180,11 @@ public class WebViewActivity extends AppCompatActivity implements IWebPageView {
         /** 设置字体默认缩放大小(改变网页字体大小,setTextSize  api14被弃用)*/
         ws.setTextZoom(100);
 
-        mWebChromeClient = new MyWebChromeClient(this);
+        mWebChromeClient = new WebChromeClientImpl(this);
         webView.setWebChromeClient(mWebChromeClient);
         // 与js交互
-        webView.addJavascriptInterface(new MyJavascriptInterface(this), "injectedObject");
-        webView.setWebViewClient(new MyWebViewClient(this));
+        webView.addJavascriptInterface(new JavascriptInterfaceImpl(this), "injectedObject");
+        webView.setWebViewClient(new WebViewClientImpl(this));
         webView.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
@@ -334,9 +332,9 @@ public class WebViewActivity extends AppCompatActivity implements IWebPageView {
      */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
-        if (requestCode == MyWebChromeClient.FILECHOOSER_RESULTCODE) {
+        if (requestCode == WebChromeClientImpl.FILECHOOSER_RESULTCODE) {
             mWebChromeClient.mUploadMessage(intent, resultCode);
-        } else if (requestCode == MyWebChromeClient.FILECHOOSER_RESULTCODE_FOR_ANDROID_5) {
+        } else if (requestCode == WebChromeClientImpl.FILECHOOSER_RESULTCODE_FOR_ANDROID_5) {
             mWebChromeClient.mUploadMessageForAndroid5(intent, resultCode);
         }
     }

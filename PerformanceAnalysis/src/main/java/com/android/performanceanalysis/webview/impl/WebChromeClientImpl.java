@@ -1,4 +1,4 @@
-package com.android.performanceanalysis.webview.config;
+package com.android.performanceanalysis.webview.impl;
 
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -8,6 +8,8 @@ import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 
+import com.android.performanceanalysis.webview.IWebPageView;
+
 import static android.app.Activity.RESULT_OK;
 
 
@@ -15,7 +17,7 @@ import static android.app.Activity.RESULT_OK;
  * - 播放网络视频配置
  * - 上传图片(兼容)
  */
-public class MyWebChromeClient extends WebChromeClient {
+public class WebChromeClientImpl extends WebChromeClient {
 
     private ValueCallback<Uri> mUploadMessage;
     private ValueCallback<Uri[]> mUploadMessageForAndroid5;
@@ -27,7 +29,7 @@ public class MyWebChromeClient extends WebChromeClient {
     private View mXCustomView;
     private CustomViewCallback mXCustomViewCallback;
 
-    public MyWebChromeClient(IWebPageView mIWebPageView) {
+    public WebChromeClientImpl(IWebPageView mIWebPageView) {
         this.mIWebPageView = mIWebPageView;
     }
 

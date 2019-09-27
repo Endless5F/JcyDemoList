@@ -38,7 +38,7 @@
             android:layout_height="match_parent"
             android:scrollbarSize="3dp" />
 
-        <com.android.performanceanalysis.webview.config.WebProgress
+        <com.android.performanceanalysis.webview.widget.WebProgress
             android:id="@+id/pb_progress"
             android:layout_width="match_parent"
             android:layout_height="3dp"

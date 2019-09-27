@@ -1,4 +1,4 @@
-package com.android.performanceanalysis.webview.config;
+package com.android.performanceanalysis.webview.widget;
 
 import android.content.Context;
 import android.view.MotionEvent;

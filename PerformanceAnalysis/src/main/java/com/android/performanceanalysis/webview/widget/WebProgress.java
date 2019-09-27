@@ -1,4 +1,4 @@
-package com.android.performanceanalysis.webview.config;
+package com.android.performanceanalysis.webview.widget;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;

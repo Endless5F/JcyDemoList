@@ -1,4 +1,4 @@
-package com.android.performanceanalysis.webview.config;
+package com.android.performanceanalysis.webview.impl;
 
 import android.content.Context;
 import android.text.TextUtils;
@@ -8,10 +8,10 @@ import android.webkit.JavascriptInterface;
 /**
  * js通信接口
  */
-public class MyJavascriptInterface {
+public class JavascriptInterfaceImpl {
     private Context context;
 
-    public MyJavascriptInterface(Context context) {
+    public JavascriptInterfaceImpl(Context context) {
         this.context = context;
     }
 

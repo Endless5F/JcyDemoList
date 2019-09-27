@@ -1,4 +1,4 @@
-package com.android.performanceanalysis.webview.config;
+package com.android.performanceanalysis.webview.impl;
 
 import android.net.http.SslError;
 import android.text.TextUtils;
@@ -7,6 +7,8 @@ import android.webkit.SslErrorHandler;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import com.android.performanceanalysis.webview.IWebPageView;
+
 /**
  * 监听网页链接:
  * - 根据标识:打电话、发短信、发邮件
@@ -14,11 +16,11 @@ import android.webkit.WebViewClient;
  * - 添加javascript监听
  * - 唤起京东，支付宝，微信原生App
  */
-public class MyWebViewClient extends WebViewClient {
+public class WebViewClientImpl extends WebViewClient {
 
     private IWebPageView mIWebPageView;
 
-    public MyWebViewClient(IWebPageView mIWebPageView) {
+    public WebViewClientImpl(IWebPageView mIWebPageView) {
         this.mIWebPageView = mIWebPageView;
     }
 

@@ -21,6 +21,7 @@ public class LaunchApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+        app = this;
         TraceCompat.beginSection("AppOnCreate");
         // TODO 一系列操作
 
