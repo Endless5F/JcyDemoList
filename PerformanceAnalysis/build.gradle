@@ -3,7 +3,7 @@ if (isPerformanceModule.toBoolean()) {
 } else {
     apply plugin: 'com.android.application'
 }
-
+apply plugin: 'android-aspectjx'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 
@@ -13,7 +13,6 @@ repositories {
 
 android {
     compileSdkVersion 28
-
 
     defaultConfig {
         multiDexEnabled true
@@ -53,4 +52,7 @@ dependencies {
     // leakcanary内存泄漏
     debugImplementation 'com.squareup.leakcanary:leakcanary-android:1.6.1'
     releaseImplementation 'com.squareup.leakcanary:leakcanary-android-no-op:1.6.1'
+
+    // AOP
+    implementation 'org.aspectj:aspectjrt:1.8.14'
 }

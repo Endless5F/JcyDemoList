@@ -63,5 +63,41 @@
         cputime：是代码消耗cpu的时间（重点指标）
         举例：锁冲突
     总结：轻量级，开销小。直观反映cpu利用率。
-### 四、优雅获取方法耗时
+## 四、优雅获取方法耗时
+### 常规方法
+手动埋点(侵入性强，工作量大)：
 
+        开始： long time = System.currentTimeMillis();
+        结束： long cost = System.currentTimeMillis()-time;
+### AOP
+1. 介绍：
+
+    Aspect Oriented Programming 面向切片编程：针对同一类问题的同一处理，无侵入添加代码
+
+        AspectJ使用：
+            最外层build.gradle：classpath 'com.hujiang.aspectjx:gradle-android-plugin-aspectjx:2.0.6'
+            module build.gradle：apply plugin: 'android-aspectjx'
+            module build.gradle：implementation 'org.aspectj:aspectjrt:1.8.4'
+    几个主要概念：
+
+    * Join Points：程序运行时的执行点，可以作为切面的地方
+            比如：函数调用、执行/获取或者设置变量/类初始化
+    * PointCut：带条件的JoinPoints
+    * Advice：一种Hook，要插入代码的位置
+        * before：PointCut之前执行
+        * after：PointCut之后执行
+        * Around：PointCut之前之后分别执行
+    * 语法介绍：
+
+        @Before("execution(* android.app.Activity.on**(…))")
+        public void onActivityCalled(JoinPoints joinPoints)throw Throwable{ ... }
+        * @Before：Advice，具体插入位置
+        * execution：处理Join Point的类型，call、execution
+        * (* android.app.Activity.on**(…)) 匹配规则
+        * onActivityCalled：aop要插入的代码
+
+    参考文档：
+    https://www.jianshu.com/p/f577aec99e17 （关于android中使用AspectJ）
+    https://blog.csdn.net/qq_30682027/article/details/82493913 (AspectJ详解)
+    https://www.jianshu.com/p/27b997677149 (AspectJ基本用法)
+ 2. 实战：
