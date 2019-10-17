@@ -44,6 +44,10 @@ public class LaunchApplication extends Application {
 
     // 初始化虚拟操作
     public void initVirtualOperating(LaunchApplication launchApplication) {
-        LogUtils.d("");
+        int key = 0;
+        for (int i = 0; i < 10000; i++) {
+            key += i;
+        }
+        LogUtils.d("" + key);
     }
 }

@@ -38,7 +38,68 @@ import org.aspectj.lang.annotation.Before;
  * @Around(切点表达式)：环绕通知，切点前后执行
  * @After(切点表达式)：后置通知，切点之后执行
  * @AfterReturning(切点表达式)：返回通知，切点方法返回结果之后执行
- * @AfterThrowing(切点表达式)：异常通知，切点抛出异常时执行
+ * @AfterThrowing(切点表达式)：异常通知，切点抛出异常时执行 <p>
+ * <p>
+ * JoinPoints            说明           Pointcut语法
+ * method call           函数调用        call(MethodSignature)
+ * method execution      函数执行        execution(MethodSignature)
+ * constructor call      构造函数被调用   call(ConstructorSignature)
+ * constructor execution 构造函数执行内部 execution(ConstructorSignature)
+ * field get             读变量         get(FieldSignature)
+ * field set             写变量         set(FieldSignature)
+ * static initialization static块初始化 staticinitialization(TypeSignature)
+ * handler               异常处理       handler(TypeSignature)注意：只能与@Before配合使用
+ *
+ * <p>
+ * MethodSignature语法：@注解 访问权限 返回值类型 类名.函数名(参数)
+ * <p>
+ * Signature语法明细明：
+ * @注解： 注解类的完整路径，如果没有则不写
+ * 访问权限：public/private/protect/static/final，如果没有则不写
+ * 返回值类型：如果不限定类型，使用通配符 * 表示
+ * 类名.函数名：可以使用的通配符*和..以及+号
+ * 参数例子：
+ * 1.(int,cahr)表示参数只能两个，并且类型也要一致
+ * 2.(String, …): 表示参数至少有一个。并且第一个参数是 String, 后面参数类型不限。在参数匹配中， … 代表任意参数个数和类型；
+ * 3.(Oject …): 表示不定个数的参数，并且类型都是 Object, 这里的 … 不是通配符，而是 java 中不定参数的意思；
+ * 4.(..)：什么都不限制
+ * <p>
+ * 通配符类型：
+ * * 表示用于匹配处 . 号之外的任意字符
+ * ... 表示任意子package或者任意参数参数列表
+ * + '号表示子类
+ * <p>
+ * 通配符例子：
+ * java.*.Data: 可以表示 java.sql.Data ，也可以表示 java.util.Date;
+ * Test* : 表示Test开头的函数，可以表示 TestBase, 也可以表示 TestDervied
+ * java…* : 表示 java 任意子类
+ * java…*Model+: 表示 Java 任意 package 中名字以 Model 结尾的子类，比如 TabelModel, TreeModel 等
+ * <p>
+ * <p>
+ * Constructor Signature 表达式：和 Method Signature类似，不同点：构造函数没有返回值，并且函数名必须叫 new
+ * 例子：public *…TestDeived.new(…)
+ * 说明：public(表示选择 public 访问权限的) *…(代表任意包名)TestDeived.new(代表 TestDerived 的构造函数)(…)((…):
+ * 代表参数个数和类型都是任意的)
+ * <p>
+ * <p>
+ * Field Signature表达式：@注解 访问权限 类型 类名.成员变量名
+ * <p>
+ * TypeSignature表达式例子：
+ * staticinitlization(test…TestBase): 表示 TestBase 类的 static block
+ * handler(NullPointException): 表示 catch 到 NullPointerException 的 JPoin
+ * <p>
+ * call 与 execution 区别：一个是 ”调用点“， 一个是 ”执行点“
+ * <p>
+ * Advice说明
+ * @Before(Pointcut)：切入到JoinPoint之前
+ * @After(Pointcut)：切入到JoinPoint之后
+ * @Around(Pointcut)：替代原来的代码，执行切入点方法使用ProceedingJoinPoint.proceed(); 注意：不支持和@Before和@After等一起使用
+ * @AfterReturning：@AfterReturning(pointcut="xxx",returning="retValue")
+ * @AfterThrowing： @AfterThrowing(pointcut="xxx",throwing="throwable")<p>
+ * <p>
+ * AspectJ 注解的等价：AspectJ 提供了相应的注解，注解的方式和 AspectJ 语言编写是等效的。
+ * <p>
+ * 详细博客：https://blog.csdn.net/yxhuang2008/article/details/94193201
  */
 
 @Aspect
@@ -73,7 +134,6 @@ public class PerformanceAop {
         Log.i("helloAOP", "aspect:::" + joinPoint.getSignature());
     }
 
-
     @Around("call(* com.android.performanceanalysis.LaunchApplication.init**(..))")
     public void getTime(ProceedingJoinPoint joinPoint) {
         // 获取切点处的签名
@@ -86,6 +146,6 @@ public class PerformanceAop {
         } catch (Throwable throwable) {
             throwable.printStackTrace();
         }
-        LogUtils.i(name + " cost " + (System.currentTimeMillis() - time));
+        LogUtils.i("getTime " + name + " cost " + (System.currentTimeMillis() - time));
     }
 }

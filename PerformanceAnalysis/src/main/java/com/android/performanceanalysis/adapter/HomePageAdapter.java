@@ -13,6 +13,7 @@ import android.view.ViewTreeObserver;
 import android.widget.TextView;
 
 import com.android.performanceanalysis.R;
+import com.android.performanceanalysis.activity.AopDemoActivity;
 import com.android.performanceanalysis.activity.WebViewDemoList;
 import com.android.performanceanalysis.data.HomeData;
 import com.android.performanceanalysis.utils.LaunchTimerUtil;
@@ -96,13 +97,15 @@ public class HomePageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             itemViewHolder.name.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
+                    Intent intent = new Intent();
                     switch (pos) {
                         case 1:
-                            Intent intent = new Intent(mContext, WebViewDemoList.class);
+                            intent.setClass(mContext, WebViewDemoList.class);
                             mContext.startActivity(intent);
                             break;
                         case 2:
-
+                            intent.setClass(mContext, AopDemoActivity.class);
+                            mContext.startActivity(intent);
                             break;
                         case 3:
 

@@ -13,6 +13,7 @@ public class HomeData {
     static {
         addDeviceItem("", "性能分析与优化");
         addDeviceItem("&#xe620;", "WebView");
+        addDeviceItem("&#xe620;", "AOP 学习");
         addDeviceItem("&#xe620;", "App启动优化");
         addDeviceItem("&#xe620;", "App内存优化");
         addDeviceItem("&#xe620;", "App布局优化");
