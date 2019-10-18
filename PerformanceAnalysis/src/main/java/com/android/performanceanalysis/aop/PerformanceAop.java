@@ -10,6 +10,7 @@ import org.aspectj.lang.Signature;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
+import org.aspectj.lang.annotation.Pointcut;
 
 /**
  * AOP术语：
@@ -133,6 +134,16 @@ public class PerformanceAop {
     public void onResumeMethod(JoinPoint joinPoint) throws Throwable {
         Log.i("helloAOP", "aspect:::" + joinPoint.getSignature());
     }
+
+    /**
+     * classpath 'com.hujiang.aspectjx:gradle-android-plugin-aspectjx:2.0.0'
+     * implementation 'org.aspectj:aspectjrt:1.8+'
+     * apply plugin: 'android-aspectjx'
+     * <p>
+     * 此版本可以如下使用：
+     *
+     * @Around("call(* com.android.performanceanalysis.LaunchApplication.**(..))")
+     */
 
     @Around("call(* com.android.performanceanalysis.LaunchApplication.init**(..))")
     public void getTime(ProceedingJoinPoint joinPoint) {

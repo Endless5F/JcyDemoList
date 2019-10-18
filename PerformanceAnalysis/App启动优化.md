@@ -96,8 +96,141 @@
         * (* android.app.Activity.on**(…)) 匹配规则
         * onActivityCalled：aop要插入的代码
 
-    参考文档：
-    https://www.jianshu.com/p/f577aec99e17 （关于android中使用AspectJ）
-    https://blog.csdn.net/qq_30682027/article/details/82493913 (AspectJ详解)
-    https://www.jianshu.com/p/27b997677149 (AspectJ基本用法)
+    参考文档：https://blog.csdn.net/yxhuang2008/article/details/94193201
  2. 实战：
+
+        /**
+         * classpath 'com.hujiang.aspectjx:gradle-android-plugin-aspectjx:2.0.0'
+         * implementation 'org.aspectj:aspectjrt:1.8+'
+         * apply plugin: 'android-aspectjx'
+         * <p>
+         * 此版本可以如下使用：
+         *
+         * @Around("call(* com.android.performanceanalysis.LaunchApplication.**(..))")
+         *
+         * 新版本需要使用如下方式：
+         */
+        @Around("call(* com.android.performanceanalysis.LaunchApplication.init**(..))")
+        public void getTime(ProceedingJoinPoint joinPoint) {
+            // 获取切点处的签名
+            Signature signature = joinPoint.getSignature();
+            // 获取切点处的方法名
+            String name = signature.toShortString();
+            long time = System.currentTimeMillis();
+            try {
+                joinPoint.proceed();
+            } catch (Throwable throwable) {
+                throwable.printStackTrace();
+            }
+            LogUtils.i("getTime " + name + " cost " + (System.currentTimeMillis() - time));
+        }
+## 五、异步优化详解
+1. 优化技巧：Theme切换，感官上快
+
+        // 1.自定义主题，防止启动页白屏
+        <style name="AppTheme.Launcher">
+            <item name="android:windowBackground">@mipmap/ic_launcher</item>
+        </style>
+
+        // 2.AndroidManifest.xml中设置启动页的主题为 1
+        <activity
+            android:name=".activity.MainActivity"
+            android:theme="@style/AppTheme.Launcher">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        // 3. 在启动页onCreate方法的super.onCreate前重新设置回该有的主题
+        @Override
+        protected void onCreate(Bundle savedInstanceState) {
+            setTheme(R.style.AppTheme);
+            super.onCreate(savedInstanceState);
+            setContentView(R.layout.activity_main);
+        }
+2. 异步优化
+
+        // 获取CPU数量
+        private static final int CPU_COUNT = Runtime.getRuntime().availableProcessors();
+        // 根据CPU数量初始化核心线程数量
+        private static final int CORE_POOL_SIZE = Math.max(2, Math.min(CPU_COUNT - 1, 4));
+        // 使用线程池
+        ExecutorService service = Executors.newFixedThreadPool(CORE_POOL_SIZE);
+        service.submit(new Runnable() {
+            @Override
+            public void run() {
+                //子线程中执行一个初始化的任务
+
+            }
+        });
+
+        这种使用会出现application走完了但是线程中初始化并没有完成而出现错误
+        解决办法：初始化一个倒计数器
+        private CountDownLatch mCountDownLatch = new CountDownLatch(1);//表示CountDownLatch需要被满足一次，具体多少次自己根据场景进行设置
+
+        // 示例代码：
+        @Override
+        public void onCreate() {
+        super.onCreate();
+            ExecutorService service = Executors.newFixedThreadPool(CORE_POOL_SIZE);
+            service.submit(new Runnable() {
+                @Override
+                public void run() {
+                    //子线程中执行一个初始化的任务
+
+                }
+            });
+
+            service.submit(new Runnable() {
+                @Override
+                public void run() {
+                    //子线程中执行一个初始化的任务
+                    initWeex();
+                    //在需要等待初始化完成的任务中调用，满足一次
+                    mCountDownLatch.countDown();
+                }
+            });
+
+            try {
+                //mCountDownLatch在onCreate中最后一步进行等待
+                mCountDownLatch.wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    注意事项：
+    1.不符合异步要求：可能某部分代码不可在异步中执行
+    2.需要在某阶段必须完成：可以采用倒计时CountDownLatch的方式
+    3.区分任务类型(CPU密集型和IO密集型)
+
+## 六、异步初始化最优解-启动器
+核心思想：充分利用cpu多核，自动梳理
+
+    // 流程图查看性能分析包下：启动器流程图.png
+    代码Task化，启动逻辑抽象为Task
+    根据所有任务依赖关系排序生成一个有向无环图
+    多线程按照排序后的优先级依次执行
+具体代码以及示例可查看代码 launchstarter包和task包下Java文件
+
+## 七、更优秀的延迟初始化方案
+1. 常规方案：不需要在application中初始化的可以在首页展示后调用，new Handler().postDelayed()  缺点：时机不便控制、导致界面卡顿
+2. 更优方案
+    核心思想：对延迟的任务分批初始化，利用IdleHandler的特性，空闲执行
+    具体代码详见：com.android.performanceanalysis.launchstarter.DelayInitDispatcher
+## 八、启动优化总结
+1. 优化总方针：异步、延迟、懒加载（如高德地图初始化只需要在使用的界面进行初始化即可），而且技术、业务要相结合
+2. 通过命令获取应用的启动时间会活动两个时间：
+walltime(启动的总时间)和cputime(启动过程cpu执行的时间)，因此cputime才是我们优化的方向，按照systrace及cputime跑满cpu，使cpu无浪费
+3. 注意事项：监控的完善、线上监控多阶段时间（App、Activity、生命周期间隔时间）、处理聚合看趋势
+## 九、其他方案
+1. 提前加载SharePreferences(在Multidex之前加载，充分利用此阶段的cpu)；若此时需要用getApplicationContext()，而此时该方法返回null，因此需要覆写getApplicationContext()返回this
+2. 启动阶段不启动子进程，子进程会共享cpu资源，导致主进程cpu资源紧张
+3. 类加载优化：提前异步类加载
+   Class.forName()只加载类本身及其静态变量的引用类
+   new 类实例 可以额外加载类成员变量的引用类
+   哪些类需要提前异步类加载呢？（替换系统的ClassLoader，自定义的ClassLoader中添加log打印出所有的类就是需要处理的）
+4. 黑科技系列
+   启动阶段抑制GC（NativeHook的方案）
+   CPU锁频（可能会引起其他问题，比如耗电量增加）
