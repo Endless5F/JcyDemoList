@@ -55,4 +55,7 @@ dependencies {
 
     // AOP
     implementation 'org.aspectj:aspectjrt:1.8.14'
+
+    // ARTHoook：Epic
+    implementation 'me.weishu:epic:0.6.0'
 }
