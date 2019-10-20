@@ -20,9 +20,4 @@ public class LoginActivity extends BaseCompatActivity {
         setContentView(R.layout.login_and_register);
 
     }
-
-    @Override
-    public boolean setFactory2() {
-        return false;
-    }
 }

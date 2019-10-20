@@ -95,7 +95,12 @@ public abstract class BaseCompatActivity extends AppCompatActivity {
         }
     }
 
-    public abstract boolean setFactory2();
+    /**
+     * 是否使用 通过标签直接生成shape，无需再写shape.xml
+     */
+    public boolean setFactory2() {
+        return false;
+    }
 
     @Override
     protected void onStart() {

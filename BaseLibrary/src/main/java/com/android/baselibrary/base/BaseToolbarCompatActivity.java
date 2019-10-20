@@ -61,11 +61,6 @@ public abstract class BaseToolbarCompatActivity extends BaseCompatActivity {
     }
 
     @Override
-    public boolean setFactory2() {
-        return false;
-    }
-
-    @Override
     public void setContentView(int layoutId) {
         setContentView(View.inflate(this, layoutId, null));
     }

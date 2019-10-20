@@ -21,7 +21,7 @@
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true"
         tools:ignore="GoogleAppIndexingWarning">
-
+        <activity android:name=".activity.LayoutActivity"></activity>
         <activity
             android:name=".activity.MainActivity"
             android:theme="@style/AppTheme.Launcher">
@@ -31,7 +31,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity android:name=".activity.AopDemoActivity" />
         <activity
             android:name=".webview.WebViewActivity"
