@@ -86,4 +86,38 @@
             1. 添加依赖：implementation 'me.weishu:epic:0.6.0'
             2. 继承XC_MethodHook，实现相应的逻辑
             3. 注入Hook：DexposedBridge.findAndHookMethod
-        Epic使用示例详见：
+        Epic使用示例详见：com.android.performanceanalysis.hook包下ImageHook的使用
+    优点：无侵入性，通用性强，兼容问题大，开源方案不能带到线上环境
+## 五、线上内存监控方案
+1. 常规实现一：设定场景线上Dump：Debug.dumpHprofData(“fileName”); 比如：超过最大内存的80% -> 内存dump -> 回传文件(文件比较大) -> MAT手动分析
+
+    总结：Dump文件太大，和对象数正相关，可裁剪。上传失败率高，分析困难。配合一定的策略，有一些效果。
+2. 常规实现二：LeakCanary带到线上，预设泄漏怀疑点，发现泄漏回传
+
+        LeakCanary原理：
+        监控生命周期，onDestroy添加RefWatcher检测，RefWatcher检测会进行二次确认断定发生内存泄漏，继而分析泄漏，找引用链
+        LeakCanary架构：监控组件+分析组件
+
+        LeakCanary定制：
+            预设怀疑点->自动找怀疑点（谁占用内存大）
+            分析泄漏链路慢->只分析Retain size大的对象
+            分析OOM(内存堆栈生成所有文件全部映射到内存中，占用内存)->对象裁剪，不全部加载到内存
+
+    总结：不适合所有场景，必须预设怀疑点。分析比较耗时，也容易OOM。
+3. 线上内存监控完整方案
+
+        监测常规指标：待机内存、重点模块内存、OOM率
+        其次需要监控：整体及重点模块GC次数、GC时间
+        最后将LeakCanary带到线上(帮助我们做自动化的内存泄漏分析)：需要定制增强LeakCanary自动化内存泄漏分析
+## 六、内存优化技巧总结
+1. 优化大方向：内存泄漏、内存抖动、Bitmap
+2. 优化细节
+
+        LargeHeap属性(提升分配内存的上限，但是更容易提升被杀的概率，然而大家都开)
+        onTrimMemory(低内存状态，在最严重的状态下情况图片和界面跳转到主界面，影响用户体验但是比被系统干掉要好)
+        使用优化过的集合：SparseArray
+        谨慎的使用Sharepreference(第一次加载将所有数据load到内存中)
+        谨慎使用外部库(使用的要是经过验证的，比较成熟的库)
+        业务架构设计合理(如：城市数据结构，一次加载很多，可以分级为省市县等)
+
+

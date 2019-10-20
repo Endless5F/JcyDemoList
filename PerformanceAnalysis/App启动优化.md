@@ -201,9 +201,10 @@
             }
         }
     注意事项：
-    1.不符合异步要求：可能某部分代码不可在异步中执行
-    2.需要在某阶段必须完成：可以采用倒计时CountDownLatch的方式
-    3.区分任务类型(CPU密集型和IO密集型)
+
+        1.不符合异步要求：可能某部分代码不可在异步中执行
+        2.需要在某阶段必须完成：可以采用倒计时CountDownLatch的方式
+        3.区分任务类型(CPU密集型和IO密集型)
 
 ## 六、异步初始化最优解-启动器
 核心思想：充分利用cpu多核，自动梳理
@@ -212,7 +213,7 @@
     代码Task化，启动逻辑抽象为Task
     根据所有任务依赖关系排序生成一个有向无环图
     多线程按照排序后的优先级依次执行
-具体代码以及示例可查看代码 launchstarter包和task包下Java文件
+具体代码以及示例可查看代码：com.android.performanceanalysis.launchstarter包和com.android.performanceanalysis.task包下Java文件
 
 ## 七、更优秀的延迟初始化方案
 1. 常规方案：不需要在application中初始化的可以在首页展示后调用，new Handler().postDelayed()  缺点：时机不便控制、导致界面卡顿
@@ -222,15 +223,18 @@
 ## 八、启动优化总结
 1. 优化总方针：异步、延迟、懒加载（如高德地图初始化只需要在使用的界面进行初始化即可），而且技术、业务要相结合
 2. 通过命令获取应用的启动时间会活动两个时间：
-walltime(启动的总时间)和cputime(启动过程cpu执行的时间)，因此cputime才是我们优化的方向，按照systrace及cputime跑满cpu，使cpu无浪费
+
+    walltime(启动的总时间)和cputime(启动过程cpu执行的时间)，因此cputime才是我们优化的方向，按照systrace及cputime跑满cpu，使cpu无浪费
 3. 注意事项：监控的完善、线上监控多阶段时间（App、Activity、生命周期间隔时间）、处理聚合看趋势
 ## 九、其他方案
 1. 提前加载SharePreferences(在Multidex之前加载，充分利用此阶段的cpu)；若此时需要用getApplicationContext()，而此时该方法返回null，因此需要覆写getApplicationContext()返回this
 2. 启动阶段不启动子进程，子进程会共享cpu资源，导致主进程cpu资源紧张
 3. 类加载优化：提前异步类加载
-   Class.forName()只加载类本身及其静态变量的引用类
-   new 类实例 可以额外加载类成员变量的引用类
-   哪些类需要提前异步类加载呢？（替换系统的ClassLoader，自定义的ClassLoader中添加log打印出所有的类就是需要处理的）
+
+        Class.forName()只加载类本身及其静态变量的引用类
+        new 类实例 可以额外加载类成员变量的引用类
+        哪些类需要提前异步类加载呢？（替换系统的ClassLoader，自定义的ClassLoader中添加log打印出所有的类就是需要处理的）
 4. 黑科技系列
-   启动阶段抑制GC（NativeHook的方案）
-   CPU锁频（可能会引起其他问题，比如耗电量增加）
+
+        启动阶段抑制GC（NativeHook的方案）
+        CPU锁频（可能会引起其他问题，比如耗电量增加）

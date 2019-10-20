@@ -1,10 +1,12 @@
 package com.android.performanceanalysis.activity
 
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import com.android.performanceanalysis.R
 import com.android.performanceanalysis.aop.SingleClick
 import kotlinx.android.synthetic.main.activity_aop_demo.*
+
 
 class AopDemoActivity : AppCompatActivity() {
     var nornalSum = 0
@@ -16,6 +18,8 @@ class AopDemoActivity : AppCompatActivity() {
             normal()
             single()
         }
+        val bitmap = BitmapFactory.decodeResource(resources, R.mipmap.ic_launcher_round, null)
+        imageView.setImageBitmap(bitmap)
     }
 
     //普通的方法
