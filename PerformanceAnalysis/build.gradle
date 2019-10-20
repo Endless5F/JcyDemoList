@@ -58,4 +58,12 @@ dependencies {
 
     // ARTHoook：Epic
     implementation 'me.weishu:epic:0.6.0'
+
+    // AndroidPerformanceMonitor 内存卡顿
+    implementation 'com.github.markzhai:blockcanary-android:1.5.0'
+
+    // ANR-WatchDog
+    implementation 'com.github.anrwatchdog:anrwatchdog:1.4.0'
+
+    compileOnly 'me.ele:lancet-base:1.0.5'
 }
