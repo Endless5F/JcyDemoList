@@ -65,5 +65,19 @@ dependencies {
     // ANR-WatchDog
     implementation 'com.github.anrwatchdog:anrwatchdog:1.4.0'
 
+    // 轻量级Android AOP框架
     compileOnly 'me.ele:lancet-base:1.0.5'
+
+    // 网络优化
+    implementation 'com.facebook.stetho:stetho:1.5.1'
+    implementation 'com.facebook.stetho:stetho-okhttp3:1.5.1'
+
+    implementation 'com.squareup.retrofit2:retrofit:2.6.1'
+    implementation 'com.squareup.okhttp3:okhttp:3.14.0'
+    implementation 'com.squareup.okhttp3:logging-interceptor:3.14.0'
+
+    implementation 'com.alibaba:fastjson:1.2.21'
+    implementation ('com.aliyun.ams:alicloud-android-httpdns:1.1.7@aar') {
+        transitive true
+    }
 }

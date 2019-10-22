@@ -15,6 +15,10 @@ import com.android.performanceanalysis.blockcanary.AppBlockCanaryContext;
 import com.android.performanceanalysis.data.HomeData;
 import com.android.performanceanalysis.hook.ImageHook;
 import com.android.performanceanalysis.hook.ThreadMethodHook;
+import com.android.performanceanalysis.launchstarter.TaskDispatcher;
+import com.android.performanceanalysis.task.InitJPushTask;
+import com.android.performanceanalysis.task.InitStethoTask;
+import com.android.performanceanalysis.task.InitWeexTask;
 import com.android.performanceanalysis.utils.LaunchTimerUtil;
 import com.android.performanceanalysis.utils.LogUtils;
 import com.github.anrwatchdog.ANRWatchDog;
@@ -52,18 +56,19 @@ public class LaunchApplication extends Application {
         LeakCanary.install(this);
 
         // 启动器的使用
-//        TaskDispatcher.init(LaunchApplication.this);
-//        TaskDispatcher dispatcher = TaskDispatcher.createInstance();
-//        dispatcher.addTask(new InitAMapTask())
-//                .addTask(new InitStethoTask())
-//                .addTask(new InitWeexTask())
+        TaskDispatcher.init(LaunchApplication.this);
+        TaskDispatcher dispatcher = TaskDispatcher.createInstance();
+        dispatcher
+//                .addTask(new InitAMapTask())
+                .addTask(new InitStethoTask())
+                .addTask(new InitWeexTask())
 //                .addTask(new InitBuglyTask())
 //                .addTask(new InitFrescoTask())
-//                .addTask(new InitJPushTask())
+                .addTask(new InitJPushTask())
 //                .addTask(new InitUmengTask())
 //                .addTask(new GetDeviceIdTask())
-//                .start();
-//        dispatcher.await();
+                .start();
+        dispatcher.await();
 
         epicHook();
         initStrictMode();
