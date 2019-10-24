@@ -51,6 +51,11 @@
             </intent-filter>
         </activity>
         <activity android:name=".activity.WebViewDemoList" />
+
+
+        <service
+            android:name=".service.JobSchedulerService"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
     </application>
 
 </manifest>

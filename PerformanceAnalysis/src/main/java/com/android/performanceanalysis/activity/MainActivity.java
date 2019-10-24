@@ -2,7 +2,13 @@ package com.android.performanceanalysis.activity;
 
 import android.app.Activity;
 import android.app.Application;
+import android.app.job.JobInfo;
+import android.app.job.JobScheduler;
+import android.content.ComponentName;
+import android.content.Context;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -13,8 +19,10 @@ import android.view.View;
 import com.android.performanceanalysis.R;
 import com.android.performanceanalysis.adapter.HomePageAdapter;
 import com.android.performanceanalysis.data.HomeData;
+import com.android.performanceanalysis.service.JobSchedulerService;
 import com.android.performanceanalysis.utils.DateUtils;
 import com.android.performanceanalysis.utils.NetStatusUtils;
+import com.android.performanceanalysis.utils.WakeLockUtils;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -60,7 +68,9 @@ public class MainActivity extends AppCompatActivity {
         Executors.newScheduledThreadPool(1).schedule(new Runnable() {
             @Override
             public void run() {
-                long netUse = NetStatusUtils.getNetStatus(MainActivity.this, System.currentTimeMillis() - 30 * 1000, System.currentTimeMillis());//开始时间：当前时间-30秒，结束时间：就是当前时间
+                long netUse = NetStatusUtils.getNetStatus(MainActivity.this,
+                        System.currentTimeMillis() - 30 * 1000, System.currentTimeMillis());
+                //开始时间：当前时间-30秒，结束时间：就是当前时间
                 //前台还是后台
                 if (appIsFront) {
                     //前台
@@ -69,6 +79,35 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }, 30, TimeUnit.SECONDS);
+
+        // 电量优化：以唤醒锁为例
+        // 此处模拟的是WakeLock使用的兜底策略
+        WakeLockUtils.acquire(this);
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                WakeLockUtils.release();
+            }
+        }, 200);
+
+        // 电量优化之JobScheduler
+        startJobScheduler();
+    }
+
+    /**
+     * 演示JobScheduler的使用
+     */
+    private void startJobScheduler() {
+        //5.0之后才能使用
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP) {
+            JobScheduler jobScheduler = (JobScheduler) getSystemService(Context.JOB_SCHEDULER_SERVICE);
+            JobInfo.Builder builder = new JobInfo.Builder(1, new ComponentName(getPackageName(), JobSchedulerService.class.getName()));
+            builder.setRequiresCharging(true) // 任务执行时需要连接电源
+                    .setRequiredNetworkType(JobInfo.NETWORK_TYPE_UNMETERED); // 任务需要在WIFI的状态下
+            if (jobScheduler != null) {
+                jobScheduler.schedule(builder.build());
+            }
+        }
     }
 
     private void registerActivityLifecycleCallbacks() {

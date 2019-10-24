@@ -1,8 +1,12 @@
 package com.android.performanceanalysis.hook;
 
+import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
+import android.util.Log;
 
 import com.android.performanceanalysis.utils.LogUtils;
+import com.android.performanceanalysis.utils.WakeLockUtils;
 
 import me.ele.lancet.base.Origin;
 import me.ele.lancet.base.Scope;
@@ -41,6 +45,7 @@ public class ActivityHooker {
     public static long runTime = 0;
 
 
+    // 线程运行时长：超过阀值预警(运行时间过长可以停止)
     @Insert(value = "run")
     @TargetClass(value = "java.lang.Runnable", scope = Scope.ALL)
     public void run() {
@@ -55,6 +60,33 @@ public class ActivityHooker {
     public static int i(String tag, String msg) {
         msg = msg + "";
         return (int) Origin.call();
+    }
+
+
+    public static String trace;
+
+    public static long sStartTime = 0;
+
+    @Insert(value = "acquire")
+    @TargetClass(value = "com.android.performanceanalysis.utils.WakeLockUtils",scope = Scope.SELF)
+    public static void acquire(Context context){
+        trace = Log.getStackTraceString(new Throwable());
+        sStartTime = System.currentTimeMillis();
+        Origin.callVoid();
+        //兜底策略
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                WakeLockUtils.release();
+            }
+        },1000);
+    }
+
+    @Insert(value = "release")
+    @TargetClass(value = "com.android.performanceanalysis.utils.WakeLockUtils",scope = Scope.SELF)
+    public static void release(){
+        LogUtils.i("PowerManager "+(System.currentTimeMillis() - sStartTime)+"/n"+trace);
+        Origin.callVoid();
     }
 
 }
