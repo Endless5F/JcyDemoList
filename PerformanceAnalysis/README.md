@@ -1,3 +1,5 @@
+此模块的学习以及笔记整理——基于性能优化视频以及相关一系列文章
+
 ## Android Studio 点击Build后的故事：
 编译一个application module或者library文件，大致可以分为gradle task代表的五个阶段： 
 1. Preparation of dependecies 在这个阶段gradle检测module依赖的所有library是否ready。
