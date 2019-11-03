@@ -88,6 +88,9 @@ dependencies {
 
     // 用于学习
     api 'org.litepal.android:core:2.0.0'
+
+    // 用于ScheduledExecutorService代替Timer实现定时器，符合阿里巴巴代码检查规范
+    implementation 'org.apache.commons:commons-lang3:3.8'
 }
 repositories {
     mavenCentral()
