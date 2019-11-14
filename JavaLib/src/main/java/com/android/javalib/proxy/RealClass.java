@@ -1,4 +1,4 @@
-package com.android.javalib;
+package com.android.javalib.proxy;
 
 /**
  * 真实类

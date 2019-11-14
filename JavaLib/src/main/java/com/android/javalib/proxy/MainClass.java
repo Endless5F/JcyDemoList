@@ -1,4 +1,6 @@
-package com.android.javalib;
+package com.android.javalib.proxy;
+
+import com.android.javalib.ThreadPoolUtils;
 
 import org.reactivestreams.Subscription;
 

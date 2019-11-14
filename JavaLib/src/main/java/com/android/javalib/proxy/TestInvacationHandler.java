@@ -1,4 +1,4 @@
-package com.android.javalib;
+package com.android.javalib.proxy;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
