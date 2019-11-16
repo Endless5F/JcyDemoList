@@ -109,7 +109,7 @@ public class JvmMemoryClass {
 
     static {
         /*
-         * 等同于静态的成员变量
+         * 等同于静态的成员变量，只会初始化一次
          */
         int staticBlockInt = 2;
         String staticBlockString = "123";
@@ -119,18 +119,22 @@ public class JvmMemoryClass {
 
     {
         /*
-         * 等同于在构造方法中初始化一致
+         * 等同于在构造方法中初始化一致，每次初始化对象实例时，都会先于构造方法初始化
          */
         int blockInt = 2;
         String blockString = "567";
         String blockStringObj = new String("789");
+        System.out.println(blockInt);
+        System.out.println(blockString);
+        System.out.println(blockStringObj);
     }
 
     public JvmMemoryClass() {
-
+        System.out.println("构造方法");
     }
 
     public static void main(String[] args) throws IOException {
+        new JvmMemoryClass();
         staticMethodNoParameters();
         staticMethodHasParameters(1, "1");
     }
