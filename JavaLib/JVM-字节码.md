@@ -105,7 +105,129 @@
     2. 基于栈的指令集主要有入栈和出栈两种操作。
     3. 基于栈的指令集的优势在于它可以在不同的平台之间移植，而基于寄存器的指令集和硬件架构紧密相关，无法做到可移植。
     4. 基于栈的指令集的缺点在于完成相同的操作，指令数量通常要比基于寄存器的指令集多。基于栈的指令集是在内存中完成操作的，而基于寄存器的指令集直接由CPU执行，是在高速缓冲中执行的，速度要快很多。虽然虚拟机可以采用一些优化手段，但是总体来说，基于栈的指令集速度还是要慢一些。
+22. 从字节码角度理解动态代理
 
+        interface Subject {
+            void request();
+        }
 
+        class RealSubject implements Subject {
+            public void request() {
+                System.out.println("real subject");
+            }
+        }
+
+        class DynamicSubject implements InvocationHandler {
+            private Object subject;     //　这个就是我们要代理的真实对象
+
+            public DynamicSubject(Object subject) {
+                this.subject = subject;        //    构造方法，给我们要代理的真实对象赋初值
+            }
+
+            @Override
+            public Object invoke(Object object, Method method, Object[] args)
+                    throws Throwable {
+                //　在代理真实对象前我们可以添加一些自己的操作
+                System.out.println("before rent house");
+                System.out.println("Method:" + method);
+                // 当代理对象调用真实对象的方法时，其会自动的跳转到代理对象关联的handler对象的invoke方法来进行调用
+                method.invoke(subject, args);
+                //　在代理真实对象后我们也可以添加一些自己的操作
+                System.out.println("after rent house");
+                return null;
+            }
+        }
+
+        public class Client {
+            public static void main(String[] args) {
+                // 系统属性，一个开关，将动态代理生成的class文件写入到磁盘上
+                System.getProperties().put("sun.misc.ProxyGenerator.saveGeneratedFiles", "true");
+                // 我们要代理的真实对象
+                Subject realSubject = new RealSubject();//这里指定被代理类
+                // 我们要代理哪个真实对象，就将该对象传进去，最后是通过该真实对象来调用其方法的
+                InvocationHandler handler = new DynamicSubject(realSubject);
+                /*
+                 * 通过Proxy的newProxyInstance方法来创建我们的代理对象，我们来看看其三个参数
+                 * 第一个参数 handler.getClass().getClassLoader()，我们这里使用代理类的类加载器，也就是被代理的那个真实对象
+                 * 第二个参数realSubject.getClass().getInterfaces()
+                 * ，我们这里为代理对象提供的接口是真实对象所实行的接口，表示我要代理的是该真实对象，这样我就能调用这组接口中的方法了
+                 * 第三个参数handler，我们这里将这个代理对象关联到了上方的InvocationHandler 这个对象上
+                 */
+                Subject subject = (Subject) Proxy.newProxyInstance(realSubject.getClass().getClassLoader(),
+                        realSubject.getClass().getInterfaces(), handler);
+                subject.request();
+            }
+        }
+    1. 通过改变sun.misc.ProxyGenerator.saveGeneratedFiles系统属性，可以将动态代理生成的class文件输出（默认只在内存，不会写到硬盘），得到Proxy0.class文件，使用反编译工具可以得到 Proxy0.class文件，使用反编译工具可以得到Proxy0.class文件，使用反编译工具可以得到Proxy0的文件如下：
+
+            final class $Proxy0 extends Proxy implements Subject {
+                private static Method m1;
+                private static Method m2;
+                private static Method m3;
+                private static Method m0;
+
+                public $Proxy0(InvocationHandler paramInvocationHandler) {
+                    super(paramInvocationHandler);
+                }
+
+                public final boolean equals(Object paramObject) {
+                    try {
+                        return ((Boolean) this.h.invoke(this, m1, new Object[]{paramObject})).booleanValue();
+                    } catch (Error | RuntimeException localError) {
+                        throw localError;
+                    } catch (Throwable localThrowable) {
+                        throw new UndeclaredThrowableException(localThrowable);
+                    }
+                }
+
+                public final String toString() {
+                    try {
+                        return (String) this.h.invoke(this, m2, null);
+                    } catch (Error | RuntimeException localError) {
+                        throw localError;
+                    } catch (Throwable localThrowable) {
+                        throw new UndeclaredThrowableException(localThrowable);
+                    }
+                }
+
+                public final void request() {
+                    try {
+                        this.h.invoke(this, m3, null);
+                        return;
+                    } catch (Error | RuntimeException localError) {
+                        throw localError;
+                    } catch (Throwable localThrowable) {
+                        throw new UndeclaredThrowableException(localThrowable);
+                    }
+                }
+
+                public final int hashCode() {
+                    try {
+                        return ((Integer) this.h.invoke(this, m0, null)).intValue();
+                    } catch (Error | RuntimeException localError) {
+                        throw localError;
+                    } catch (Throwable localThrowable) {
+                        throw new UndeclaredThrowableException(localThrowable);
+                    }
+                }
+
+                static {
+                    try {
+                        m1 = Class.forName("java.lang.Object").getMethod("equals", new Class[]{Class.forName("java.lang.Object")});
+                        m2 = Class.forName("java.lang.Object").getMethod("toString", new Class[0]);
+                        m3 = Class.forName("controller.Subject").getMethod("request", new Class[0]);
+                        m0 = Class.forName("java.lang.Object").getMethod("hashCode", new Class[0]);
+                        return;
+                    } catch (NoSuchMethodException localNoSuchMethodException) {
+                        throw new NoSuchMethodError(localNoSuchMethodException.getMessage());
+                    } catch (ClassNotFoundException localClassNotFoundException) {
+                        throw new NoClassDefFoundError(localClassNotFoundException.getMessage());
+                    }
+                }
+            }
+    2. 由反编译$Proxy0.class文件内容，可轻易得知：
+        1. $Proxy0是Proxy的子类，实现Subject接口；
+        2. $Proxy0重写了Object中的equal()、toString()、hashCode()方法；
+        3. 在调用$Proxy0中方法时，实际上调用父类Proxy的h属性的invoke()方法，其中h为Proxy.newInstance()方法传入的DynamicSubject，也就是说最终会调用DynamicSubject的invoke()方法，并将参数传入—this.h.invoke(this, m3, null);
 
 
