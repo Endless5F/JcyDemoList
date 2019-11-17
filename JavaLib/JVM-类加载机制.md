@@ -299,104 +299,248 @@
 13. 自定义加载器
 
         /**
-         * 创建自定义加载器，继承ClassLoader
-         */
-        public class MyTest16 extends ClassLoader {
-            private String classLoaderName;
-            private String path;
-            private final String fileExtension = ".class";
+                  * 创建自定义加载器，继承ClassLoader
+                  */
+                 public class MyTest16 extends ClassLoader {
+                     private String classLoaderName;
+                     private String path;
+                     private final String fileExtension = ".class";
 
-            public MyTest16(String classLoaderName) {
-                super();        //将系统类当做该类的父加载器
-                this.classLoaderName = classLoaderName;
-            }
+                     public MyTest16(String classLoaderName) {
+                         super();        //将系统类当做该类的父加载器
+                         this.classLoaderName = classLoaderName;
+                     }
 
-            public MyTest16(ClassLoader parent, String classLoaderName) {
-                super(parent);      //显式指定该类的父加载器
-                this.classLoaderName = classLoaderName;
-            }
+                     public MyTest16(ClassLoader parent, String classLoaderName) {
+                         super(parent);      //显式指定该类的父加载器
+                         this.classLoaderName = classLoaderName;
+                     }
 
-            public MyTest16(ClassLoader parent) {
-                super(parent);      //显式指定该类的父加载器
-            }
+                     public MyTest16(ClassLoader parent) {
+                         super(parent);      //显式指定该类的父加载器
+                     }
 
-            public void setPath(String path) {
-                this.path = path;
-            }
+                     // 设置Class文件包所在的路径
+                     public void setPath(String path) {
+                         this.path = path;
+                     }
 
-            @Override
-            public Class <?> findClass(String className) {
-                System.out.println("calssName=" + className);
-                className = className.replace(".", File.separator);
-                byte[] data = loadClassData(className);
-                return defineClass(className, data, 0, data.length); //define方法为父类方法
-            }
+                     @Override
+                     public Class <?> findClass(String className) {
+                         System.out.println("calssName=" + className);
+                         className = className.replace(".", File.separator);
+                         byte[] data = loadClassData(className);
+                         return defineClass(className, data, 0, data.length); //define方法为父类方法
+                     }
 
-            private byte[] loadClassData(String name) {
-                InputStream is = null;
-                byte[] data = null;
-                ByteArrayOutputStream baos = null;
-                try {
-                    is = new FileInputStream(new File(this.path + name + this.fileExtension));
-                    baos = new ByteArrayOutputStream();
-                    int ch;
-                    while (-1 != (ch = is.read())) {
-                        baos.write(ch);
-                    }
-                    data = baos.toByteArray();
+                     private byte[] loadClassData(String name) {
+                         InputStream is = null;
+                         byte[] data = null;
+                         ByteArrayOutputStream baos = null;
+                         try {
+                             is = new FileInputStream(new File(this.path + name + this.fileExtension));
+                             baos = new ByteArrayOutputStream();
+                             int ch;
+                             while (-1 != (ch = is.read())) {
+                                 baos.write(ch);
+                             }
+                             data = baos.toByteArray();
 
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } finally {
-                    try {
-                        is.close();
-                        baos.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    return data;
-                }
-            }
+                         } catch (Exception e) {
+                             e.printStackTrace();
+                         } finally {
+                             try {
+                                 is.close();
+                                 baos.close();
+                             } catch (IOException e) {
+                                 e.printStackTrace();
+                             }
+                             return data;
+                         }
+                     }
 
-            public static void test(ClassLoader classLoader) {
-                Class<?> clazz = null;
-                try {
-                    clazz = classLoader.loadClass("com.android.javalib.jvm.JvmMemoryClass");
-                    //loadClass是父类方法，在方法内部调用findClass
-                    System.out.println(clazz.hashCode());
-                    Object object = clazz.newInstance();
-                    System.out.println(object);
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                } catch (InstantiationException e) {
-                    e.printStackTrace();
-                }
-            }
+                     public static void test(ClassLoader classLoader) {
+                         Class<?> clazz = null;
+                         try {
+                             clazz = classLoader.loadClass("com.android.javalib.jvm.JvmMemoryClass");
+                             //loadClass是父类方法，在方法内部调用findClass
+                             System.out.println(clazz.hashCode());
+                             Object object = clazz.newInstance();
+                             System.out.println(object);
+                         } catch (ClassNotFoundException e) {
+                             e.printStackTrace();
+                         } catch (IllegalAccessException e) {
+                             e.printStackTrace();
+                         } catch (InstantiationException e) {
+                             e.printStackTrace();
+                         }
+                     }
 
-            public static void main(String[] args) {
-                //父亲是系统类加载器，根据父类委托机制，MyTest1由系统类加载器加载了
-                MyTest16 loader1 = new MyTest16("loader1");
-                test(loader1);
-            }
-        }
+                     public static void main(String[] args) {
+                         //父亲是系统类加载器，根据父类委托机制，MyTest1由系统类加载器加载了
+                         MyTest16 loader1 = new MyTest16("loader1");
+                         test(loader1);
+                     }
+                 }
 14. 类的命名空间
     1. 每个类加载器都有自己的命名空间，命名空间由该加载器及所有父加载器所加载的类构成；
     2. 在同一个命名空间中，不会出现类的完整名字（包括类的包名）相同的两个类；
     3. 在不同的命名空间中，有可能会出现类的完整名字（包括类的包名）相同的两个类；
     4. 同一命名空间内的类是互相可见的，非同一命名空间内的类是不可见的；
-    5. 子加载器可以见到父加载器加载的类，父加载器也不能见到子加载器加载的类。
+    5. 子加载器可以见到父加载器加载的类，父加载器不能见到子加载器加载的类。
+
 15. 类的卸载
     1. 当一个类被加载、连接和初始化之后，它的生命周期就开始了。当此类的Class对象不再被引用，即不可触及时，Class对象就会结束生命周期，类在方法区内的数据也会被卸载。
     2. 一个类何时结束生命周期，取决于代表它的Class对象何时结束生命周期。
     3. 由Java虚拟机自带的类加载器所加载的类，在虚拟机的生命周期中，始终不会被卸载。Java虚拟机本身会始终引用这些加载器，而这些类加载器则会始终引用他们所加载的类的Class对象，因此这些Class对象是可触及的。
     4. 由用户自定义的类加载器所加载的类是可以被卸载的。
     5. 查看类的卸载：1.配置Jvm选项 -XX:+TraceClassLoading；2.将某对象置空；3.调用System.gc();
-16. 
+16. 三种类加载器所加载类的路径
 
+        /**
+         * 在运行期，一个Java类是由该类的完全限定名（binary name）和用于加载该类的定义类加载器所共同决定的。
+         * 如果同样名字（完全相同限定名）是由两个不同的加载器所加载，那么这些类就是不同的，即便.class文件字节码相同，并且从相同的位置加载亦如此。
+         * <p>
+         * 在oracle的hotspot，系统属性sun.boot.class.path如果修改错了，则运行会出错：
+         * Error occurred during initialization of VM
+         * java/lang/NoClassDeFoundError: java/lang/Object
+         */
+        public class MyTest18 {
+            public static void main(String[] args) {
+                System.out.println(System.getProperty("sun.boot.class.path"));//结果为根加载器路径
+                System.out.println(System.getProperty("java.ext.dirs"));//结果为扩展类加载器路径
+                System.out.println(System.getProperty("java.calss.path"));//结果为应用类加载器路径
 
+                /*
+                 *
+                 * 类加载器本身也是类加载器，类加载器又是谁加载的呢？
+                 *  类加载器是由启动类加载器去加载的，启动类加载器是C++写的，内嵌在JVM中。
+                 *  内嵌于JVM中的启动类加载器会加载java.lang.ClassLoader以及其他的Java平台类。当JVM启动时，一块特殊的机器码会运行，它会加载扩展类加载器以及系统类加载器，这块特殊的机器码叫做启动类加载器。
+                 *  启动类加载器并不是java类，其他的加载器都是java类。
+                 *  启动类加载器是特定于平台的机器指令，它负责开启整个加载过程。
+                 *  启动加载器还会负责加载提供JRE正常运行所需要的基本组件，这包括java.util与java.lang包中的类等等。
+                 *
+                 */
+            }
+        }
+17. 自定义类加载器明目空间可能导致的问题以及双亲委托模型的优点
 
+        /**
+         * 类加载器双亲委托模型的好处：
+         * 1. 可以确保Java和核心库的安全：所有的Java应用都会引用java.lang中的类，也就是说在运行期java.lang中的类会被加载到虚拟机中，
+         * 如果这个加载过程如果是由自己的类加载器所加载，那么很可能就会在JVM中存在多个版本的java.lang中的类，而且这些类是相互不可见的（命名空间的作用）。
+         * 借助于双亲委托机制，Java核心类库中的类的加载工作都是由启动根加载器去加载，从而确保了Java应用所使用的的都是同一个版本的Java核心类库，他们之间是相互兼容的；
+         * 2. 确保Java核心类库中的类不会被自定义的类所替代；
+         * 3. 同的类加载器可以为相同名称的类（binary name）创建额外的命名空间。相同名称的类可以并存在Java虚拟机中，只需要用不同的类加载器去加载即可。相当于在Java
+         * 虚拟机内部建立了一个又一个相互隔离的Java类空间。
+         */
+        public class MyTest21 {
+            public static void main(String[] args) {
+                MyTest16 loader1 = new MyTest16("loader1");
+                MyTest16 loader2 = new MyTest16("loader2");
+                loader1.setPath("C:\Users\xxx\Desktop");
+                loader2.setPath("C:\Users\xxx\Desktop");
+                // Build后删掉classpath下的Person.class文件
+                // 以保证应用类加载器加载的路径下不存在Person.class，此时就可以满足使用自己的类加载MyTest16来加载Person类
+                Class<?> clazz1 = loader1.loadClass("Person");
+                Class<?> clazz2 = loader2.loadClass("Person");
+                //clazz1和clazz由loader1和loader2加载，两者不存在父子委托，属于两个不同的加载器，因此结果为false
+                System.out.println(clazz1 == clazz2);
+                // 由于loader1和loader2属于两个不同的加载器，因此object1和object2也属于不同的对象(由于命名空间引起)
+                Object object1 = clazz1.getInstance();
+                Object object2 = clazz2.getInstance();
+
+                Method method = clazz1.getMethod("setPerson", Object.class);
+                //此处报错，loader1和loader2所处不用的命名空间
+                method.invoke(object1, object2);
+            }
+        }
+
+        class Person {
+            private Person person;
+
+            public void setPerson(Object object) {
+                // 此处强制转换会报错
+                this.person = (Person) object;
+            }
+        }
+18. 线程上下文加载器
+
+        示例一：初识线程上下文加载器
+        /**
+         * 当前类加载器(Current ClassLoader)
+         * 每个类都会尝试使用自己的类加载器去加载依赖的类。
+         * <p>
+         * 线程上下文类加载器(Context ClassLoader)
+         * 线程上下文加载器 @ jdk1.2
+         * 线程类中的 getContextClassLoader() 与 setContextClassLoader(ClassLoader c)
+         * 如果没有通过setContextClassLoader()
+         * 方法设置，线程将继承父线程的上下文类加载器，java应用运行时的初始线程的上下文类加载器是系统类加载器。该线程中运行的代码可以通过该类加载器加载类和资源。
+         * <p>
+         * 线程上下文类加载器的作用：
+         * SPI：Service Provide Interface
+         * 父ClassLoader可以使用当前线程Thread.currentThread().getContextClassLoader()
+         * 所制定的ClassLoader加载的类，这就改变了父加载器加载的类无法使用子加载器或是其他没有父子关系的ClassLoader加载的类的情况，即改变了双亲委托模型。
+         * <p>
+         * 在双亲委托模型下，类加载是由下至上的，即下层的类加载器会委托父加载器进行加载。但是对于SPI来说，有些接口是Java核心库所提供的的（如JDBC），Java
+         * 核心库是由启动类记载器去加载的，而这些接口的实现却来自不同的jar包（厂商提供），Java的启动类加载器是不会加载其他来源的jar包，这样传统的双亲委托模型就无法满足SPI
+         * 的要求。通过给当前线程设置上下文类加载器，就可以由设置的上下文类加载器来实现对于接口实现类的加载。
+         */
+        public class MyTest24 {
+            public static void main(String[] args) {
+                System.out.println(Thread.currentThread().getContextClassLoader());
+                System.out.println(Thread.class.getClassLoader());
+            }
+        }
+
+        示例二：线程上下文的使用
+        /**
+         * 线程上下文类加载器的一般使用模式：（获取-使用-还原）
+         * // 获取线程上下文加载器
+         * ClassLoader classLoader=Thread.currentThread().getContextLoader();
+         * try{
+         * // 设置目标加载器
+         * Thread.currentThread().setContextLoader("目标加载器");
+         * myMethod(); // 通过线程上下文加载器使用目标加载器
+         * }finally{
+         * // 还原线程上下文加载器
+         * Thread.currentThread().setContextLoader(classLoader);
+         * }
+         * 在myMethod中调用Thread.currentThread().getContextLoader()做某些事情
+         * ContextClassLoader的目的就是为了破坏类加载委托机制
+         * <p>
+         * 在SPI接口的代码中，使用线程上下文类加载器就可以成功的加载到SPI的实现类。
+         * <p>
+         * 当高层提供了统一的接口让底层去实现，同时又要在高层加载（或实例化）底层的类时，就必须通过上下文类加载器来帮助高层的ClassLoader找到并加载该类。
+         */
+        public class MyTest26 {
+            public static void main(String[] args) {
+
+                //一旦加入下面此行，将使用ExtClassLoader去加载Driver.class， ExtClassLoader不会去加载classpath，因此无法找到MySql的相关驱动。
+                //Thread.getCurrentThread().setContextClassLoader(MyTest26.class.getClassLoader().parent());
+
+                // 需要先添加依赖 implementation "mysql:mysql-connector-java:5.1.34"
+                // JDBC ServiceLoader服务提供者，加载实现的服务   Driver：sql驱动
+                ServiceLoader<Driver> loader = ServiceLoader.load(Driver.class);
+                Iterator<Driver> iterator = loader.iterator();
+                while (iterator.hasNext()) {
+                    Driver driver = iterator.next();
+                    System.out.println("driver:" + driver.class + ",loader" + driver.class.getClassLoader());
+                }
+                System.out.println("当前上下文加载器" + Thread.currentThread().getContextClassLoader());
+                System.out.println("ServiceLoader的加载器" + ServiceLoader.class.getClassLoader());
+            }
+        }
+19. jar hell(冲突)问题以及解决办法
+
+        // 当一个类或者一个资源文件存在多个jar中，就会存在jar hell问题。可通过以下代码解决问题：
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        String resource = "java/lang/String.class";
+        Enumeration<URL> urls = classLoader.getResources(resource);
+        while (urls.hasMoreElements()) {
+            URL element = urls.nextElement();
+            System.out.println(element);
+        }
 
 
 
