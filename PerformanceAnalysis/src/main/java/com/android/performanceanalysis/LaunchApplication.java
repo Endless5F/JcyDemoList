@@ -90,9 +90,9 @@ public class LaunchApplication extends Application {
         }
         LeakCanary.install(this);
         // 2. 自定义保存泄漏信息
-        LeakCanary.refWatcher(this).listenerServiceClass(LeadCanaryService.class)
-                .excludedRefs(AndroidExcludedRefs.createAppDefaults().build())
-                .buildAndInstall();
+//        LeakCanary.refWatcher(this).listenerServiceClass(LeadCanaryService.class)
+//                .excludedRefs(AndroidExcludedRefs.createAppDefaults().build())
+//                .buildAndInstall();
 
     }
 
