@@ -16,6 +16,7 @@ import com.android.performanceanalysis.data.HomeData;
 import com.android.performanceanalysis.hook.ImageHook;
 import com.android.performanceanalysis.hook.ThreadMethodHook;
 import com.android.performanceanalysis.launchstarter.TaskDispatcher;
+import com.android.performanceanalysis.service.LeadCanaryService;
 import com.android.performanceanalysis.task.InitJPushTask;
 import com.android.performanceanalysis.task.InitStethoTask;
 import com.android.performanceanalysis.task.InitWeexTask;
@@ -23,6 +24,7 @@ import com.android.performanceanalysis.utils.LaunchTimerUtil;
 import com.android.performanceanalysis.utils.LogUtils;
 import com.github.anrwatchdog.ANRWatchDog;
 import com.github.moduth.blockcanary.BlockCanary;
+import com.squareup.leakcanary.AndroidExcludedRefs;
 import com.squareup.leakcanary.LeakCanary;
 import com.taobao.android.dexposed.DexposedBridge;
 import com.taobao.android.dexposed.XC_MethodHook;
@@ -50,10 +52,7 @@ public class LaunchApplication extends Application {
         TraceCompat.beginSection("AppOnCreate");
         // TODO 一系列操作
 
-        if (LeakCanary.isInAnalyzerProcess(this)) {
-            return;
-        }
-        LeakCanary.install(this);
+        initLeakCanary();
 
         // 启动器的使用
         TaskDispatcher.init(LaunchApplication.this);
@@ -84,6 +83,19 @@ public class LaunchApplication extends Application {
         TraceCompat.endSection();
     }
 
+    private void initLeakCanary() {
+        // 1. 默认
+        if (LeakCanary.isInAnalyzerProcess(this)) {
+            return;
+        }
+        LeakCanary.install(this);
+        // 2. 自定义保存泄漏信息
+        LeakCanary.refWatcher(this).listenerServiceClass(LeadCanaryService.class)
+                .excludedRefs(AndroidExcludedRefs.createAppDefaults().build())
+                .buildAndInstall();
+
+    }
+
     public static LaunchApplication getInstance() {
         return app;
     }
@@ -102,7 +114,7 @@ public class LaunchApplication extends Application {
                     int.class, Parcel.class, Parcel.class, int.class, new XC_MethodHook() {
                         @Override
                         protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                            LogUtils.i( "BinderProxy beforeHookedMethod " + param.thisObject.getClass().getSimpleName()
+                            LogUtils.i("BinderProxy beforeHookedMethod " + param.thisObject.getClass().getSimpleName()
                                     + "\n" + Log.getStackTraceString(new Throwable()));
                             super.beforeHookedMethod(param);
                         }
@@ -118,7 +130,7 @@ public class LaunchApplication extends Application {
             protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                 super.afterHookedMethod(param);
                 Thread thread = (Thread) param.thisObject;
-                LogUtils.i(thread.getName()+" stack "+Log.getStackTraceString(new Throwable()));
+                LogUtils.i(thread.getName() + " stack " + Log.getStackTraceString(new Throwable()));
             }
         });
         // 拦截Thread 类以及 Thread 类所有子类的 run方法，在 run 方法开始执行和退出的时候进行拦截，
