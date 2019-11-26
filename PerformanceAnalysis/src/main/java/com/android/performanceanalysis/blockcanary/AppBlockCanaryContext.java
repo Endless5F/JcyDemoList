@@ -14,6 +14,7 @@ import java.util.List;
  * BlockCanary配置的各种信息
  */
 public class AppBlockCanaryContext extends BlockCanaryContext {
+    // 实现各种上下文，包括应用标识符，用户uid，网络类型，卡顿判断阀值，Log保存位置等
 
     /**
      * Implement in your project.
