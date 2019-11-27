@@ -717,7 +717,7 @@ analyze 方法开启了HeapAnalyzerService堆分析服务，HeapAnalyzerService�
 
 到此，LeakCanary分析就结束啦，对性能优化的小伙伴可以看一下我的Github：https://github.com/Endless5F/JcyDemoList/tree/master/PerformanceAnalysis ，有详细的文档和代码参考。
 
-### 参考链接
+## 参考链接
 https://www.cnblogs.com/cord/p/11546303.html
 
 https://www.cnblogs.com/huanyi0723/p/7050555.html
