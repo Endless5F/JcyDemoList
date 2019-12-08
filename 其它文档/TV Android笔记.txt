@@ -1,0 +1,44 @@
+Log-U盘组合键：左减右加上加下减
+
+全编译方法：在tools目录下， chmod -R 777 android-sdk-linux/build-tools  ，再  ./gradlew clean rA
+编译某项目：./gradlew clean;./gradlew aR
+
+Serial 连接：新建连接--> 协议(Serial)--> 端口(COM3；此端口需要在连接串口后，在计算机上查看)、波特率(115200)、取消RTS/CTS选中--> 设置会话名称--> 完成
+
+U盘串口pm安装应用：pm install -r /mnt/usb/xxx/
+
+串口pm卸载应用：pm uninstall -k com.jamdeo.tv.mediacenter
+
+串口查看应用版本号：dumpsys package com.jamdeo.tv.mediacenter |grep version
+
+进程查看：ps -e/-A（-e/-A，查看所有） 或者  ps -ef |grep com.jamdeo.tv.mediacenter （-ef，以全格式显示进程所有信息，包括父进程Pid，创建人，创建时间，进程号。等等）
+进程杀死：kill -9  13492(需要杀死的进程号) ；kill -9发送的信号是SIGKILL，即exit。exit信号不会被系统阻塞，所以kill -9能顺利杀掉进程。
+查看当前项目进程信息：ps -A |grep com.jamdeo.tv.mediacenter
+
+Serial log清除：logcat -c
+Serial log查看：logcat -v time(打印log的同时打印出当前系统时间)
+Serial log查看特定级别的信息：logcat *:E (过滤只显示error级别及以上的信息)
+Serial log查看特定tag的信息：logcat -s xxx (过滤xxx这个tag记录的Activity启动日志)
+Serial log查看特定进程的信息：logcat -v time| grep xxx (过滤xxx这个进程号的app日志)
+
+adb命令改变log等级：
+1. setprop log.tag.MEDIA_CENTER DEBUG
+2. setprop persist.log.level D
+3. logcat -c;logcat -v time|grep Tag
+注：若logcat -c失败，则使用：logcat -b all -c。即：logcat -b all -c;logcat -v time|grep Tag
+
+setprop log.tag.MEDIA_CENTER DEBUG;setprop persist.log.level D;logcat -b all -c;logcat -v time|grep UiActivityManager
+
+ps -A |grep com.jamdeo.tv.mediacenter
+setprop log.tag.MEDIA_CENTER DEBUG;setprop persist.log.level D;logcat -b all -c;logcat -v time|grep xxx(进程号)
+
+logcat命令参数说明：
+-b <buffer>	加载一个可使用的日志缓冲区供查看，比如event和radio。默认值是main
+-c		清除缓冲区中的全部日志并退出（清除完后可以使用-g查看缓冲区）
+-d		将缓冲区的log转存到屏幕中然后退出
+-f <filename>	将log输出到指定的文件中<文件名>.默认为标准输出（stdout）
+-g		打印日志缓冲区的大小并退出
+-n <count>	设置日志的最大数目<count>，默认值是4，需要和-r选项一起使用
+-r <kbytes>	没<kbytes>时输出日志，默认值是16，需要和-f选项一起使用
+-s		设置过滤器
+-v <format>	设置输出格式的日志消息。默认是短暂的格式。支持的格式列表

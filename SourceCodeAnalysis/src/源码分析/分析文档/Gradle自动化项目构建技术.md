@@ -200,3 +200,126 @@
             println "key:${i.key} value:${i.value}"
         }
         ```
+8. 闭包
+    1. 定义：Groovy中的闭包是一个开放的，匿名的代码块，可以接受参数，可以返回值并且可以赋值给闭包变量。闭包可以引用在其周围范围内声明的变量，与闭包的正式定义相反，Groovy语言中的Closure也可以包含在其周围范围之外定义的自由变量。
+    2. 语法：{ [closureParameters -> ] statements } 。其中[closureParameters->]是一个以逗号分隔的可选参数列表，而且statements 有0条或更多条Groovy语句，参数看起来类似于方法参数列表，这些参数可以是类型化的或非类型化的。指定参数列表时， - >字符是必需的，用于将参数列表与Groovy语句分开。
+    3. 代码示例
+        ```
+        { item++ }          //一个引用名为item的变量的闭包
+
+        { -> item++ }       //通过添加箭头（ - >）可以明确地将闭包参数与代码分开
+
+        { println it }      //使用隐式参数（it）的闭包
+
+        { it -> println it }    //上面的一个替代版本，它是一个显式参数
+
+        { name -> println name }    //在这种情况下，通常最好为参数使用显式名称
+
+        { String x, int y ->        //一个闭包接受两个类型参数
+            println "hey ${x} the value is ${y}"
+        }
+
+        { reader ->                 //闭包可以包含多个语句
+            def line = reader.readLine()
+            line.trim()
+        }
+
+        // 上面代码定义一个名为 closure_name 的闭包，用途由 closure body 中的代码定义。
+        // 匿名闭包指不声明闭包变量名，只有闭包方法体{ //closure body }
+        def closure_name = {
+            // closure body
+        }
+        ```
+    4. 闭包类：一个闭包是groovy.lang.Closure类的一个实例，它可以像任何其他变量一样赋值给变量或字段，尽管它是一个代码块。Java8中lambda表达式也引入了闭包概念，类com.sun.corba.se.spi.orbutil.closure.Closure。Groovy将闭包定义为Closure类的实例，与Java 8中的lambda表达式截然不同。
+    5. 参数
+        1. 普通参数：闭包的参数和常规方法的参数一样，遵循相同的原则。
+        2. 隐式参数：当闭包没有显式定义参数列表（使用 - >定义）时，闭包总是定义一个名为it的隐式参数。
+        3. 可变参数：闭包可以像任何其他方法一样声明可变参数。可变参数方法的特点是：参数的数量是可变的。有2种情况：最后一个参数是可变长度的参数，或者是一个数组参数。
+    6. 闭包调用：def closure_name = { // closure body }
+        1. closure_name.call()
+        2. closure_name()
+    7. 闭包使用：闭包可以用作方法的参数。在Groovy中，很多用于数据类型（例如列表和集合）的内置方法都有闭包作为参数类型。
+        ```
+        def clos = { param -> println "${str1} ${param}" }
+        clos("Groovy")
+        clos.call("World");
+        // 闭包和列表
+        def lst = [11, 12, 13, 14];
+        lst.each {println it}
+        // 闭包和映射
+        def mp = ["TopicName" : "Maps", "TopicDescription" : "Methods in Maps"]
+        mp.each {println it}
+        mp.each {println "${it.key} maps to: ${it.value}"}
+        ```
+    8. 闭包进阶
+9. 范围
+    1. 定义：范围是指定值序列的速记。范围由序列中的第一个和最后一个值表示，Range可以是包含或排除。包含范围包括从第一个到最后一个的所有值，而独占范围包括除最后一个之外的所有值。
+    2. 使用示例：
+        ```
+        1..10 - 包含范围的示例
+        1 .. <10 - 独占范围的示例
+        'a'..'x' - 范围也可以由字符组成
+        10..1 - 范围也可以按降序排列
+        'x'..'a' - 范围也可以由字符组成并按降序排列。
+        def range = 1..10
+        ```
+    3. 常用方法：
+        ```
+        contains()      检查范围是否包含特定值
+        get()           返回此范围中指定位置处的元素。
+        getFrom()       获得此范围的下限值。
+        getTo()         获得此范围的上限值。
+        isReverse()     这是一个反向的范围，反向迭代
+        size()          返回此范围的元素数。
+        subList()       返回此指定的fromIndex（包括）和toIndex（排除）之间的此范围部分的视图
+        ```
+10. 列表
+    1. 定义：列表是用于存储数据项集合的结构。在Groovy中，List保存了一系列对象引用。List中的对象引用占据序列中的位置，并通过整数索引来区分。列表文字表示为一系列用逗号分隔并用方括号括起来的对象。要处理列表中的数据，我们必须能够访问各个元素。Groovy列表使用索引操作符[]索引。列表索引从零开始，这指的是第一个元素。
+    2. 使用示例：
+        ```
+        [11，12，13，14] - 整数值列表
+        ['Angular'，'Groovy'，'Java'] - 字符串列表
+        [1，2，[3，4]，5] - 嵌套列表
+        ['Groovy'，21，2.11] - 异构的对象引用列表
+        [] - 一个空列表
+        def arrayList = [1, 2, 3, 4]
+        ```
+    3. 常用方法
+        ```
+        add()           将新值附加到此列表的末尾。
+        contains()      如果此列表包含指定的值，则返回true。
+        get()           返回此列表中指定位置的元素。
+        isEmpty()       如果此列表不包含元素，则返回true
+        minus()         创建一个由原始元素组成的新列表，而不是集合中指定的元素。
+        plus()          创建由原始元素和集合中指定的元素组成的新列表。
+        pop()           从此列表中删除最后一个项目
+        remove()        删除此列表中指定位置的元素。
+        reverse()       创建与原始列表的元素相反的新列表
+        size()          获取此列表中的元素数。
+        sort()          返回原始列表的排序副本。
+        ```
+11. 映射
+    1. 定义：映射（也称为关联数组，字典，表和散列）是对象引用的无序集合。Map集合中的元素由键值访问。 Map中使用的键可以是任何类。当我们插入到Map集合中时，需要两个值：键和值。
+    2. 使用示例：
+        ```
+        ['TopicName'：'Lists'，'TopicName'：'Maps'] - 具有TopicName作为键的键值对的集合及其相应的值。
+        [：] - 空映射。
+        def map = ['key': 'value']
+        ```
+    3. 常用方法
+        ```
+        containsKey()   此映射是否包含此键？
+        get()           查找此Map中的键并返回相应的值。如果此映射中没有键的条目，则返回null。
+        keySet()        获取此映射中的一组键。
+        put()           将指定的值与此映射中的指定键相关联。如果此映射先前包含此键的映射，则旧值将替换为指定的值。
+        size()          返回此地图中的键值映射的数量。
+        values()        返回此地图中包含的值的集合视图。
+        ```
+12. 面向对象：
+13. 异常处理：类似Java
+## 参考链接
+<a href="https://www.w3cschool.cn/groovy/">Groovy基础</a>
+
+https://www.jianshu.com/p/8127742e0569
+
+https://blog.csdn.net/liao_hb/article/details/88690400
