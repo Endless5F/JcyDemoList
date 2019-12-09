@@ -21,11 +21,13 @@ Serial log查看特定级别的信息：logcat *:E (过滤只显示error级别�
 Serial log查看特定tag的信息：logcat -s xxx (过滤xxx这个tag记录的Activity启动日志)
 Serial log查看特定进程的信息：logcat -v time| grep xxx (过滤xxx这个进程号的app日志)
 
-adb命令改变log等级：
+adb命令改变log等级：UiInterpretedApplication
 1. setprop log.tag.MEDIA_CENTER DEBUG
 2. setprop persist.log.level D
 3. logcat -c;logcat -v time|grep Tag
 注：若logcat -c失败，则使用：logcat -b all -c。即：logcat -b all -c;logcat -v time|grep Tag
+
+setprop log.tag.MEDIA_CENTER DEBUG;setprop persist.log.level D;logcat -v time|grep UiActivityManager
 
 setprop log.tag.MEDIA_CENTER DEBUG;setprop persist.log.level D;logcat -b all -c;logcat -v time|grep UiActivityManager
 
@@ -42,3 +44,9 @@ logcat命令参数说明：
 -r <kbytes>	没<kbytes>时输出日志，默认值是16，需要和-f选项一起使用
 -s		设置过滤器
 -v <format>	设置输出格式的日志消息。默认是短暂的格式。支持的格式列表
+一个很强大的LOG开关---Log.isLoggable：https://blog.csdn.net/csh86277516/article/details/79558518
+
+设置系统属性：setprop  <propertyName>  <value>
+获取系统属性：getprop  [propertyName] ；getprop | grep [propertyName]
+监视系统属性：watchprops  <propertyName> （监视名为 propertyName 的属性的值，当其数值发生变化时将最新的属性值实时打印出来。）
+系统应用或者拥有root权限，则可以在代码中通过反射设置自定义的系统属性SystemProperties，来保存数据，此方式比SharedPreferences方式更优。

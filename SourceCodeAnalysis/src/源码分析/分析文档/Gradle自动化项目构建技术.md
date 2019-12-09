@@ -252,6 +252,98 @@
         mp.each {println "${it.key} maps to: ${it.value}"}
         ```
     8. 闭包进阶
+        1. 闭包三个重要变量：this，owner，delegate
+            ```
+            // '注：此段代码位于HelloWorld.groovy文件中'
+
+            // '1. 直接在闭包中使用时： 三者没有区别'
+            def scriptClosure = {
+                println "scriptClosure  this:" + this // 代表闭包定义处的类
+                println "scriptClosure  owner:" + owner // 代表闭包定义处的类或对象（静态是class文件，非静态是对象)
+                println "scriptClosure  delegate:" + delegate // 代表任意对象，默认与owner一致
+            }
+            // 输出结果：
+            scriptClosure  this:main.HelloWorld@6ce139a4
+            scriptClosure  owner:main.HelloWorld@6ce139a4
+            scriptClosure  delegate:main.HelloWorld@6ce139a4
+
+            // '2. 闭包内部的闭包，this与 owner和delegate是不同的'
+            /**
+             * 1. 在类或者闭包中定义的闭包，三者没有区别
+             * 2. 在闭包中定义的闭包 this 与 owner ，delegate就不一样了
+             * 3. this ：永远会指向最外层的类
+             * 4. owner和delegate默认都会指向定义出最近的closure对象
+             */
+            def nestClosure = {
+                def innerClosure = {
+                    println "innerClosure  this:" + this
+                    println "innerClosure  owner:" + owner
+                    println "innerClosure  delegate:" + delegate
+                }
+                innerClosure.call()
+            }
+            nestClosure.call()
+            // 输出结果：
+            innerClosure  this:main.HelloWorld@6ce139a4
+            innerClosure  owner:main.HelloWorld$_run_closure6@33afa13b
+            innerClosure  delegate:main.HelloWorld$_run_closure6@33afa13b
+
+            // '3. 修改delegate指向的对象'
+            def nestClosure = {
+                def innerClosure = {
+                    println "innerClosure  this:" + this
+                    println "innerClosure  owner:" + owner
+                    println "innerClosure  delegate:" + delegate
+                }
+                innerClosure.delegate = new HelloWorld()
+                innerClosure.call()
+            }
+            nestClosure.call()
+            // 输出结果：
+            innerClosure  this:main.HelloWorld@6ce139a4
+            innerClosure  owner:main.HelloWorld$_run_closure6@45b9a632
+            innerClosure  delegate:main.HelloWorld@25d250c6
+            ```
+            * 在大多数情况下 this，owner，delegate的值是一样的
+            * 在闭包中定义闭包的时候，this与 owner，delegate就不一样了
+            * 在修改了delegate 的值得时候 owner 和 delegate 就不一样了
+            * this 与 owner 只要定义了就不可以修改，delegate 可以更改
+            * this永远是指定义该闭包类，如果存在内部类，则是最内层的类，但this不是指当前闭包对象
+            * owner永远是指定义该闭包的类或者闭包，顾名思义，闭包只能定义在类中或者闭包中
+        2. 闭包的委托策略
+            ```
+            // '1. 正常调用'
+            class Student {
+                String name
+                def pretty = { println "My name is ${name}" }
+
+                String toString() {
+                    pretty.call()
+                }
+            }
+
+            class Teather {
+                String name
+            }
+
+            def student = new Student(name: "groovy")
+            def teather = new Teather(name: "android")
+            student.toString()
+            // 结果：My name is groovy
+            // 原因：每个闭包都会有自己的委托策略，默认的委托策略是 Closure.OWNER_FIRST（因此这也是为什么大多数情况和owner一致的原因）
+
+            2. '更改委托策略委托'
+	        student.pretty.delegate = teather
+	        // 更改对应的委托策略委托才真正生效
+	        student.pretty.resolveStrategy = Closure.DELEGATE_FIRST
+	        student.toString()
+	        // 结果：My name is android
+            ```
+            * Closure.OWNER_FIRST是默认策略。优先在owner寻找，owner没有再delegate
+            * Closure.DELEGATE_FIRST：优先在delegate寻找，delegate没有再owner
+            * Closure.OWNER_ONLY：只在owner中寻找
+            * Closure.DELEGATE_ONLY：只在delegate中寻找
+            * Closure.TO_SELF：高级选项，让开发者自定义策略。
 9. 范围
     1. 定义：范围是指定值序列的速记。范围由序列中的第一个和最后一个值表示，Range可以是包含或排除。包含范围包括从第一个到最后一个的所有值，而独占范围包括除最后一个之外的所有值。
     2. 使用示例：
@@ -316,7 +408,107 @@
         values()        返回此地图中包含的值的集合视图。
         ```
 12. 面向对象：
+    1. Groovy中类的特点
+        1. Groovy中的类默认都是public类型的，所有的方法变量默认都是public类型的
+        2. Groovy中的类默认集成自GroovyObject ，在这个类中默认实现了getProperty和 setProperty方法。
+        3. Groovy中在创建对象的同时可以对变量进行赋值，可以选择对部分或者全部进行赋值
+        4. Groovy中无论是直接.变量，还是调用get/set方法获取或者设置变量，最终调用的都是get/set。
+        ```
+        class HelloGroovy {
+            String name
+            Integer age
+
+            // def等同于Java中的Object
+            def invokeMethod(String method, Object args){
+                return "invokeMethod : the method is ${method},the args is ${args}"
+            }
+
+            static void main(String[] args) {
+                //赋值： 可以不初始化，也可以初始化部分或者全部
+                def hello = new HelloGroovy(name: "dog",age: 2)
+                //hello.name的方式获取变量的值，其实最终的实现也是 animal.getName()
+                println "this animal's name is ${hello.name},the  animal's age is ${hello.age}"
+            }
+        }
+        ```
+    2. Groovy中接口的特点：接口中不许定义非public的方法
+    3. trait：Groovy中独有的面向对象的语法特性，Trait可以被看作是具有方法实现和状态的接口。它的使用方法和接口一样，都是使用implements关键字，这个看上去感觉跟继承有点类似，但又不一样，trait仅仅是将其方法和状态嵌入到实现类中，而没有继承中的那种上下级的父子关系。
+        1. trait中支持定义抽象方法，其实现类必须实现此抽象方法。
+        2. trait中可以定义私有方法，其实现类无法访问。
+        3. trait中的this关键字指其实现类。
+        4. trait可以实现接口。
+        5. trait中可定义属性，此属性会自动被附加到实现此trait的类中。
+        6. trait可定义私有字段由于存储相关状态。
+        7. trait可定义公共字段，但为了避免钻石问题，其获取方式有所不同
+    4. Groovy中方法调用的特点：编码阶段，若一个方法不存在时，Groovy并不会报错。而在执行过程中时，若不存在某方法，则首先会找当前类是否重写了methodMissing方法，若重写则调用，若methodMissing方法没有重写，则会查找当前类是否重写了invokeMethod方法，若重写了则调用，否则就会报错。
+        ```
+        class HelloGroovy {
+
+            /**
+            *  一个方法在找不到时，调用这个方法作为代替
+            *  优先于 invokeMethod（）
+            */
+            def methodMissing(String method, Object args) {
+                return "methodMissing : the method is ${method},the args is ${args}"
+            }
+
+            // 一个方法在找不到时，调用这个方法作为代替
+            def invokeMethod(String method,Object args){
+                return "invokeMethod : the method is ${method},the args is ${args}"
+            }
+
+            static void main(String[] args) {
+                def hello = new HelloGroovy()
+                //调用不存在的方法
+                hello.call()
+            }
+        }
+        ```
+    5. Groovy中的元编程：
+        1. 使用metaClass() 方法动态的为对象插入属性
+        2. 使用metaClass() 方法动态的为对象插入方法
+        3. 使用metaClass() 方法动态的为对象插入静态方法
+        4. 应用功能场景：当我们引用第三方的框架时，很容易引用的到无法修改的jar文件和final修饰的类，这个时候我们无法修改类的属性，可我们又特别的希望可以插入一个变量或者插入或修个一个方法，比如破解，这时候如果有了动态注入变量或者是方法，我们就可以轻松实现我们的需求了。当然我们这样动态注入的变量和方法是不能在真的应用中被使用的，有一定的作用域的限制(只能在当前页面使用)。
+        ```
+        class HelloGroovy {
+            String name
+            Integer version
+
+            static void main(String[] args) {
+                // 元编程为类动态注入属性
+                HelloGroovy.metaClass.desc = "我是描述信息"
+                def groovy = new HelloGroovy()
+                groovy.desc = "我是Groovy"
+                println(groovy.desc)
+
+                // 元编程为类动态注入方法
+                HelloGroovy.metaClass.descUpcase = {
+                    it -> it.toUpperCase()
+                }
+                HelloGroovy.metaClass.english = "I am Groovy"
+                def helloGroovy = new HelloGroovy()
+                println helloGroovy.descUpcase(helloGroovy.english)
+
+                // 元编程为类动态注入静态方法
+                HelloGroovy.metaClass.static.addVersion = {
+                    it -> it + 1
+                }
+                HelloGroovy.metaClass.desc = "注入静态方法"
+                def staticInject = new HelloGroovy(name: "groovy", version: 2)
+                println "the language's name is ${staticInject.name}, the language's next version is ${staticInject.addVersion(staticInject.version)}"
+            }
+        }
+
+        // 输出结果：
+        我是Groovy
+        I AM GROOVY
+        the language's name is groovy, the language's next version is 3
+        ```
 13. 异常处理：类似Java
+### Groovy的高级语法
+1. Json操作
+2. XML操作
+3. 文件IO操作
 ## 参考链接
 <a href="https://www.w3cschool.cn/groovy/">Groovy基础</a>
 
