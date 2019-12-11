@@ -48,3 +48,152 @@ allprojects {
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
+
+
+/**
+ * 问：什么是gradle wrapper？
+ * 答：gradle wrapper 就是由gradle 帮我们生成的gradlew脚本，里面包含了用到的gradle版本信息，
+ * 我们编译代码的时候不直接运行gradle命令，而是运行gradlew 命令，
+ * 他会自动帮我们下载对应的gradle dist，gradle wrapper被添加到代码管理系统， 这样每一个开发人员都不用去折腾gradle版本。
+ * <p>
+ * gradle命令(Linux执行需要使用 ./)
+ * 常用任务指令：
+ * gradlew build。生成所有的输出，并执行所有的检查。
+ * gradlew run。生成应用程序并执行某些脚本或二进制文件
+ * gradlew check。执行所有检测类任务如tests、linting等
+ * gradlew clean。删除build文件目录。
+ * gradlew projects。查看项目结构。
+ * gradlew tasks。查看任务列表。查看某个任务详细信息，可用gradle help --task someTask
+ * gradlew dependencies。查看依赖列表。
+ * gradlew assembleDebug（或者gradlew aD） 编译并打Debug包
+ * gradlew assembleRelease（或者gradlew aR） 编译并打Release的包
+ * 调试类：
+ * gradlew -?, -h, --help。查看帮助信息。
+ * gradlew -v,--version。查看版本信息。
+ * gradlew -s,--stacktrace。执行任务时，打印栈信息。如gradle build --s
+ * 日志类：
+ * -q, --quiet。只打印errors类信息。
+ * -i, --info。打印详细的信息。
+ * 性能类：
+ * --configure-on-demand,--no-configure-on-demand。是否开启按需配置模式。
+ * --build-cache, --no-build-cache。是否使用缓存。
+ *
+ * 其它的详见其官方文档：https://docs.gradle.org/current/userguide/command_line_interface.html
+ */
+
+/**
+ * Gradle属性
+ * Gradle属性都有对应的命令行方式，gradle.properties文件属性和对应的命令行如下：
+ * gradle.properties文件属性	                                    命令行指令
+ * org.gradle.caching=(true,false)	                            --build-cache,  --no-build-cache
+ *  设置为true时，Gradle将在可能的情况下重用任何先前构建的任务输出，从而使构建速度更快。
+ * org.gradle.caching.debug=(true,false)
+ * org.gradle.configureondemand=(true,false)	                --configure-on-demand, --no-configure-on-demand
+ *  启用按需孵化配置，Gradle将尝试仅配置必要的项目。
+ * org.gradle.console=(auto,plain,rich,verbose)	                --console=(auto,plain,rich,verbose)
+ *  自定义控制台输出的颜色或详细程度。默认值取决于如何调用Gradle。
+ * org.gradle.daemon=(true,false)	                            --daemon, --no-daemon
+ * org.gradle.daemon.idletimeout=(# of idle millis)	            -Dorg.gradle.daemon.idletimeout=(number of milliseconds)
+ *  在指定的空闲毫秒数后，Gradle守护程序将自行终止。默认值为10800000（3小时）。
+ * org.gradle.debug=(true,false)	                            -Dorg.gradle.debug=（true,false)
+ * org.gradle.java.home=(path to JDK home)	                    -Dorg.gradle.java.home
+ * org.gradle.jvmargs=(JVM arguments)	                        -Dorg.gradle.jvmargs
+ *  指定用于Gradle守护程序的JVM参数。该设置对于配置JVM内存设置以提高构建性能特别有用。这不会影响Gradle客户端VM的JVM设置。
+ * org.gradle.logging.level=(quiet,warn,lifecycle,info,debug)	-Dorg.gradle.logging.level=(quiet,warn,lifecycle,info,debug)或者 -q、-w、-i、-d
+ *  当设置为安静，警告，生命周期，信息或调试时，Gradle将使用此日志级别。这些值不区分大小写。该lifecycle级别是默认级别。
+ * org.gradle.parallel=(true,false)	                            --parallel, --no-parallel
+ * org.gradle.warning.mode=(all,none,summary)	                -Dorg.gradle.warning.mode=(all,none,summary) 或者--warning-mode=(all,none,summary)
+ * org.gradle.workers.max=(max # of worker processes)	        --max-workers
+ *
+ * 其它的详见其官方文档：https://docs.gradle.org/current/userguide/build_environment.html
+ */
+
+/**
+ * gradle项目构建流程：
+ * Gradle项目的构建分为三个阶段：初始化、配置、执行。
+ * 1. 初始化（Initialization）
+ * 在这个阶段中，Gradle决定哪些项目加入到构建中（因为Gradle支持多项目构建），并为这些项目分别创建一个Project实例。
+ * Gradle在初始化阶段会首先去查找setting.gradle文件，查找的规则如下：
+ *  1. 查找当前构建目录下的setting.gradle文件。
+ *  2. 如果没有找到，则去与当前目录有相同嵌套级别的master目录查找。
+ *  3. 如果没有找到，则去父目录查找。
+ *  4. 如果没有找到，则进行单项目构建。
+ *  5. 如果找到了，Gradle去检查当前项目在settings.gradle中是否有定义。如果没有，则进行单项目构建，否则进行多项目构建。
+ *  注：多项目工程在根目录必须存在setting.gradle文件，单项目工程则可以不需要这个文件。
+ * 问：多项目构建的项目集如何决定？
+ * 答：多项目构建时，项目集由setting.gradle创建。项目集可以用一个树形结构表示，每个节点表示一个项目，并且有对应的项目路径。在大多数情况下，项目路径与文件系统中项目的位置一致，当然这也是可以配置的。
+ * 在setting.gradle中，有很多方法可以定义项目树，常见的是层次化和扁平化的布局。
+ *  层次化布局：setting.gradle中：include 'project1', 'project2:child', 'project3:child1'
+ *      注：include方法接收多个项目路径作为参数。 每个项目路径对应文件系统中的一个目录，
+ *      通常，项目路径和文件目录一一对应，比如project2:child对应项目根目录下的project2/child目录。
+ *      如果项目树的叶子节点和它的父节点都需要包含在构建中，则只需指定叶子节点即可。比如，project2:child，将创建两个项目实例project2和project2:child。
+ *  扁平化布局：setting.gradle中：includeFlat 'project3', 'project4'
+ *      注：includeFlat方法将目录名作为参数。这些目录是根项目目录的兄弟目录，并作为多项目树中根项目的子项目。
+ * Settings语法：重点include方法的语法， setting.gradle在构建时会创建代理对象Settings，其include方法对应着 Settings.include(java.lang.String[]).
+ *  其余的语法请见对应的DSL Reference(https://docs.gradle.org/current/dsl/org.gradle.api.initialization.Settings.html)
+ *  1. include方法接收项目路径数组作为参数，并将对应的项目添加到构建中。
+ *  2. 参数中支持的项目路径分隔符为“:”，而不是“/”。
+ *  3. 路径的最后一个节点是项目的名称。
+ *  4. 项目路径是根项目目录下的相对路径，可以使用ProjectDescriptor.setProjectDir(java.io.File))更改。
+ *  示例：引入‘aaa’项目，对应的文件目录是aaa/bbb
+ *      include 'aaa'
+ *      project(':aaa').projectDir = file('aaa/bbb')
+ * 2. 配置（Configuration）
+ *  在这个阶段，Gradle会配置加入到构建中的Project实例，执行所有项目对应的构建脚本。
+ *  注1：作为名词的‘配置（Configuration）'是指，Gradle执行项目的构建脚本这一过程。
+ *  注2：作为动词的'配置（ Configure）'是指，Gradle执行项目的构建脚本这一动作。
+ *  1. 默认配置模式：
+ *  默认情况下，Gradle会配置settings.gradle里的所有项目，不论这些项目与最终执行的任务是否有关系。
+ *  这样做是因为Gradle允许一个项目在配置和执行阶段访问任何其他项目，如Gradle里可以进行跨项目配置(Cross project configuration)，一个项目的配置可能会依赖其他项目，所以在执行任务之前，需要配置所有的项目。
+ *  项目配置按照广度（ breadth-wise）顺序来执行，如父项目先于子项目被配置。
+ *  2. 按需配置模式：
+ *  由于多项目配置中，可能存在大量无需配置的项目，如果需要配置所有项目后才执行任务则会浪费大量的时间。从Gradle1.4开始，有一个孵化中的特性，叫做按需配置（configuration on demand）模式。按需配置项目时，Gradle只配置与最终任务相关联的项目，以缩短构建时间。这个模式以后可能会成为默认模式，甚至成为唯一的模式。
+ *  按需配置（configuration on demand）详见官网：https://docs.gradle.org/current/userguide/multi_project_builds.html
+ *  按需配置模式下，项目配置遵循规则如下：
+ *      1. 根项目总会被配置。
+ *      2. 构建的当前项目也会被配置。
+ *      3. 项目的依赖会被配置。如果项目A将项目B作为依赖，则构建A时，A和B都会被配置。
+ *      4. 任务依赖对应的项目会被配置。如’someTask.dependsOn(":someOtherProject:someOtherTask")‘，someOtherProject会被配置。
+ *      5. 通过命令行构建任务时会配置相应的项目。如构建 'projectA:projectB:someTask'时会配置projectB。
+ *  注：进行构建时，可以在命令行加入--configure-on-demand来指定用按需配置模式来进行构建，如gradle hello --configure-on-demand将以按需配置模式执行‘’hello“任务。
+ * 3. 执行（Execution）
+ * 在这个阶段，首先，Gradle确定要执行的任务集，任务集是由输入到命令行的任务名称参数和当前目录决定的。然后，Gradle会去执行任务集中的每个任务。
+ * 任务（Task）是由一系列的活动（Action）组成的，当任务执行的时候，活动会依次执行。可以通过doFirst和doLast方法将活动添加到任务中。
+ * 任务的位置：以$ gradle hello为例，在执行阶段，Gradle会从构建的当前项目目录开始，依据项目树往下查找名称为hello的任务并执行。因此Gradle不会执行当前项目的父项目和兄弟节点项目的任务。
+ * 任务的顺序：如果没有额外配置，Gradle将以字母数字顺序执行任务。比如 “:consumer:action” 将先于 “:producer:action”执行。
+ *
+ * gradle构建过程：
+ * 1. 初始化阶段。
+ * 执行settings.gradle脚本，所以首先输出'settings.gradle -> this is executed during the initialization phase.'。
+ * 2. 配置阶段。
+ * 由于settings.gradle没有定义项目，根项目即当前项目有build.gradle，因此只是执行这个文件。顺序执行：打印语句、三个task方法。
+ * 这里的三个task方法对应Project实例中Task task(String name, Closure configureClosure)，查看其Reference文档，说是这个方法会产生一个任务对象并添加到当前Project实例中，并且在返回这个任务的时候会执行闭包以配置这个任务。也就说在配置我们这个项目时，三个task方法的闭包都会被执行。
+ * 以testBoth任务对应的task方法为例，它的闭包里包含doFirst、doLast和println三个方法。其中doFirst和doLast是Task的方法，查看doFirst的Reference文档，说是添加闭包到任务的action列表中，当任务执行的时候，会执行这个闭包。在配置阶段，并不会去执行任务，也就是说不会去执行doFirst和doLast闭包里的内容。
+ * 因此，在配置阶段，Gradle会依次执行三个任务方法里的闭包，而不会执行闭包里添加action的闭包即doFirst和doLast的闭包，因此会依次输出 'build.gradle -> task configured -> ...' 和‘build.gradle -> task testBoth -...’
+ * 3. 执行阶段。
+ * 由于在命令行只构建testBoth任务，因此这个阶段只执行testBoth任务中的Action列表，依次执行doFirst和doLast的闭包。
+ *
+ * 参考链接：https://www.jianshu.com/p/498ae3fabe6f
+ */
+
+/**
+ * gradle声明周期监听1：
+ * 配置阶段开始前的监听回调
+ */
+this.beforeEvaluate {}
+
+/**
+ * gradle声明周期监听2：
+ * 配置阶段完成以后的回调
+ */
+this.afterEvaluate {
+    println '配置阶段执行完毕'
+}
+
+/**
+ * gradle声明周期监听3：
+ * gradle执行完毕后的回调监听
+ */
+this.gradle.buildFinished {
+    println '执行阶段执行完毕'
+}
