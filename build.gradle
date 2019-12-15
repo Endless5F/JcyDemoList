@@ -109,7 +109,7 @@ task clean(type: Delete) {
  */
 
 /**
- * gradle项目构建流程：
+ * gradle项目构建具体流程：
  * Gradle项目的构建分为三个阶段：初始化、配置、执行。
  * 1. 初始化（Initialization）
  * 在这个阶段中，Gradle决定哪些项目加入到构建中（因为Gradle支持多项目构建），并为这些项目分别创建一个Project实例。
@@ -129,7 +129,7 @@ task clean(type: Delete) {
  *      如果项目树的叶子节点和它的父节点都需要包含在构建中，则只需指定叶子节点即可。比如，project2:child，将创建两个项目实例project2和project2:child。
  *  扁平化布局：setting.gradle中：includeFlat 'project3', 'project4'
  *      注：includeFlat方法将目录名作为参数。这些目录是根项目目录的兄弟目录，并作为多项目树中根项目的子项目。
- * Settings语法：重点include方法的语法， setting.gradle在构建时会创建代理对象Settings，其include方法对应着 Settings.include(java.lang.String[]).
+ * Settings语法(即setting.gradle文件中语法)：重点include方法的语法， setting.gradle在构建时会创建代理对象Settings，其include方法对应着 Settings.include(java.lang.String[]).
  *  其余的语法请见对应的DSL Reference(https://docs.gradle.org/current/dsl/org.gradle.api.initialization.Settings.html)
  *  1. include方法接收项目路径数组作为参数，并将对应的项目添加到构建中。
  *  2. 参数中支持的项目路径分隔符为“:”，而不是“/”。
@@ -139,7 +139,7 @@ task clean(type: Delete) {
  *      include 'aaa'
  *      project(':aaa').projectDir = file('aaa/bbb')
  * 2. 配置（Configuration）
- *  在这个阶段，Gradle会配置加入到构建中的Project实例，执行所有项目对应的构建脚本。
+ *  在这个阶段，Gradle会配置加入到构建(即setting.gradle)中的Project实例，执行所有项目对应的构建脚本。
  *  注1：作为名词的‘配置（Configuration）'是指，Gradle执行项目的构建脚本这一过程。
  *  注2：作为动词的'配置（ Configure）'是指，Gradle执行项目的构建脚本这一动作。
  *  1. 默认配置模式：
@@ -162,18 +162,14 @@ task clean(type: Delete) {
  * 任务的位置：以$ gradle hello为例，在执行阶段，Gradle会从构建的当前项目目录开始，依据项目树往下查找名称为hello的任务并执行。因此Gradle不会执行当前项目的父项目和兄弟节点项目的任务。
  * 任务的顺序：如果没有额外配置，Gradle将以字母数字顺序执行任务。比如 “:consumer:action” 将先于 “:producer:action”执行。
  *
- * gradle构建过程：
- * 1. 初始化阶段。
- * 执行settings.gradle脚本，所以首先输出'settings.gradle -> this is executed during the initialization phase.'。
- * 2. 配置阶段。
- * 由于settings.gradle没有定义项目，根项目即当前项目有build.gradle，因此只是执行这个文件。顺序执行：打印语句、三个task方法。
- * 这里的三个task方法对应Project实例中Task task(String name, Closure configureClosure)，查看其Reference文档，说是这个方法会产生一个任务对象并添加到当前Project实例中，并且在返回这个任务的时候会执行闭包以配置这个任务。也就说在配置我们这个项目时，三个task方法的闭包都会被执行。
- * 以testBoth任务对应的task方法为例，它的闭包里包含doFirst、doLast和println三个方法。其中doFirst和doLast是Task的方法，查看doFirst的Reference文档，说是添加闭包到任务的action列表中，当任务执行的时候，会执行这个闭包。在配置阶段，并不会去执行任务，也就是说不会去执行doFirst和doLast闭包里的内容。
- * 因此，在配置阶段，Gradle会依次执行三个任务方法里的闭包，而不会执行闭包里添加action的闭包即doFirst和doLast的闭包，因此会依次输出 'build.gradle -> task configured -> ...' 和‘build.gradle -> task testBoth -...’
- * 3. 执行阶段。
- * 由于在命令行只构建testBoth任务，因此这个阶段只执行testBoth任务中的Action列表，依次执行doFirst和doLast的闭包。
- *
  * 参考链接：https://www.jianshu.com/p/498ae3fabe6f
+ *
+ *
+ * gradle简易构建过程：
+ * 1. 初始化阶段：执行settings.gradle脚本，解析整个工程中所有Project，构建所有Project对应的project对象。
+ * 2. 配置阶段：解析所有project对象中的task对象，构建好所有task的拓扑图
+ * 3. 执行阶段：执行具体的task以及依赖的task
+ *
  */
 
 /**
@@ -196,4 +192,53 @@ this.afterEvaluate {
  */
 this.gradle.buildFinished {
     println '执行阶段执行完毕'
+}
+
+/**
+ * gradle声明周期监听4：
+ * gradle构建执行之前的回调监听
+ */
+this.gradle.beforeProject {
+
+}
+
+/**
+ * gradle声明周期监听5：
+ * gradle构建执行之后的回调监听
+ */
+this.gradle.afterProject {
+
+}
+
+/**
+ * 所有project配置完成后调用
+ */
+gradle.projectsEvaluated {
+    gradle ->
+        println "所有的project都配置完毕了，准备生成Task依赖关系"
+}
+
+/**
+ * 表示 "task 依赖关系已经生成"
+ */
+gradle.taskGraph.whenReady {
+    TaskExecutionGraph graph ->
+        println "task 依赖关系已经生成"
+}
+
+/**
+ * 每一个 Task 任务执行之前回调
+ */
+gradle.taskGraph.beforeTask {
+    Task task ->
+        println "Project[${task.project.name}]--->Task[${task.name}] 在执行之前被回调"
+}
+
+/**
+ * 每一个 task 执行之后被回调
+ */
+gradle.taskGraph.afterTask {
+    task, TaskState taskState ->
+        //第二个参数表示 task 的状态，是可选的参数
+        println "Project[${task.project.name}]--->Task[${task.name}] 在执行完毕,taskState[upToDate:${taskState.upToDate},skipped:${taskState.skipped},executed:${taskState.executed},didWork:${taskState.didWork}]"
 }
