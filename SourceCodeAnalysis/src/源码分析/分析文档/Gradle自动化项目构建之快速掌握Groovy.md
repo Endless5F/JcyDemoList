@@ -342,6 +342,52 @@ println("Hello Groovy")
         * Closure.OWNER_ONLY：只在owner中寻找
         * Closure.DELEGATE_ONLY：只在delegate中寻找
         * Closure.TO_SELF：高级选项，让开发者自定义策略。
+9. 闭包代码块中，只要是this、owner、delegate三者中拥有的属性和方法，闭包中都是可以直接(可省略引用)调用到的。区别在于存在一个执行顺序，执行顺序是闭包的委托策略决定。
+
+    ```
+    // rootProject : build.gradle
+    buildscript { ScriptHandler scriptHandler ->
+        // 配置工程仓库地址
+        scriptHandler.repositories { RepositoryHandler repositoryHandler ->
+            repositoryHandler.jcenter()
+            repositoryHandler.mavenCentral()
+            repositoryHandler.mavenLocal()
+            repositoryHandler.ivy {}
+            repositoryHandler.maven { MavenArtifactRepository mavenArtifactRepository ->
+                mavenArtifactRepository.name 'personal'
+                mavenArtifactRepository.url 'http://localhost:8081/nexus/repositories/'
+                mavenArtifactRepository.credentials {
+                    username = 'admin'
+                    password = 'admin123'
+                }
+            }
+        }
+    }
+
+    // ======================== 上述简化后 =============================
+
+    buildscript {
+        /**
+         * 配置工程仓库地址
+         *  由于repositories这个闭包中的delegate是repositoryHandler，
+         *      因此可以省略repositoryHandler的引用，直接使用其属性和方法。
+         */
+        repositories {
+            jcenter()
+            mavenCentral()
+            mavenLocal()
+            ivy {}
+            maven {
+                name 'personal'
+                url 'http://localhost:8081/nexus/repositories/'
+                credentials {
+                    username = 'admin'
+                    password = 'admin123'
+                }
+            }
+        }
+    }
+    ```
 ### 9. 范围
 1. 定义：范围是指定值序列的速记。范围由序列中的第一个和最后一个值表示，Range可以是包含或排除。包含范围包括从第一个到最后一个的所有值，而独占范围包括除最后一个之外的所有值。
 2. 使用示例：

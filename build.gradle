@@ -242,3 +242,131 @@ gradle.taskGraph.afterTask {
         //第二个参数表示 task 的状态，是可选的参数
         println "Project[${task.project.name}]--->Task[${task.name}] 在执行完毕,taskState[upToDate:${taskState.upToDate},skipped:${taskState.skipped},executed:${taskState.executed},didWork:${taskState.didWork}]"
 }
+
+
+/**
+ * Project API讲解
+ */
+this.getAllprojects() // 获取所有project
+this.getSubprojects() // 获取所有子project
+
+/**
+ * 获取项目所有project
+ */
+def getAllProject() {
+
+    println '''
+		------------------------------------------------------------
+		Root project
+		------------------------------------------------------------
+		'''
+
+    this.allprojects.eachWithIndex { project, index ->
+        if (index == 0) {
+            println "Root project ${project.name}"
+        }else {
+            println "+-------- Project ${project.name}"
+        }
+    }
+
+}
+
+/**
+ * 获取父Project
+ * 此方法可放到任意module的build.gralde文件中
+ */
+def getParentProject() {
+    def parentName = this.getParent().name
+    if (parentName == null) {
+        println "当前project没有父project"
+    } else {
+        println "当前project父project为：$parentName"
+    }
+}
+
+/**
+ * 获取根project
+ */
+def getRootProj() {
+    println this.getRootProject().name
+}
+
+
+/**
+ * 可以通过在根project中完成子project中的所有配置和管理，一般不使用
+ */
+project('App') {
+    println it.name
+
+    apply plugin: 'com.android.application'
+//    group 'com.jcy'
+//    version '1.0.0-release'
+    android {
+
+    }
+
+    dependencies {
+
+    }
+}
+
+/**
+ * 配置当前根工程和子project(subproject)的所有project
+ */
+allprojects {
+    group 'com.jcy'
+    version '1.0.0-release'
+}
+
+println project('BaseLibrary').group
+
+/**
+ * 不包括根project，只包括所有子project
+ */
+subprojects { Project project ->
+    // 判断当前子工程是否是一个库工程
+    if (project.plugins.hasPlugin('com.android.library')) {
+        // 给每个子工程都引入一个publishToMaven.gradle文件
+        // 这样每个字工程都具备推送Maven仓库的功能，publishToMaven中是一些Maven配置
+        apply from: '../publishToMaven.gradle'
+    }
+}
+
+/**
+ * 属性相关 API
+ */
+ext {
+    version = 1.0
+}
+
+// 打印common.gradle文件内容
+println getContent('common.gradle')
+def getContent(String path){
+    try{
+        def file = file(path)
+        return file.text
+    }catch(GradleException e){
+        println 'file not found..'
+    }
+    return null
+}
+
+// 拷贝文件、文件夹
+copy {
+    from file('build/outputs/apk/')
+    into getRootProject().getBuildDir().path + '/apk/'
+    exclude {} // 排除文件
+    rename {} // 文件重命名
+}
+
+// 对文件树进行遍历并拷贝
+fileTree('build/outputs/apk/') { FileTree fileTree ->
+    fileTree.visit { FileTreeElement element ->
+        println 'the file name is: '+element.file.name
+        copy {
+            from element.file
+            into getRootProject().getBuildDir().path + '/test/'
+        }
+    }
+}
+
