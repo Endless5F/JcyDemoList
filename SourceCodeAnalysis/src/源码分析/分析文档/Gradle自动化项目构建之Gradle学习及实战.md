@@ -194,4 +194,537 @@
         }
     }
 
+## Task
+### Task定义及配置
+Task定义的方法很简单，创建的方式主要为两种：
+    * 一种迭代声明task任务以及doLast,doFirst方法添加可执行代码；
+    * 一种是通过 “<<” 快捷创建task任务，闭合执行任务代码。但不仅限于这两种。
+> TaskContainer：管理所有的Task，如：增加、查找。
+1. 定义（创建）Task
 
+    ```
+    // 直接通过task函数去创建
+    task helloTask {
+        println 'i am helloTask.'
+    }
+
+    // 通过TaskContainer去创建
+    this.tasks.create(name: 'helloTask2') {
+        println 'i am helloTask 2.'
+    }
+    ```
+    * 查看所有Task命令：gradlew task
+    * 执行某一Task命令：gradlew taskName
+2. 配置Task
+
+    ```
+    // 给Task指定分组与描述
+    task helloTask(group: 'study', description: 'task study'){ // 语法糖
+        ...
+    }
+    task helloTask {
+        group 'study' // 或者setGroup('study')
+        description 'task study' // 或者setDescription('task study')
+        ...
+    }
+    ```
+    Task除了可以配置group、description外，还可以配置name、type、dependsOn、overwrite、action。
+    * 注1：给Task分组之后，该task会被放到指定组中，方便归类查找。（默认被分组到other中）
+    * 注2：给Task添加描述，相当于给方法添加注释。
+### Task的执行详情
+Gradle的执行阶段执行的都是Task，即只有Task可在执行阶段执行。
+1. Task中doFirst与doLast的使用：
+    ```
+    // 1. task代码块内部使用
+    task helloTask {
+        println 'i am helloTask.'
+        doFirst {
+            println 'the task group is: ' + group
+        }
+        // doFirst、doLast可以定义多个
+        doFirst {}
+    }
+    // 2. 外部指定doFirst（会比在闭包内部指定的doFirst先执行）
+    helloTask.doFirst {
+        println 'the task description is: ' + description
+    }
+
+    // 统计build执行时长
+    def startBuildTime, endBuildTime
+    this.afterEvaluate { Project project ->
+        // 通过taskName找到指定的Task
+        def preBuildTask = project.tasks.getByName('preBuild') // 执行build任务时，第一个被执行的Task
+        // 在preBuildTask这个task执行前执行
+        preBuildTask.doFirst {
+            startBuildTime = System.currentTimeMillis()
+        }
+        def buildTask = project.tasks.getByName('build') // 执行build任务时，最后一个被执行的Task
+        // 在buildTask这个task执行后执行
+        buildTask.doLast {
+            endBuildTime = System.currentTimeMillis()
+            println "the build time is: ${endBuildTime - startBuildTime}"
+        }
+    }
+    ```
+2. 总结
+    1. Task闭包中直接编写的代码，会在配置阶段执行。可以通过doFirst、doLast块将代码逻辑放到执行阶段中执行。
+    2. doFirst、doLast可以指定多个。
+    3. 外部指定的doFirst、doLast会比内部指定的先执行。
+    4. doFirst、doLast可以对gradle中提供的已有的task进行扩展。
+### Task的执行顺序
+1. Task执行顺序指定的三种方式：
+    1. dependsOn强依赖方式
+    2. 通过Task输入输出指定（与第1种等效）
+    3. 通过API指定执行顺序
+2. Task的依赖
+    ```
+    task taskX {
+        doLast {
+            println 'taskX'
+        }
+    }
+    task taskY {
+        doLast {
+            println 'taskY'
+        }
+    }
+    // 方式一：静态依赖
+    // task taskZ(dependsOn: taskY) // 依赖一个task
+    task taskZ(dependsOn: [taskX, taskY]) { // 依赖多个task，需要用数组[]表示
+        doLast {
+            println 'taskZ'
+        }
+    }
+    // 方式二：静态依赖
+    taskZ.dependsOn(taskX, taskY)
+    // 方式三：动态依赖
+    task taskZ() {
+        dependsOn this.tasks.findAll {
+            // 依赖所有以lib开头的task
+            task -> return task.name.startsWith('lib')
+        }
+        doLast {
+            println 'taskZ'
+        }
+    }
+    // lib开头task
+    task lib1 << { println 'lib1' }
+    task lib2 << { println 'lib2' }
+    task lib3 << { println 'lib3' }
+
+    注：此处 << 为快捷创建task，闭包里代码等同于在doLast闭包中执行一样，但此写法目前已被标记为deprecated
+    ```
+    * taskZ依赖了taskX与taskY，所以在执行taskZ时，会先执行taskX、taskY。
+    * taskZ依赖了taskX与taskY，但taskX与taskY没有关系，它们的执行顺序是随机的。
+3. Task的输入输出
+流程：Task Inputs --> Task One ——> Task Outputs --> 通过输入输出关联Task间的关闭 --> Task Inputs --> Task Two ——> Task Outputs --> .....
+    1. 流程分析：
+        1. inputs和outputs是Task的属性。
+        2. inputs可以是任意数据类型对象，而outputs只能是文件（或文件夹）。
+        3. TaskA的outputs可以作为TaskB的inputs。
+    2. 代码实战
+        ```
+        // 例子：将每个版本信息，保存到指定的release.xml中
+
+        ext {
+            versionCode = '1.0.0'
+            versionName = '100'
+            versionInfo = 'App的第1个版本，完成聊天功能'
+            destFile = file('release.xml')
+            if (destFile != null && !destFile.exists()) {
+                destFile.createNewFile()
+            }
+        }
+
+        // writeTask输入扩展属性，输出文件
+        task writeTask {
+            // 为task指定输入
+            inputs.property('versionCode', this.versionCode)
+            inputs.property('versionName', this.versionName)
+            inputs.property('versionInfo', this.versionInfo)
+            // 为task指定输出
+            outputs.file this.destFile
+            doLast {
+                def data = inputs.getProperties() // 返回一个map
+                File file = outputs.getFiles().getSingleFile()
+                // 将map转为实体对象
+                def versionMsg = new VersionMsg(data)
+                def sw = new StringWriter()
+                def xmlBuilder = new groovy.xml.MarkupBuilder(sw)
+                if (file.text != null && file.text.size() <= 0) { // 文件中没有内容
+                    // 实际上，xmlBuilder将xml数据写入到sw中
+                    xmlBuilder.releases { // <releases>
+                        release { // <releases>的子节点<release>
+                            versionCode(versionMsg.versionCode)
+                            // <release>的子节点<versionCode>1.0.0<versionCode>
+                            versionName(versionMsg.versionName)
+                            versionInfo(versionMsg.versionInfo)
+                        }
+                    }
+                    // 将sw里的内容写到文件中
+                    file.withWriter { writer ->
+                        writer.append(sw.toString())
+                    }
+                } else { // 已经有其它版本信息了
+                    xmlBuilder.release {
+                        versionCode(versionMsg.versionCode)
+                        versionName(versionMsg.versionName)
+                        versionInfo(versionMsg.versionInfo)
+                    }
+                    def lines = file.readLines()
+                    def lengths = lines.size() - 1
+                    file.withWriter { writer ->
+                        lines.eachWithIndex { String line, int index ->
+                            if (index != lengths) {
+                                writer.append(line + '\r\n')
+                            } else if (index == lengths) {
+                                writer.append(sw.toString() + '\r\n')
+                                writer.append(line + '\r\n')
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // readTask输入writeTask的输出文件
+        task readTask {
+            inputs.file destFile
+            doLast {
+                def file = inputs.files.singleFile
+                println file.text
+            }
+        }
+
+        task taskTest(dependsOn: [writeTask, readTask]) {
+            doLast {
+                println '任务执行完毕'
+            }
+        }
+
+        class VersionMsg {
+            String versionCode
+            String versionName
+            String versionInfo
+        }
+        ```
+        通过执行 gradle taskTask 之后，就可以在工程目录下看到release.xml文件了。
+4. Task API指定顺序
+    * mustRunAfter : 强行指定在某个或某些task执行之后才执行。
+    * shouldRunAfter : 与mustRunAfter一样，但不强制。
+    ```
+    task taskX {
+        doLast {
+            println 'taskX'
+        }
+    }
+    task taskY {
+        // shouldRunAfter taskX
+        mustRunAfter taskX
+        doLast {
+            println 'taskY'
+        }
+    }
+    task taskZ {
+        mustRunAfter taskY
+        doLast {
+            println 'taskZ'
+        }
+    }
+    ```
+    通过执行 gradle taskY taskZ taskX 之后，可以看到终端还是按taskX、taskY、taskZ顺序执行的。
+5. 挂接到构建生命周期
+    1. 例子：build任务执行完成后，执行一个自定义task
+        ```
+        this.afterEvaluate { Project project ->
+            def buildTask = project.tasks.getByName('build')
+            if (buildTask == null) throw GradleException('the build task is not found')
+            buildTask.doLast {
+                taskZ.execute()
+            }
+        }
+        ```
+    2. 例子：Tinker将自定义的manifestTask插入到了gradle脚本中processManifest与processResources这两个任务之间
+        ```
+        TinkerManifestTask manifestTask = project.tasks.create("tinkerProcess${variantName}Manifest", TinkerManifestTask)
+        ...
+        manifestTask.mustRunAfter variantOutput.processManifest
+        variantOutput.processResources.dependsOn manifestTask
+        ```
+6. Task类型
+    1. <a href="https://docs.gradle.org/current/dsl/">Gradle DSL Version 5.1</a>
+    2. <a href="https://docs.gradle.org/current/dsl/org.gradle.api.tasks.Copy.html">Copy - Gradle DSL Version 5.1</a>--> Task types
+
+## Gradle其它模块
+### Settings类
+settings.gradle（对应Settings.java）决定哪些工程需要被gradle处理，占用了整个gradle生命周期的三分之一，即Initialzation初始化阶段。
+### SourceSet类
+对默认的文件位置进行修改，从而让gradle知道哪种资源要从哪些文件夹中去查找。
+```
+// sourceSets是可以调用多次的
+android {
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['libs']
+        }
+    }
+    sourceSets {
+        main {
+            res.srcDirs = ['src/main/res',
+                           'src/main/res-ad',
+                           'src/main/res-player']
+        }
+    }
+}
+
+// sourceSets一般情况下是一次性配置
+android {
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['libs']
+            res.srcDirs = ['src/main/res',
+                           'src/main/res-ad',
+                           'src/main/res-player']
+        }
+    }
+}
+
+// 使用编程的思想，配置sourceSets
+this.android.sourceSets{
+    main {
+        jniLibs.srcDirs = ['libs']
+        res.srcDirs = ['src/main/res',
+                       'src/main/res-ad',
+                       'src/main/res-player']
+    }
+}
+```
+### Gradle Plugin
+#### Gradle插件（Plugin）是什么?
+Gradle中的Plugin是对完成指定功能的Task封装的体现，只要工程依赖了某个Plugin，就能执行该Plugin中所有的功能，如：使用java插件，就可以打出jar包，使用Android插件，就可以生成apk、aar。
+
+#### 自定义Plugin
+1. 创建插件工程
+    * 在工程目录下创建buildSrc文件夹。
+    * 在buildSrc目录下，创建src文件夹、build.gradle文件。
+    * 在buildSrc/src目录下，再创建main文件夹。
+    * 在buildSrc/src/main目录下，再分别创建groovy、resources文件夹。
+    * 在buildSrc/src/main/resources再创建一个META-INF文件夹，再在META-INF下创建一个gradle-plugins文件夹。
+    * 在build.gradel文件中输入如下脚本：
+        ```
+        apply plugin: 'groovy'
+
+        sourceSets {
+            main {
+                groovy {
+                    srcDir 'src/main/groovy'
+                }
+                resources {
+                    srcDir 'src/main/resources'
+                }
+            }
+        }
+        ```
+        最后，Async一下工程，buildSrc就会被识别出来了，整体目录如图：E:\CodeProject\android\Github\JcyDemoList\SourceCodeAnalysis\src\源码分析\图示讲解\Gradle自定义Plugin.png
+2. 创建插件类：
+与Java一样，在groovy目录下，创建一个包，再创建一个插件类（如：com.android.gradle.study.GradleStudyPlugin），该插件类必须实现Plugin<Project>接口。
+    > 注意：gradle插件类是.groovy文件，不是.java文件
+    ```
+    import org.gradle.api.Plugin
+    import org.gradle.api.Project
+
+    /**
+     * 自定义Gradle插件
+     */
+    class GradleStudyPlugin implements Plugin<Project> {
+
+        /**
+         * 插件引入时要执行的方法
+         * @param project 引入当前插件的project
+         */
+        @Override
+        void apply(Project project) {
+            println 'hello gradle study plugin. current project name is ' + project.name
+        }
+    }
+    ```
+3. 指定插件入口：
+在编写完插件类的逻辑之后，需要在META-INF.gradle-plugins目录下创建一个properties文件（建议以插件类包名来命名，如：com.android.gradle.study.properties），在该properties中声明插件类，以此来指定插件入口。
+    > 该properties文件的名字将作为当前gradle插件被app工程引用的依据。
+    ```
+    implementation-class=com.android.gradle.study.GradleStudyPlugin
+    // 如果报错 Could not find implementation class 'xxx' 的话，
+    // 一般是类全路径有问题，默认包不需要写包路径，修改如下即可：implementation-class=GradleStudyPlugin
+    ```
+4. 使用自定义插件：
+打开app工程的build.gradle，应用上面的自定义gradle插件，并Async。
+    ```
+    apply plugin: 'com.android.application'
+    apply plugin: 'com.android.gradle.study'
+
+    android {
+      ...
+    }
+    ```
+    在Terminal中可以看到，在gradle的配置阶段，就输出了前面自定义插件的apply方法中的日志。
+5. 创建扩展属性：
+插件往往会在gradle脚本中进行参数配置，如在android{}中，可以配置compileSdkVersion等参数，其实本质上，就是在gradle脚本中使用闭包方式创建了一个javaBean，并将其传递到插件中被插件识别读取而已。
+
+    步骤：
+    1. 创建一个实体类，声明成员变量，用于接收gradle中配置的参数。（可以理解为就是javaBean，不过要注意，该文件后缀是.groovy，不是.java）
+        ```
+        class ReleaseInfoExtension {
+            String versionCode
+            String versionName
+            String versionInfo
+            String fileName
+
+            ReleaseInfoExtension() {}
+
+            @Override
+            String toString() {
+                return "versionCode = ${versionCode} , versionName = ${versionName} ," +
+                        " versionInfo = ${versionInfo} , fileName = ${fileName}"
+            }
+        }
+        ```
+    2. 在自定义插件中，对当前project进行扩展。
+        ```
+        class GradleStudyPlugin implements Plugin<Project> {
+
+            /**
+             * 插件引入时要执行的方法
+             * @param project 引入当前插件的project
+             */
+            @Override
+            void apply(Project project) {
+                // 这样就可以在gradle脚本中，通过releaseInfo闭包来完成ReleaseInfoExtension的初始化。
+                project.extensions.create("releaseInfo", ReleaseInfoExtension)
+            }
+        }
+        ```
+    3. 打开在app工程的build.gradle，通过扩展key值命名闭包的方式，就可以配置指定参数了。
+        ```
+        apply plugin: 'com.android.gradle.study'
+
+        releaseInfo {
+            versionCode = '1.0.0'
+            versionName = '100'
+            versionInfo = '第一个app信息'
+            fileName = 'release.xml'
+        }
+        ```
+    4. 接收参数
+        ```
+        def versionCodeMsg = project.extensions.releaseInfo.versionCode
+        ```
+6. 创建扩展Task：
+自定义插件无非就是封装一些常用Task，所以，扩展Task才是自定义插件的最重要的一部分。扩展Task也很简单，继承DefaultTask，编写TaskAction注解方法。
+    ```
+    // 例子：把app版本信息写入到xml文件中
+    import groovy.xml.MarkupBuilder
+    import org.gradle.api.DefaultTask
+    import org.gradle.api.tasks.TaskAction
+
+    class ReleaseInfoTask extends DefaultTask {
+
+        ReleaseInfoTask() {
+            group 'android' // 指定分组
+            description 'update the release info' // 添加说明信息
+        }
+
+        /**
+         * 使用TaskAction注解，可以让方法在gradle的执行阶段去执行。
+         * doFirst其实就是在外部为@TaskAction的最前面添加执行逻辑。
+         * 而doLast则是在外部为@TaskAction的最后面添加执行逻辑。
+         */
+        @TaskAction
+        void doAction() {
+            updateInfo()
+        }
+
+        private void updateInfo() {
+            // 获取gradle脚本中配置的参数
+            def versionCodeMsg = project.extensions.releaseInfo.versionCode
+            def versionNameMsg = project.extensions.releaseInfo.versionName
+            def versionInfoMsg = project.extensions.releaseInfo.versionInfo
+            def fileName = project.extensions.releaseInfo.fileName
+            // 创建xml文件
+            def file = project.file(fileName)
+            if (file != null && !file.exists()) {
+                file.createNewFile()
+            }
+            // 创建写入xml数据所需要的类。
+            def sw = new StringWriter();
+            def xmlBuilder = new groovy.xml.MarkupBuilder(sw)
+            // 若xml文件中没有内容，就多创建一个realease节点，并写入xml数据
+            if (file.text != null && file.text.size() <= 0) {
+                xmlBuilder.releases {
+                    release {
+                        versionCode(versionCodeMsg)
+                        versionName(versionNameMsg)
+                        versionInfo(versionInfoMsg)
+                    }
+                }
+                file.withWriter { writer ->
+                    writer.append(sw.toString())
+                }
+            } else { // 若xml文件中已经有内容，则在原来的内容上追加。
+                xmlBuilder.release {
+                    versionCode(versionCodeMsg)
+                    versionName(versionNameMsg)
+                    versionInfo(versionInfoMsg)
+                }
+                def lines = file.readLines()
+                def lengths = lines.size() - 1
+                file.withWriter { writer ->
+                    lines.eachWithIndex { String line, int index ->
+                        if (index != lengths) {
+                            writer.append(line + '\r\n')
+                        } else if (index == lengths) {
+                            writer.append(sw.toString() + '\r\n')
+                            writer.append(line + '\r\n')
+                        }
+                    }
+                }
+            }
+        }
+    }
+    ```
+    与创建扩展属性一样，扩展Task也需要在project中创建注入。
+    ```
+    /**
+     * 自定义Gradle插件
+     */
+    class GradleStudyPlugin implements Plugin<Project> {
+
+        /**
+         * 插件引入时要执行的方法
+         * @param project 引入当前插件的project
+         */
+        @Override
+        void apply(Project project) {
+            // 创建扩展属性
+            // 这样就可以在gradle脚本中，通过releaseInfo闭包来完成ReleaseInfoExtension的初始化。
+            project.extensions.create("releaseInfo", ReleaseInfoExtension)
+            // 创建Task
+            project.tasks.create("updateReleaseInfo", ReleaseInfoTask)
+        }
+    }
+    ```
+    再次Async工程之后，就可以在Idea的gradle标签里android分组中看到自定义好的Task了。
+
+    注：这种在工程下直接创建buildSrc目录编写的插件，只能对当前工程可见，所以，如果需要将我们自定义好的grdle插件被其他工程所使用，则需要单独创建一个库工程，并创建如buildSrc目录下所有的文件，最后上传maven仓库即可
+#### android插件对gradle扩展
+1. <a href="https://avatarqing.github.io/Gradle-Plugin-User-Guide-Chinese-Verision/">译者序 | Gradle Android插件用户指南翻译</a>
+1. <a href="https://avatarqing.github.io/Gradle-Plugin-User-Guide-Chinese-Verision/advanced_build_customization/manipulation_taskstask.html">Manipulation tasks（操作task） | Gradle Android插件用户指南翻译</a>
+3. 自定义Apk输出位置：
+    ```
+    this.afterEvaluate {
+      this.android.applicationVariants.all { variant ->
+        def output = variant.outpus.first() // 获取变体输出文件（outputs返回是一个集合，但只有一个元素，即输出apk的file）
+        def apkName = "app-${variant.baseName}-${variant.versionName}.apk"
+        output.outputFile = new File(output.outputFile.parent, apkName)
+      }
+    }
+    ```

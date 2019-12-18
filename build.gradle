@@ -264,7 +264,7 @@ def getAllProject() {
     this.allprojects.eachWithIndex { project, index ->
         if (index == 0) {
             println "Root project ${project.name}"
-        }else {
+        } else {
             println "+-------- Project ${project.name}"
         }
     }
@@ -336,16 +336,24 @@ subprojects { Project project ->
  * 属性相关 API
  */
 ext {
-    version = 1.0
+    versionCode = '1.0.0'
+    versionName = '100'
+    versionInfo = 'App的第1个版本，完成聊天功能'
+    destFile = file('release.xml')
+    if (destFile != null && !destFile.exists()) {
+        println '创建release.xml文件'
+        destFile.createNewFile()
+    }
 }
 
 // 打印common.gradle文件内容
 println getContent('common.gradle')
-def getContent(String path){
-    try{
+
+def getContent(String path) {
+    try {
         def file = file(path)
         return file.text
-    }catch(GradleException e){
+    } catch (GradleException e) {
         println 'file not found..'
     }
     return null
@@ -362,7 +370,7 @@ copy {
 // 对文件树进行遍历并拷贝
 fileTree('build/outputs/apk/') { FileTree fileTree ->
     fileTree.visit { FileTreeElement element ->
-        println 'the file name is: '+element.file.name
+        println 'the file name is: ' + element.file.name
         copy {
             from element.file
             into getRootProject().getBuildDir().path + '/test/'
@@ -370,3 +378,97 @@ fileTree('build/outputs/apk/') { FileTree fileTree ->
     }
 }
 
+
+task HelloTask(group: 'hello', description: 'study') {
+    println 'Task build'
+    doFirst {
+        println 'Hello Task'
+    }
+    doLast {
+        println 'Task end'
+    }
+}
+
+task HelloTask2(group: 'hello', description: 'study2', dependsOn: HelloTask) {
+    println 'Task build 2'
+    doFirst {
+        println 'Hello2 Task'
+    }
+    doLast {
+        println 'Task end 2'
+    }
+}
+
+
+// Task实战
+// writeTask输入扩展属性，输出文件
+task writeTask {
+    // 为task指定输入
+    inputs.property('versionCode', this.versionCode)
+    inputs.property('versionName', this.versionName)
+    inputs.property('versionInfo', this.versionInfo)
+    // 为task指定输出
+    outputs.file this.destFile
+    doLast {
+        def data = inputs.getProperties() // 返回一个map
+        File file = outputs.getFiles().getSingleFile()
+        // 将map转为实体对象
+        def versionMsg = new VersionMsg(data)
+        def sw = new StringWriter()
+        def xmlBuilder = new groovy.xml.MarkupBuilder(sw)
+        if (file.text != null && file.text.size() <= 0) { // 文件中没有内容
+            // 实际上，xmlBuilder将xml数据写入到sw中
+            xmlBuilder.releases { // <releases>
+                release { // <releases>的子节点<release>
+                    versionCode(versionMsg.versionCode)
+                    // <release>的子节点<versionCode>1.0.0<versionCode>
+                    versionName(versionMsg.versionName)
+                    versionInfo(versionMsg.versionInfo)
+                }
+            }
+            // 将sw里的内容写到文件中
+            file.withWriter { writer ->
+                writer.append(sw.toString())
+            }
+        } else { // 已经有其它版本信息了
+            xmlBuilder.release {
+                versionCode(versionMsg.versionCode)
+                versionName(versionMsg.versionName)
+                versionInfo(versionMsg.versionInfo)
+            }
+            def lines = file.readLines()
+            def lengths = lines.size() - 1
+            file.withWriter('utf-8') { writer ->
+                lines.eachWithIndex { String line, int index ->
+                    if (index != lengths) {
+                        writer.append(line + '\r\n')
+                    } else if (index == lengths) {
+                        writer.append(sw.toString() + '\r\n')
+                        writer.append(line + '\r\n')
+                    }
+                }
+            }
+        }
+    }
+}
+
+// readTask输入writeTask的输出文件
+task readTask {
+    inputs.file destFile
+    doLast {
+        def file = inputs.files.singleFile
+        println file.text
+    }
+}
+
+task taskTest(dependsOn: [writeTask, readTask]) {
+    doLast {
+        println '任务执行完毕'
+    }
+}
+
+class VersionMsg {
+    String versionCode
+    String versionName
+    String versionInfo
+}
