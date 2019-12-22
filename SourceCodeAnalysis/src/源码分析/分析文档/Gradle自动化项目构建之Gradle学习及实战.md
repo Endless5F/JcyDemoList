@@ -1,3 +1,137 @@
+## Gradle概念
+### 什么是gradle wrapper？
+gradle wrapper 就是由gradle 帮我们生成的gradlew脚本，里面包含了用到的gradle版本信息，我们编译代码的时候不直接运行gradle命令，而是运行gradlew 命令，他会自动帮我们下载对应的gradle dist，gradle wrapper被添加到代码管理系统， 这样每一个开发人员都不用去折腾gradle版本。
+```
+gradle命令(Linux执行需要使用 ./)
+常用任务指令：
+gradlew build。生成所有的输出，并执行所有的检查。
+gradlew run。生成应用程序并执行某些脚本或二进制文件
+gradlew check。执行所有检测类任务如tests、linting等
+gradlew clean。删除build文件目录。
+gradlew projects。查看项目结构。
+gradlew tasks。查看任务列表。查看某个任务详细信息，可用gradle help --task someTask
+gradlew dependencies。查看依赖列表。
+gradlew assembleDebug（或者gradlew aD） 编译并打Debug包
+gradlew assembleRelease（或者gradlew aR） 编译并打Release的包
+调试类：
+gradlew -?, -h, --help。查看帮助信息。
+gradlew -v,--version。查看版本信息。
+gradlew -s,--stacktrace。执行任务时，打印栈信息。如gradle build --s
+日志类：
+-q, --quiet。只打印errors类信息。
+-i, --info。打印详细的信息。
+性能类：
+--configure-on-demand,--no-configure-on-demand。是否开启按需配置模式。
+--build-cache, --no-build-cache。是否使用缓存。
+
+其它的详见其官方文档：https://docs.gradle.org/current/userguide/command_line_interface.html
+```
+### Gradle执行流程
+1. 初始化阶段：执行settings.gradle脚本，解析整个工程中所有Project，构建所有Project对应的project对象。
+2. 配置阶段：解析所有project对象中的task对象，构建好所有task的拓扑图
+3. 执行阶段：执行具体的task以及依赖的task
+### Gradle生命周期
+```
+// setting.gradle文件
+    println '初始化阶段执行完毕'
+
+    // settings.gradle配置完后调用，只对settings.gradle设置生效
+    gradle.settingsEvaluated {
+        println "settings：执行settingsEvaluated..."
+    }
+
+    // 当settings.gradle中引入的所有project都被创建好后调用，只在该文件设置才会生效
+    gradle.projectsLoaded {
+        println "settings：执行projectsLoaded..."
+    }
+
+    // 在每个project进行配置前调用，child project必须在root project中设置才会生效，root project必须在settings.gradle中设置才会生效
+    gradle.beforeProject { proj ->
+        println "settings：执行${proj.name} beforeProject"
+    }
+
+    // 在每个project配置后调用
+    gradle.afterProject { proj ->
+        println "settings：执行${proj.name} afterProject"
+    }
+
+    // 所有project配置完成后调用
+    gradle.projectsEvaluated {
+        println "settings: 执行projectsEvaluated..."
+    }
+
+    //构建开始前调用
+    gradle.buildStarted {
+        println "构建开始..."
+    }
+
+    //构建结束后调用
+    gradle.buildFinished {
+        println "构建结束..."
+    }
+
+// build.gradle文件中
+/**
+ * 配置本Project阶段开始前的监听回调
+ */
+this.beforeEvaluate {
+    println '配置阶段执行之前'
+}
+
+/**
+ * 配置本Project阶段完成以后的回调
+ */
+this.afterEvaluate {
+    println '配置阶段执行完毕'
+}
+
+/**
+ * gradle执行本Project完毕后的回调监听
+ */
+this.gradle.buildFinished {
+    println '执行阶段执行完毕'
+}
+
+/**
+ * 所有project配置完成后调用，可直接在setting.gradle中监听
+ */
+gradle.projectsEvaluated {
+    gradle ->
+        println "所有的project都配置完毕了，准备生成Task依赖关系"
+}
+
+/**
+ * 表示本Project "task 依赖关系已经生成"
+ */
+gradle.taskGraph.whenReady {
+    TaskExecutionGraph graph ->
+        println "task 依赖关系已经生成"
+}
+
+/**
+ * 每一个 Task 任务执行之前回调
+ */
+gradle.taskGraph.beforeTask {
+    Task task ->
+        println "Project[${task.project.name}]--->Task[${task.name}] 在执行之前被回调"
+}
+
+/**
+ * 每一个 task 执行之后被回调
+ */
+gradle.taskGraph.afterTask {
+    task, TaskState taskState ->
+        //第二个参数表示 task 的状态，是可选的参数
+        println "Project[${task.project.name}]--->Task[${task.name}] 在执行完毕,taskState[upToDate:${taskState.upToDate},skipped:${taskState.skipped},executed:${taskState.executed},didWork:${taskState.didWork}]"
+}
+```
+* 注1：上述例子中setting.gradle和build.gradle中存在重复的Gradle生命周期
+* 注2：有一些生命周期只在setting.gradle中配置有效，比如settingsEvaluated
+* 注3：根据Gradle执行流程，第一步初始化setting.gradle文件，第二步配置各个project。而配置各个project的顺序是按照projectName首字母a-z的顺序执行，因此若某一生命周期在所有project的中间的位置声明，则会在声明处以及后面的project产生效应。
+
+附一张不知名大佬的执行流程和声明周期图示：
+
+![](https://user-gold-cdn.xitu.io/2019/12/22/16f2c72e88b88689?w=586&h=1330&f=png&s=72454)
 ## Project
 ### Peoject定义：
     1. 从Gradle的角度看，Gradle的管理是树状结构的，最外层的是根project，里层module是子project。
@@ -459,17 +593,31 @@ Gradle的执行阶段执行的都是Task，即只有Task可在执行阶段执行
 ### Settings类
 settings.gradle（对应Settings.java）决定哪些工程需要被gradle处理，占用了整个gradle生命周期的三分之一，即Initialzation初始化阶段。
 ### SourceSet类
-对默认的文件位置进行修改，从而让gradle知道哪种资源要从哪些文件夹中去查找。
+Gradle有一个约定的目录结构，格式和maven的结构一样。但不同的是，gradle的目录结构是可以改的。对默认的文件位置进行修改，从而让gradle知道哪种资源要从哪些文件夹中去查找。
 ```
-// sourceSets是可以调用多次的
+// 1. sourceSets是可以调用多次的
 android {
     sourceSets {
         main {
+            // 配置jni so库存放位置
             jniLibs.srcDirs = ['libs']
         }
     }
     sourceSets {
         main {
+            // 根据模块配置不同的资源位置
+            res.srcDirs = ['src/main/res',  // 普通资源目录
+                           'src/main/res-ad',   // 广告资源目录
+                           'src/main/res-player']   // 播放器相关资源目录
+        }
+    }
+}
+
+// 2. sourceSets一般情况下是一次性配置
+android {
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['libs']
             res.srcDirs = ['src/main/res',
                            'src/main/res-ad',
                            'src/main/res-player']
@@ -477,19 +625,7 @@ android {
     }
 }
 
-// sourceSets一般情况下是一次性配置
-android {
-    sourceSets {
-        main {
-            jniLibs.srcDirs = ['libs']
-            res.srcDirs = ['src/main/res',
-                           'src/main/res-ad',
-                           'src/main/res-player']
-        }
-    }
-}
-
-// 使用编程的思想，配置sourceSets
+// 3. 使用编程的思想，配置sourceSets
 this.android.sourceSets{
     main {
         jniLibs.srcDirs = ['libs']
@@ -527,7 +663,7 @@ Gradle中的Plugin是对完成指定功能的Task封装的体现，只要工程�
         ```
         最后，Async一下工程，buildSrc就会被识别出来了，整体目录如图：E:\CodeProject\android\Github\JcyDemoList\SourceCodeAnalysis\src\源码分析\图示讲解\Gradle自定义Plugin.png
 2. 创建插件类：
-与Java一样，在groovy目录下，创建一个包，再创建一个插件类（如：com.android.gradle.study.GradleStudyPlugin），该插件类必须实现Plugin<Project>接口。
+与Java一样，在groovy目录下，创建一个包，再创建一个插件类（如：com.android.gradle.GradleStudyPlugin），该插件类必须实现Plugin<Project>接口。
     > 注意：gradle插件类是.groovy文件，不是.java文件
     ```
     import org.gradle.api.Plugin
@@ -549,10 +685,10 @@ Gradle中的Plugin是对完成指定功能的Task封装的体现，只要工程�
     }
     ```
 3. 指定插件入口：
-在编写完插件类的逻辑之后，需要在META-INF.gradle-plugins目录下创建一个properties文件（建议以插件类包名来命名，如：com.android.gradle.study.properties），在该properties中声明插件类，以此来指定插件入口。
+在编写完插件类的逻辑之后，需要在META-INF.gradle-plugins目录下创建一个properties文件（建议以插件类包名来命名，如：com.android.gradle.properties），在该properties中声明插件类，以此来指定插件入口。
     > 该properties文件的名字将作为当前gradle插件被app工程引用的依据。
     ```
-    implementation-class=com.android.gradle.study.GradleStudyPlugin
+    implementation-class=com.android.gradle.GradleStudyPlugin
     // 如果报错 Could not find implementation class 'xxx' 的话，
     // 一般是类全路径有问题，默认包不需要写包路径，修改如下即可：implementation-class=GradleStudyPlugin
     ```
@@ -560,7 +696,7 @@ Gradle中的Plugin是对完成指定功能的Task封装的体现，只要工程�
 打开app工程的build.gradle，应用上面的自定义gradle插件，并Async。
     ```
     apply plugin: 'com.android.application'
-    apply plugin: 'com.android.gradle.study'
+    apply plugin: 'com.android.gradle'
 
     android {
       ...
@@ -605,7 +741,7 @@ Gradle中的Plugin是对完成指定功能的Task封装的体现，只要工程�
         ```
     3. 打开在app工程的build.gradle，通过扩展key值命名闭包的方式，就可以配置指定参数了。
         ```
-        apply plugin: 'com.android.gradle.study'
+        apply plugin: 'com.android.gradle'
 
         releaseInfo {
             versionCode = '1.0.0'
@@ -717,14 +853,27 @@ Gradle中的Plugin是对完成指定功能的Task封装的体现，只要工程�
     注：这种在工程下直接创建buildSrc目录编写的插件，只能对当前工程可见，所以，如果需要将我们自定义好的grdle插件被其他工程所使用，则需要单独创建一个库工程，并创建如buildSrc目录下所有的文件，最后上传maven仓库即可
 #### android插件对gradle扩展
 1. <a href="https://avatarqing.github.io/Gradle-Plugin-User-Guide-Chinese-Verision/">译者序 | Gradle Android插件用户指南翻译</a>
-1. <a href="https://avatarqing.github.io/Gradle-Plugin-User-Guide-Chinese-Verision/advanced_build_customization/manipulation_taskstask.html">Manipulation tasks（操作task） | Gradle Android插件用户指南翻译</a>
+2. <a href="https://avatarqing.github.io/Gradle-Plugin-User-Guide-Chinese-Verision/advanced_build_customization/manipulation_taskstask.html">Manipulation tasks（操作task） | Gradle Android插件用户指南翻译</a>
 3. 自定义Apk输出位置：
     ```
     this.afterEvaluate {
-      this.android.applicationVariants.all { variant ->
-        def output = variant.outpus.first() // 获取变体输出文件（outputs返回是一个集合，但只有一个元素，即输出apk的file）
-        def apkName = "app-${variant.baseName}-${variant.versionName}.apk"
-        output.outputFile = new File(output.outputFile.parent, apkName)
-      }
+        this.android.applicationVariants.all { variant ->
+            def output = variant.outpus.first() // 获取变体输出文件（outputs返回是一个集合，但只有一个元素，即输出apk的file）
+            def apkName = "app-${variant.baseName}-${variant.versionName}.apk"
+            output.outputFile = new File(output.outputFile.parent, apkName)
+        }
     }
     ```
+## Jenkins
+ Jenkins是一个开源的、提供友好操作界面的持续集成(CI)工具，起源于Hudson（Hudson是商用的），主要用于持续、自动的构建/测试软件项目、监控外部任务的运行（这个比较抽象，暂且写上，不做解释）。Jenkins用Java语言编写，可在Tomcat等流行的servlet容器中运行，也可独立运行。通常与版本管理工具(SCM)、构建工具结合使用。常用的版本控制工具有SVN、GIT，构建工具有Maven、Ant、Gradle。
+
+具体学习请参考：<a href="https://www.jianshu.com/p/5f671aca2b5a">Jenkins详细教程</a>
+## 参考链接
+
+https://www.jianshu.com/p/498ae3fabe6f
+
+https://www.jianshu.com/u/f9de259236a3
+
+...
+
+<font color="#ff0000">注：若有什么地方阐述有误，敬请指正。**期待您的点赞哦！！！**</font>
