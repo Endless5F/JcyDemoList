@@ -183,3 +183,284 @@ private static final EventBusBuilder DEFAULT_BUILDER = new EventBusBuilder();
         executorService = builder.executorService;
     }
 ```
+### EventBus线程切换
+EventBus的成员属性中，我们来简单看一下其非常重要的三个Poster：mainThreadPoster、backgroundPoster、asyncPoster
+
+1. mainThreadPoster：用于主线程切换。
+    ```
+    // EventBusBuilder类：
+        MainThreadSupport getMainThreadSupport() {
+            if (mainThreadSupport != null) {
+                return mainThreadSupport;
+            } else if (Logger.AndroidLogger.isAndroidLogAvailable()) {
+                // 获取主线程Looper，正常情况不会为null
+                Object looperOrNull = getAndroidMainLooperOrNull();
+                return looperOrNull == null ? null :
+                        // 初始化MainThreadSupport，实际上是AndroidHandlerMainThreadSupport对象
+                        new MainThreadSupport.AndroidHandlerMainThreadSupport((Looper) looperOrNull);
+            } else {
+                return null;
+            }
+        }
+
+        Object getAndroidMainLooperOrNull() {
+            try {
+                // 获取主线程Looper
+                return Looper.getMainLooper();
+            } catch (RuntimeException e) {
+                // 并不是真正的功能性Android（例如，“ Stub！” Maven依赖项）
+                return null;
+            }
+        }
+
+        public interface MainThreadSupport {
+
+            boolean isMainThread();
+
+            Poster createPoster(EventBus eventBus);
+
+            class AndroidHandlerMainThreadSupport implements MainThreadSupport {
+
+                private final Looper looper;
+
+                public AndroidHandlerMainThreadSupport(Looper looper) {
+                    // 初始化looper属性，此处就是上面传进来的主线程Looper
+                    this.looper = looper;
+                }
+
+                @Override
+                public boolean isMainThread() {
+                    // 判断是否为主线程
+                    return looper == Looper.myLooper();
+                }
+
+                @Override
+                public Poster createPoster(EventBus eventBus) {
+                    // 初始化HandlerPoster，实际是Handler子类
+                    return new HandlerPoster(eventBus, looper, 10);
+                }
+            }
+
+        }
+    ```
+    从构造函数中mainThreadPoster初始化，实际上是通过mainThreadSupport.createPoster(this)，而mainThreadSupport通过分析，我们可以了解实际上是AndroidHandlerMainThreadSupport类的对象。因此通过调用其createPoster(this)方法最后返回了HandlerPoster。
+    ```
+    // 继承自Handler
+    public class HandlerPoster extends Handler implements Poster {
+
+        // PendingPostQueue队列，用于保存用于即将执行的，待发送的post队列
+        private final PendingPostQueue queue;
+        // 表示post事件可以最大的在HandlerMessage中存活时间。规定最大的运行时间，因为运行在主线程，不能阻塞主线程。
+        private final int maxMillisInsideHandleMessage;
+        private final EventBus eventBus;
+        // 标识Handler是否有效，即是否运行起来啦
+        private boolean handlerActive;
+
+        protected HandlerPoster(EventBus eventBus, Looper looper, int maxMillisInsideHandleMessage) {
+            // 此处传入通过调用createPoster(this)方法，
+            // 传入保存到AndroidHandlerMainThreadSupport成员属性的主线程looper。
+            // 因此HandlerPoster是主线程的Handler，用于将EventBus异步线程消息切换回主线程。
+            super(looper);
+            // 将createPoster(this)，传入的this，即EventBus保存
+            this.eventBus = eventBus;
+            this.maxMillisInsideHandleMessage = maxMillisInsideHandleMessage;
+            queue = new PendingPostQueue();
+        }
+
+        // 消息入队，若此Handler已运行，则直接发送obtainMessage消息，最终回到下面的handleMessage中处理入队消息。
+        public void enqueue(Subscription subscription, Object event) {
+            // 根据传进来的参数封装PendingPost待处理post对象。PendingPost的封装，使用了数据缓存池。
+            PendingPost pendingPost = PendingPost.obtainPendingPost(subscription, event);
+            synchronized (this) {
+                // 待处理消息入队
+                queue.enqueue(pendingPost);
+                if (!handlerActive) {
+                    handlerActive = true;
+                    // 调用sendMessage，发送事件回到主线程，最终会调用下面的handleMessage方法
+                    if (!sendMessage(obtainMessage())) {
+                        throw new EventBusException("Could not send handler message");
+                    }
+                }
+            }
+        }
+
+        // Handler中最重要的方法就是handleMessage，所有的消息处理最后都会经过此方法。
+        @Override
+        public void handleMessage(Message msg) {
+            boolean rescheduled = false;
+            try {
+                long started = SystemClock.uptimeMillis();
+                // 无限循环
+                while (true) {
+                    // 从队列中取出消息
+                    PendingPost pendingPost = queue.poll();
+                    // 双重判断并加锁，若pendingPost为null，则返回
+                    if (pendingPost == null) {
+                        synchronized (this) {
+                            // Check again, this time in synchronized
+                            pendingPost = queue.poll();
+                            if (pendingPost == null) {
+                                handlerActive = false;
+                                return;
+                            }
+                        }
+                    }
+                    // 使用反射的方法调用订阅者的订阅方法，进行事件的分发。
+                    eventBus.invokeSubscriber(pendingPost);
+                    long timeInMethod = SystemClock.uptimeMillis() - started;
+                    // 每次分发完事件都会重新比较一下处于此循环的时间，若大于最大设定值则返回
+                    if (timeInMethod >= maxMillisInsideHandleMessage) {
+                        if (!sendMessage(obtainMessage())) {
+                            throw new EventBusException("Could not send handler message");
+                        }
+                        rescheduled = true;
+                        return;
+                    }
+                }
+            } finally {
+                handlerActive = rescheduled;
+            }
+        }
+    }
+    ```
+2. backgroundPoster：后台消息切换。
+    ```
+    // 实现Runnable接口
+    final class BackgroundPoster implements Runnable, Poster {
+
+        private final PendingPostQueue queue;
+        private final EventBus eventBus;
+        // 标识此Runnable是否正在运行
+        private volatile boolean executorRunning;
+
+        BackgroundPoster(EventBus eventBus) {
+            // 初始化eventBus属性
+            this.eventBus = eventBus;
+            // 初始化待处理post队列
+            queue = new PendingPostQueue();
+        }
+
+        // 消息入队，若此Runnable正在运行，则通过eventBus获取其初始化时构造的线程池，执行当前任务，最终回到下面的run方法中。
+        public void enqueue(Subscription subscription, Object event) {
+            // 根据传进来的参数封装PendingPost待处理post对象。PendingPost的封装，使用了数据缓存池。
+            PendingPost pendingPost = PendingPost.obtainPendingPost(subscription, event);
+            synchronized (this) {
+                // 消息入队
+                queue.enqueue(pendingPost);
+                if (!executorRunning) {
+                    executorRunning = true;
+                    // 通过eventBus成员获取在EventBus构造方法中初始化的线程池，然后执行当前Runnable
+                    eventBus.getExecutorService().execute(this);
+                }
+            }
+        }
+
+        @Override
+        public void run() {
+            try {
+                try {
+                    while (true) {
+                        // 双重判断并加锁，若pendingPost为null，则返回
+                        PendingPost pendingPost = queue.poll(1000);
+                        if (pendingPost == null) {
+                            synchronized (this) {
+                                // Check again, this time in synchronized
+                                pendingPost = queue.poll();
+                                if (pendingPost == null) {
+                                    executorRunning = false;
+                                    return;
+                                }
+                            }
+                        }
+                        // 通过eventBus执行分发事件，此while循环会将队列中所有消息都取出，并分发。
+                        eventBus.invokeSubscriber(pendingPost);
+                    }
+                } catch (InterruptedException e) {
+                    eventBus.getLogger().log(Level.WARNING, Thread.currentThread().getName() + " was interruppted", e);
+                }
+            } finally {
+                executorRunning = false;
+            }
+        }
+    }
+    ```
+3. asyncPoster：
+    ```
+    // 实现Runnable接口
+    class AsyncPoster implements Runnable, Poster {
+
+        private final PendingPostQueue queue;
+        private final EventBus eventBus;
+
+        AsyncPoster(EventBus eventBus) {
+            this.eventBus = eventBus;
+            queue = new PendingPostQueue();
+        }
+
+        // 消息入队，直接使用evnetBus中线程池执行当前Runnable，最终回到run方法中
+        public void enqueue(Subscription subscription, Object event) {
+            PendingPost pendingPost = PendingPost.obtainPendingPost(subscription, event);
+            queue.enqueue(pendingPost);
+            eventBus.getExecutorService().execute(this);
+        }
+
+        @Override
+        public void run() {
+            // 获取消息队列中的消息
+            PendingPost pendingPost = queue.poll();
+            if(pendingPost == null) {
+                throw new IllegalStateException("No pending post available");
+            }
+            // 只执行消息队列中的一个消息即结束
+            eventBus.invokeSubscriber(pendingPost);
+        }
+    }
+    ```
+
+#### 小结
+1. 三个Poster均实现了Poster接口，此接口只有enqueue一个方法。此方法用于消息入队，然后通过Handler发送obtainMessage消息或者线程池执行当前Runnable任务，最终回到消息队列处理的方法中，即handleMessage或者run方法。
+2. backgroundPoster和asyncPoster实际上很相似，差别在于backgroundPoster会一次性将消息队列中的消息通过eventBus分发完，而asyncPoster一次只分发一个。
+3. 三个Poster入队的消息最后都被封装为PendingPost对象，此类的封装，使用了数据缓存池。PendingPost类内部维护一个类型PendingPost的ArrayList，最大容量为10000。每一个PendingPost消息被分发完成，都会调用PendingPost#releasePendingPost方法释放其内部成员属性值，并将其添加到内部集合中，已备调用obtainPendingPost而复用，这样就减少了初始化PendingPost对象的时间，直接更改其内部属性值以提高效率。
+    ```
+    final class PendingPost {
+        private final static List<PendingPost> pendingPostPool = new ArrayList<PendingPost>();
+
+        Object event;
+        Subscription subscription;
+        PendingPost next;
+
+        private PendingPost(Object event, Subscription subscription) {
+            this.event = event;
+            this.subscription = subscription;
+        }
+        // 复用或者创建新的obtainPendingPost
+        static PendingPost obtainPendingPost(Subscription subscription, Object event) {
+            synchronized (pendingPostPool) {
+                int size = pendingPostPool.size();
+                if (size > 0) {
+                    // 移除并获取最后一位PendingPost
+                    PendingPost pendingPost = pendingPostPool.remove(size - 1);
+                    // 重置成员属性值
+                    pendingPost.event = event;
+                    pendingPost.subscription = subscription;
+                    pendingPost.next = null;
+                    return pendingPost;
+                }
+            }
+            return new PendingPost(event, subscription);
+        }
+        // 释放PendingPost成员属性保存的值
+        static void releasePendingPost(PendingPost pendingPost) {
+            // 清空属性值
+            pendingPost.event = null;
+            pendingPost.subscription = null;
+            pendingPost.next = null;
+            synchronized (pendingPostPool) {
+                // Don't let the pool grow indefinitely
+                if (pendingPostPool.size() < 10000) {
+                    pendingPostPool.add(pendingPost);
+                }
+            }
+        }
+    }
+    ```
