@@ -61,7 +61,7 @@ public class EventActivity1 extends BaseToolbarCompatActivity {
      * @Subscribe 订阅者方法
      * 注：不管post发布事件在什么线程中，MAIN 都在主线程
      */
-    @Subscribe(threadMode = ThreadMode.MAIN)
+    @Subscribe(threadMode = ThreadMode.MAIN, sticky = false, priority = 2)
     public void onMessageEventMain(EventBean member) {
         LogUtil.i(member.toString());
         TextView viewById = (TextView) findViewById(R.id.tv_event1);
