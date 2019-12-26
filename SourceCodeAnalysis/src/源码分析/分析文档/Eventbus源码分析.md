@@ -150,7 +150,7 @@ private static final EventBusBuilder DEFAULT_BUILDER = new EventBusBuilder();
     EventBus(EventBusBuilder builder) {
         // 日志打印
         logger = builder.getLogger();
-        // 事件对应的订阅者存储
+        // 事件对应的 订阅者和订阅者方法集合映射的封装类 存储
         subscriptionsByEventType = new HashMap<>();
         // 注册的订阅者存储
         typesBySubscriber = new HashMap<>();
@@ -777,6 +777,7 @@ public @interface Subscribe {
             }
         }
 
+        // 处理粘性事件
         private void checkPostStickyEventToSubscription(Subscription newSubscription, Object stickyEvent) {
             if (stickyEvent != null) {
                 // 发布到订阅者相应方法中
@@ -784,6 +785,7 @@ public @interface Subscribe {
             }
         }
 
+        // 粘性事件订阅者，在注册时，会及时收到事件，就是在注册后通过此方法将粘性事件及时发布的
         private void postToSubscription(Subscription subscription, Object event, boolean isMainThread) {
             // 判断订阅事件方法的线程模式
             switch (subscription.subscriberMethod.threadMode) {
@@ -843,3 +845,268 @@ public @interface Subscribe {
     2. 调用register方法,首先获取订阅者的Class对象，然后通过SubscriberMethodFinder对象获取订阅者中所有订阅方法集合,它先从缓存中获取，如果缓存中有，直接返回；如果缓存中没有，通过反射的方式去遍历订阅者类内部被Subscribe注解的方法，将这些参数只有一个的方法放入到集合中进行返回。
     3. 按个将所有订阅者和对应事件方法进行绑定。在绑定之后会判断绑定的事件是否是粘性事件，如果是粘性事件，直接调用postToSubscription方法，将之前发送的粘性事件发送给订阅者。这就是粘性事件为什么在事件发送去之后，再注册该事件时，还能接受到此消息的。
 ### 发布事件EventBus—post(event)
+```
+// EventBus类：
+    // 发布的线程状态
+    final static class PostingThreadState {
+        final List<Object> eventQueue = new ArrayList<>();  // 事件队列
+        boolean isPosting;  // 是否正在发布
+        boolean isMainThread;   // 是否在主线程
+        Subscription subscription;  // 订阅者和订阅方法封装类
+        Object event;   // 事件
+        boolean canceled;   // 取消标志位
+    }
+
+    // ThreadLocal使用方法很简单：get()和set(T)
+    // ThreadLocal内部维护一个静态内部类ThreadLocalMap。每个Thread中都具备一个ThreadLocalMap，而ThreadLocalMap可以存储以ThreadLocal为key的键值对。
+    private final ThreadLocal<PostingThreadState> currentPostingThreadState = new ThreadLocal<PostingThreadState>() {
+        // initialValue方法，同一个线程使用ThreadLocal#get()方法时，只有第一次会调用，即同一个线程使用的PostingThreadState对象是同一个。
+        @Override
+        protected PostingThreadState initialValue() {
+            return new PostingThreadState();
+        }
+    };
+
+    // 1. 将给定事件发布到事件总线
+    public void post(Object event) {
+        // currentPostingThreadState实际上是：ThreadLocal<PostingThreadState>
+        // Threadlocal而是一个线程内部的存储类，可以在指定线程内存储数据，数据存储以后，只有指定线程可以得到存储数据
+        // 因此，若是同一个线程，则postingState是唯一的，可以类比成单例。
+        PostingThreadState postingState = currentPostingThreadState.get();
+        List<Object> eventQueue = postingState.eventQueue;
+        // 将事件添加到事件队列中，即同一线程post发布的所有事件都在该队列中
+        eventQueue.add(event);
+        // 是否正在发布事件
+        if (!postingState.isPosting) {
+            // 是否是主线程
+            postingState.isMainThread = isMainThread();
+            // 正在发布
+            postingState.isPosting = true;
+            if (postingState.canceled) {
+                throw new EventBusException("Internal error. Abort state was not reset");
+            }
+            try {
+                // 将事件队列中所有事件，移除队列并发布
+                while (!eventQueue.isEmpty()) {
+                    postSingleEvent(eventQueue.remove(0), postingState);
+                }
+            } finally {
+                postingState.isPosting = false;
+                postingState.isMainThread = false;
+            }
+        }
+    }
+
+    // 1.1 发布单个事件
+    private void postSingleEvent(Object event, PostingThreadState postingState) throws Error {
+        Class<?> eventClass = event.getClass();
+        boolean subscriptionFound = false;
+        // 判断事件的继承性，默认是true
+        if (eventInheritance) {
+            // 查找所有事件类型，包括父类和接口
+            List<Class<?>> eventTypes = lookupAllEventTypes(eventClass);
+            int countTypes = eventTypes.size();
+            // 遍历Class集合，继续处理事件
+            for (int h = 0; h < countTypes; h++) {
+                Class<?> clazz = eventTypes.get(h);
+                // 通过postSingleEventForEventType方法返回的boolean值和subscriptionFound，进行或运算，subscriptionFound默认为false
+                subscriptionFound |= postSingleEventForEventType(event, postingState, clazz);
+            }
+        } else {
+            subscriptionFound = postSingleEventForEventType(event, postingState, eventClass);
+        }
+        // 若subscriptionFound为false，则证明没有订阅者订阅此事件
+        if (!subscriptionFound) {
+            if (logNoSubscriberMessages) {
+                logger.log(Level.FINE, "No subscribers registered for event " + eventClass);
+            }
+            if (sendNoSubscriberEvent && eventClass != NoSubscriberEvent.class &&
+                    eventClass != SubscriberExceptionEvent.class) {
+                // 发送 '没有订阅者事件' 事件
+                post(new NoSubscriberEvent(this, event));
+            }
+        }
+    }
+
+    // 1.1.1 查找所有Class对象，包括超类和接口。
+    private static List<Class<?>> lookupAllEventTypes(Class<?> eventClass) {
+        synchronized (eventTypesCache) {
+            // 先查找缓存
+            List<Class<?>> eventTypes = eventTypesCache.get(eventClass);
+            // 缓存没有则遍历查找
+            if (eventTypes == null) {
+                eventTypes = new ArrayList<>();
+                Class<?> clazz = eventClass;
+                while (clazz != null) {
+                    eventTypes.add(clazz);  // 添加当前事件类型
+                    // 获取当前事件类实现的所有接口，添加到事件类型集合中
+                    addInterfaces(eventTypes, clazz.getInterfaces());
+                    clazz = clazz.getSuperclass();
+                }
+                // 通过以事件Class类型位key，缓存跟此事件有关的所有事件
+                eventTypesCache.put(eventClass, eventTypes);
+            }
+            return eventTypes;
+        }
+    }
+
+    // 1.1.1.1 通过父接口递归，添加事件的父接口类型
+    static void addInterfaces(List<Class<?>> eventTypes, Class<?>[] interfaces) {
+        // 遍历当前事件类所实现的所有接口
+        for (Class<?> interfaceClass : interfaces) {
+            // 若事件集合不包含此接口，则添加，并获取接口的父接口，继续迭代
+            if (!eventTypes.contains(interfaceClass)) {
+                eventTypes.add(interfaceClass);
+                // 继续迭代
+                addInterfaces(eventTypes, interfaceClass.getInterfaces());
+            }
+        }
+    }
+
+    // 1.1.2 针对事件类型发布单个事件
+    private boolean postSingleEventForEventType(Object event, PostingThreadState postingState, Class<?> eventClass) {
+        CopyOnWriteArrayList<Subscription> subscriptions;
+        synchronized (this) {
+            // 通过事件类型，获取 订阅者和订阅者方法集合映射的封装类 集合
+            subscriptions = subscriptionsByEventType.get(eventClass);
+        }
+        if (subscriptions != null && !subscriptions.isEmpty()) {
+            // 遍历subscriptions集合
+            for (Subscription subscription : subscriptions) {
+                postingState.event = event;
+                postingState.subscription = subscription;
+                boolean aborted = false;
+                try {
+                    // 发布到订阅
+                    postToSubscription(subscription, event, postingState.isMainThread);
+                    aborted = postingState.canceled;
+                } finally {
+                    // 重置postingState
+                    postingState.event = null;
+                    postingState.subscription = null;
+                    postingState.canceled = false;
+                }
+                if (aborted) {
+                    break;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+    // 1.1.2.1 最后发布到订阅者，根据线程模式，进行线程切换
+    private void postToSubscription(Subscription subscription, Object event, boolean isMainThread) {
+         // 判断订阅事件方法的线程模式
+         switch (subscription.subscriberMethod.threadMode) {
+             case POSTING:
+                 // 默认的线程模式，在那个线程发送事件就在那个线程处理事件
+                 invokeSubscriber(subscription, event);
+                 break;
+             case MAIN:  // 在主线程处理事件
+                 if (isMainThread) {
+                     // 如果在主线程发送事件，则直接在主线程通过反射处理事件
+                     invokeSubscriber(subscription, event);
+                 } else {
+                     // 如果是在子线程发送事件，则将事件入队列，通过Handler切换到主线程执行处理事件
+                     mainThreadPoster.enqueue(subscription, event);
+                 }
+                 break;
+             case MAIN_ORDERED:
+                 // 无论在那个线程发送事件，都先将事件入队列，然后通过 Handler 切换到主线程，依次处理事件。mainThreadPoster不会为null
+                 if (mainThreadPoster != null) {
+                     mainThreadPoster.enqueue(subscription, event);
+                 } else {
+                     // temporary: technically not correct as poster not decoupled from subscriber
+                     invokeSubscriber(subscription, event);
+                 }
+                 break;
+             case BACKGROUND:
+                 if (isMainThread) {
+                     // 如果在主线程发送事件，则先将事件入队列，然后通过线程池依次处理事件
+                     backgroundPoster.enqueue(subscription, event);
+                 } else {
+                     // 如果在子线程发送事件，则直接在发送事件的线程通过反射处理事件
+                     invokeSubscriber(subscription, event);
+                 }
+                 break;
+             case ASYNC:
+                 // 无论在那个线程发送事件，都将事件入队列，然后通过线程池处理。
+                 asyncPoster.enqueue(subscription, event);
+                 break;
+             default:
+                 throw new IllegalStateException("Unknown thread mode: " + subscription.subscriberMethod.threadMode);
+         }
+    }
+
+     // 1.1.2.1.1 用反射来执行订阅事件的方法，这样发送出去的事件就被订阅者接收并做相应处理
+    void invokeSubscriber(Subscription subscription, Object event) {
+        try {
+            subscription.subscriberMethod.method.invoke(subscription.subscriber, event);
+        } catch (InvocationTargetException e) {
+            handleSubscriberException(subscription, event, e.getCause());
+        } catch (IllegalAccessException e) {
+            throw new IllegalStateException("Unexpected exception", e);
+        }
+    }
+```
+总结：
+1. 获取当前线程的事件队列，将要发布的事件加入到队列中。然后遍历整个队列，边移除遍历的当前事件，边发布当前事件。
+2. 获取事件的Class对象，找到当前的event的所有父类和实现的接口的class集合。遍历这个集合，发布集合中的每一个事件。
+3. 通过事件类型，获取 订阅者和订阅者方法集合映射的封装类 集合，遍历集合，将事件发送给订阅者。
+4. 发送给订阅者时，根据订阅者的订阅方法注解中的线程模式，判断是否需要线程切换，若需要则切换线程进行调用，否则直接执行发布。
+5. 用反射来执行订阅事件的方法，这样发送出去的事件就被订阅者接收并做相应处理。
+
+若是粘性事件，则先添加到粘性事件集合中，再发布事件：
+```
+// EventBus类：
+    public void postSticky(Object event) {
+        synchronized (stickyEvents) {
+            // 添加到粘性事件集合，以备事件发布之后，订阅该事件的订阅者注册该事件时，依旧能够及时收到该事件
+            // 具体可回顾【注册EventBus—register(this)--遍历集合按个订阅】部分，查看如何注册后即可及时收到粘性事件
+            stickyEvents.put(event.getClass(), event);
+        }
+        // 调用普通事件的发布方法，及时发布
+        post(event);
+    }
+```
+### EventBus-unregister(subscriber)
+```
+// EventBus类：
+    // 从所有事件类中注销给定的订阅者
+    public synchronized void unregister(Object subscriber) {
+        // 获取订阅者订阅的所有事件
+        List<Class<?>> subscribedTypes = typesBySubscriber.get(subscriber);
+        if (subscribedTypes != null) {
+            // 遍历订阅类型集合，释放之前缓存的当前类中的Subscription
+            for (Class<?> eventType : subscribedTypes) {
+                unsubscribeByEventType(subscriber, eventType);
+            }
+            // 删除以subscriber为key的键值对，更新typesBySubscriber
+            typesBySubscriber.remove(subscriber);
+        } else {
+            logger.log(Level.WARNING, "Subscriber to unregister was not registered before: " + subscriber.getClass());
+        }
+    }
+
+    // 仅更新subscriptionsByEventType，而不更新typesBySubscriber
+    private void unsubscribeByEventType(Object subscriber, Class<?> eventType) {
+        // 得到当前参数类型对应的Subscription集合
+        List<Subscription> subscriptions = subscriptionsByEventType.get(eventType);
+        if (subscriptions != null) {
+            int size = subscriptions.size();
+            // 遍历Subscription集合
+            for (int i = 0; i < size; i++) {
+                Subscription subscription = subscriptions.get(i);
+                 // 如果当前subscription对象对应的注册类对象 和 要取消注册的注册类对象相同，则删除当前subscription对象
+                if (subscription.subscriber == subscriber) {
+                    subscription.active = false;
+                    subscriptions.remove(i);
+                    i--;
+                    size--;
+                }
+            }
+        }
+    }
+```
+总结：unregister中释放了typesBySubscriber、subscriptionsByEventType中缓存的资源。
