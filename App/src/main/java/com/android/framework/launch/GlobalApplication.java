@@ -13,6 +13,9 @@ import com.android.baselibrary.strategy.httpProcessor.RetrofitProcessor;
 import com.android.baselibrary.strategy.httpProcessor.http.interceptors.LogInterceptor;
 import com.android.baselibrary.util.AppUtil;
 import com.android.baselibrary.util.CrashHandler;
+import com.android.framework.CustomEventBusIndex;
+
+import org.greenrobot.eventbus.EventBus;
 
 import java.util.Objects;
 
@@ -39,6 +42,9 @@ public class GlobalApplication extends Application {
                 .withJavascriptInterface("latte")
                 .configure();
         HttpHelper.init(new RetrofitProcessor());
+
+        // EventBus安装默认事件总线
+        EventBus.builder().addIndex(new CustomEventBusIndex()).installDefaultEventBus();
     }
 
     private void initApp() {

@@ -1,4 +1,11 @@
-## Eventbus使用
+主流开源框架源码深入了解第6篇——EventBus源码分析。(源码以3.1.1版为准)
+
+![](https://user-gold-cdn.xitu.io/2019/12/29/16f520a780ddf968?w=300&h=300&f=png&s=51701)
+## EventBus简介
+EventBus是一个Android事件发布/订阅轻量级框架，通过此框架可以解耦发布者和订阅者，可以简化Android的事件传递。事件传递既可以用于Android的四大组件间的通讯，也可以用于异步线程和主线程通讯。其最大的优点在于，代码简洁、使用简单以及将事件的发布和订阅充分的解耦。
+
+![](https://user-gold-cdn.xitu.io/2019/12/30/16f56ea6562e575b?w=800&h=299&f=png&s=69649)
+### EventBus使用
 ```
 public class EventActivity extends AppCompatActivity {
 
@@ -82,6 +89,15 @@ public class EventActivity extends AppCompatActivity {
     }
 }
 ```
+### EventBus分析流程
+1. EventBus初始化
+2. EventBus成员属性
+3. EventBus线程切换
+4. Subscribe注解
+5. EventBus注册
+6. 发布事件EventBus 
+7. 取消注册unregister
+8. Subscriber 索引
 ## EventBus源码分析
 ### EventBus初始化
 ```
@@ -613,7 +629,7 @@ public @interface Subscribe {
             // findState中间器初始化订阅者
             findState.initForSubscriber(subscriberClass);
             while (findState.clazz != null) {
-                // 获取subscriberInfo，初始化为null。默认为null
+                // 获取subscriberInfo，默认为null。此方法会在【Subscriber 索引】详细讲解。
                 findState.subscriberInfo = getSubscriberInfo(findState);
                 if (findState.subscriberInfo != null) {
                     SubscriberMethod[] array = findState.subscriberInfo.getSubscriberMethods();
@@ -1110,3 +1126,212 @@ public @interface Subscribe {
     }
 ```
 总结：unregister中释放了typesBySubscriber、subscriptionsByEventType中缓存的资源。
+
+## Subscriber 索引
+EventBus主要是在项目运行时通过反射来查找订事件的方法信息，如果项目中有大量的订阅事件的方法，必然会对项目运行时的性能产生影响。其实除了在项目运行时通过反射查找订阅事件的方法信息，EventBus在3.0之后增加了注解处理器，在程序的编译时候，就可以根据注解生成相对应的代码，相对于之前的直接通过运行时反射，大大提高了程序的运行效率，但是在3.0默认的是通过反射去查找用@Subscribe标注的方法，来生成一个辅助的索引类来保存这些信息，这个索引类就是Subscriber Index，和 ButterKnife 的原理是类似的。
+
+### SubscriberInfoIndex使用(以【EventBus使用为例】)
+1. App build.gradle依赖：
+```
+dependencies {
+    compile 'org.greenrobot:eventbus:3.1.1'
+    // 引入注解处理器
+    annotationProcessor 'org.greenrobot:eventbus-annotation-processor:3.1.1'
+}
+```
+2. App build.gradle配置注解生成类选项：
+```
+android {
+    defaultConfig {
+        ...
+        javaCompileOptions {
+            annotationProcessorOptions {
+                // 根据项目实际情况，指定辅助索引类的名称和包名
+                arguments = [ eventBusIndex : 'com.android.framework.CustomEventBusIndex' ]
+            }
+        }
+    }
+    ...
+```
+3. Application中配置：
+```
+// CustomEventBusIndex此类由EventBus注解处理器，在项目编译阶段动态生成
+EventBus.builder().addIndex(new CustomEventBusIndex()).installDefaultEventBus();
+
+public class CustomEventBusIndex implements SubscriberInfoIndex {
+    // 保存当前注册类的 Class 类型和其中事件订阅方法的信息
+    private static final Map<Class<?>, SubscriberInfo> SUBSCRIBER_INDEX;
+
+    static {
+        SUBSCRIBER_INDEX = new HashMap<Class<?>, SubscriberInfo>();
+
+        /*
+         * 添加订阅者信息索引——SimpleSubscriberInfo参数：
+         * subscriberClass：订阅者Class类
+         * shouldCheckSuperclass：是否检查父类Class
+         * methodInfos(数组)：订阅方法数组
+         *
+         * SubscriberMethodInfo构造参数：1. 方法名  2. 方法唯一参数类型，即事件类型
+         */
+        putIndex(new SimpleSubscriberInfo(com.android.framework.launch.activity.EventActivity1.class, true,
+                new SubscriberMethodInfo[] {
+            new SubscriberMethodInfo("onMessageEventPosting", com.android.baselibrary.bean.EventBean.class),
+            new SubscriberMethodInfo("onMessageEventMain", com.android.baselibrary.bean.EventBean.class,
+                    ThreadMode.MAIN, 2, false),
+            new SubscriberMethodInfo("onMessageEventMainOrdered", com.android.baselibrary.bean.EventBean.class,
+                    ThreadMode.MAIN_ORDERED),
+            new SubscriberMethodInfo("onMessageEventBackground", com.android.baselibrary.bean.EventBean.class,
+                    ThreadMode.BACKGROUND),
+            new SubscriberMethodInfo("onMessageEventAsync", com.android.baselibrary.bean.EventBean.class,
+                    ThreadMode.ASYNC),
+        }));
+
+    }
+
+    private static void putIndex(SubscriberInfo info) {
+        SUBSCRIBER_INDEX.put(info.getSubscriberClass(), info);
+    }
+
+    @Override
+    public SubscriberInfo getSubscriberInfo(Class<?> subscriberClass) {
+        SubscriberInfo info = SUBSCRIBER_INDEX.get(subscriberClass);
+        if (info != null) {
+            return info;
+        } else {
+            return null;
+        }
+    }
+}
+```
+### 使用SubscriberInfoIndex时EventBus的注册流程
+1. 首先看看Application中配置的代码EventBus.builder().addIndex(new CustomEventBusIndex())
+    ```
+    // EventBusBuilder类：
+        public EventBusBuilder addIndex(SubscriberInfoIndex index) {
+            if (subscriberInfoIndexes == null) {
+                subscriberInfoIndexes = new ArrayList<>();
+            }
+            subscriberInfoIndexes.add(index);
+            return this;
+        }
+    ```
+2. addIndex把生成的索引类的实例保存在subscriberInfoIndexes集合中，然后用installDefaultEventBus()创建默认的 EventBus实例：
+    ```
+    // EventBusBuilder类：
+        public EventBus installDefaultEventBus() {
+            synchronized (EventBus.class) {
+                if (EventBus.defaultInstance != null) {
+                    throw new EventBusException("Default instance already exists." +
+                        " It may be only set once before it's used the first time to ensure consistent behavior.");
+                }
+                // 给默认的EventBus单例对象赋初值
+                EventBus.defaultInstance = build();
+                return EventBus.defaultInstance;
+            }
+        }
+    
+    // EventBus类：  
+        public static EventBus getDefault() {
+            if (defaultInstance == null) {
+                synchronized (EventBus.class) {
+                    if (defaultInstance == null) {
+                        defaultInstance = new EventBus();
+                    }
+                }
+            }
+            return defaultInstance;
+        }
+    ```
+    即用当前EventBusBuilder对象创建一个 EventBus 实例，这样我们通过EventBusBuilder配置的 SubscriberInfoIndex 也就传递到了EventBus实例中，然后赋值给EventBus的 defaultInstance成员变量。所以在 Application 中生成了 EventBus 的默认单例，这样就保证了在项目其它地方执行EventBus.getDefault()就能得到唯一的 EventBus 实例！
+3. subscriberMethodFinder 注解方法找寻器：从第一步addIndex中，我们知道了subscriberInfoIndexes此时已经不为null，那么我们回到EventBus构造方法中看一个变量：
+    ```
+    EventBus(EventBusBuilder builder) {
+        indexCount = builder.subscriberInfoIndexes != null ? builder.subscriberInfoIndexes.size() : 0;
+        // @Subscribe注解方法找寻器
+        subscriberMethodFinder = new SubscriberMethodFinder(builder.subscriberInfoIndexes,
+                builder.strictMethodVerification, builder.ignoreGeneratedIndex);
+    }
+    
+    // 注意此字段
+    private List<SubscriberInfoIndex> subscriberInfoIndexes;
+    SubscriberMethodFinder(List<SubscriberInfoIndex> subscriberInfoIndexes, boolean strictMethodVerification,
+                           boolean ignoreGeneratedIndex) {
+        this.subscriberInfoIndexes = subscriberInfoIndexes;
+        this.strictMethodVerification = strictMethodVerification;
+        this.ignoreGeneratedIndex = ignoreGeneratedIndex;
+    }
+    ```
+    我们在上面【查找订阅方法集合】部分提到过一个方法：getSubscriberInfo，此方法默认返回值为null，因此后面查找订阅方法为：运行期通过反射查找。而若配置了Subscriber索引，则getSubscriberInfo返回不为null：
+    ```
+    // SubscriberMethodFinder类：
+        private SubscriberInfo getSubscriberInfo(FindState findState) {
+            if (findState.subscriberInfo != null && findState.subscriberInfo.getSuperSubscriberInfo() != null) {
+                SubscriberInfo superclassInfo = findState.subscriberInfo.getSuperSubscriberInfo();
+                if (findState.clazz == superclassInfo.getSubscriberClass()) {
+                    return superclassInfo;
+                }
+            }
+            
+            // 上一段代码中，我们说过注意此字段，此时不为null
+            if (subscriberInfoIndexes != null) {
+                for (SubscriberInfoIndex index : subscriberInfoIndexes) {
+                    // 根据注册类的 Class 类查找SubscriberInfo
+                    SubscriberInfo info = index.getSubscriberInfo(findState.clazz);
+                    if (info != null) {
+                        return info;
+                    }
+                }
+            }
+            return null;
+        }
+    
+    // index.getSubscriberInfo此方法就是addIndex传入的 CustomEventBusIndex实现的方法：
+        @Override
+        public SubscriberInfo getSubscriberInfo(Class<?> subscriberClass) {
+            SubscriberInfo info = SUBSCRIBER_INDEX.get(subscriberClass);
+            if (info != null) {
+                return info;
+            } else {
+                return null;
+            }
+        }
+    ```
+    因此，findUsingInfo方法中，无需再通过反射单个查找订阅方法。
+    ```
+    private List<SubscriberMethod> findUsingInfo(Class<?> subscriberClass) {
+        FindState findState = prepareFindState();
+        findState.initForSubscriber(subscriberClass);
+        while (findState.clazz != null) {
+            findState.subscriberInfo = getSubscriberInfo(findState);
+            // 此时不为null
+            if (findState.subscriberInfo != null) {
+                SubscriberMethod[] array = findState.subscriberInfo.getSubscriberMethods();
+                for (SubscriberMethod subscriberMethod : array) {
+                    // 检查添加
+                    if (findState.checkAdd(subscriberMethod.method, subscriberMethod.eventType)) {
+                        findState.subscriberMethods.add(subscriberMethod);
+                    }
+                }
+            } else {
+                findUsingReflectionInSingleClass(findState);
+            }
+            findState.moveToSuperclass();
+        }
+        return getMethodsAndRelease(findState);
+    }
+    ```
+ Subscriber Index 的核心就是项目编译时使用注解处理器生成保存事件订阅方法信息的索引类，然后项目运行时将索引类实例设置到 EventBus 中，这样当注册 EventBus 时，从索引类取出当前注册类对应的事件订阅方法信息，以完成最终的注册，避免了运行时反射处理的过程，所以在性能上会有质的提高。项目中可以根据实际的需求决定是否使用 Subscriber Index。 
+
+## 参考链接
+
+https://www.jianshu.com/p/d9516884dbd4
+
+https://juejin.im/post/5db7d789f265da4cf1583315
+
+https://blog.csdn.net/lufeng20/article/details/24314381
+
+https://segmentfault.com/a/1190000020052249
+
+...
+
+<font color="#ff0000">注：若有什么地方阐述有误，敬请指正。**期待您的点赞哦！！！**</font> 
