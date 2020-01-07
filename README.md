@@ -14,7 +14,7 @@ CustomWidget：自定义组件，学习HenCoder练习项目集锦，以及自己
 
 GradleLib：Gradle自动化项目构建Demo部分笔记，其余笔记：settings.gradle、最外层build.gradle
 
-buidlSrc：Gradle插件
+buidlSrc：Gradle自定义插件
 
 JavaLib：Java类库，目前主要为计算机组成原理部分、Java虚拟机规范以及easyExcel读取（包括多语言文件生成）
 
