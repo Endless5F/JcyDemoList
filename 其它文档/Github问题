@@ -1,0 +1,11 @@
+解决连不上GitHub，也ping不通？
+C:\Windows\System32\drivers\etc ：
+找到host文件，右键-属性-安全-编辑，选中当前电脑登录的用户，给自己最高权限，确认。然后用记事本打开，在最后一行加：
+192.30.253.113    github.com
+192.30.252.131 github.com
+185.31.16.185 github.global.ssl.fastly.net
+74.125.237.1 dl-ssl.google.com
+173.194.127.200 groups.google.com
+192.30.252.131 github.com
+185.31.16.185 github.global.ssl.fastly.net
+74.125.128.95 ajax.googleapis.com
