@@ -12,6 +12,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.android.customwidget.R;
+import com.android.customwidget.activity.ScrollerDemoActivity;
 import com.android.customwidget.activity.exerciseActivity.ThumbUpActivity;
 import com.android.customwidget.data.HomeData;
 import com.android.customwidget.exerciseList.hencoderpracticedraw1.DrawBasicActivity;
@@ -125,6 +126,10 @@ public class HomePageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                         case 10:
                             Intent intent10 = new Intent(mContext, ScrollRecycleViewActivity.class);
                             mContext.startActivity(intent10);
+                            break;
+                        case 11:
+                            Intent intent11 = new Intent(mContext, ScrollerDemoActivity.class);
+                            mContext.startActivity(intent11);
                             break;
                         default:
                             break;

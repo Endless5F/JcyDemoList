@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.android.customwidget.widget.CustomScrollerView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/csv_scroll"
+    android:gravity="center"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".activity.ScrollerDemoActivity">
+
+    <com.android.customwidget.widget.CustomLinearView
+        android:layout_width="100dp"
+        android:layout_height="100dp">
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@mipmap/ic_launcher" />
+    </com.android.customwidget.widget.CustomLinearView>
+
+</com.android.customwidget.widget.CustomScrollerView>
+
