@@ -21,7 +21,8 @@
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true"
         tools:ignore="GoogleAppIndexingWarning">
-        <activity android:name=".activity.LayoutActivity"/>
+        <activity android:name=".activity.IdleHandlerActivity"></activity>
+        <activity android:name=".activity.LayoutActivity" />
         <activity
             android:name=".activity.MainActivity"
             android:theme="@style/AppTheme.Launcher">
@@ -52,8 +53,7 @@
         </activity>
         <activity android:name=".activity.WebViewDemoList" />
 
-
-        <service android:name=".service.LeadCanaryService"/>
+        <service android:name=".service.LeadCanaryService" />
         <service
             android:name=".service.JobSchedulerService"
             android:permission="android.permission.BIND_JOB_SERVICE" />

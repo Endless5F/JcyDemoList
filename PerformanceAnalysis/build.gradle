@@ -85,7 +85,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:logging-interceptor:3.14.0'
 
     implementation 'com.alibaba:fastjson:1.2.21'
-    implementation ('com.aliyun.ams:alicloud-android-httpdns:1.1.7@aar') {
+    implementation('com.aliyun.ams:alicloud-android-httpdns:1.1.7@aar') {
         transitive true
     }
 }

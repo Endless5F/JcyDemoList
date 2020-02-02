@@ -23,6 +23,7 @@ public class HomeData {
         addDeviceItem("&#xe620;", "App电量优化");
         addDeviceItem("&#xe620;", "App瘦身优化");
         addDeviceItem("&#xe620;", "App稳定性优化");
+        addDeviceItem("&#xe620;", "IdleHandler的使用");
     }
 
     private static void addDeviceItem(String icon, String desc) {
