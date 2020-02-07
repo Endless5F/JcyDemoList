@@ -68,7 +68,7 @@ public class CustomClassLoader extends ClassLoader {
     }
 
     public static void main(String[] args) {
-        //父亲是系统类加载器，根据父类委托机制，MyTest1由系统类加载器加载了
+        //父亲是系统类加载器，根据父类委托机制，JvmMemoryClass由系统类加载器加载了
         CustomClassLoader loader1 = new CustomClassLoader("loader1");
         test(loader1);
     }

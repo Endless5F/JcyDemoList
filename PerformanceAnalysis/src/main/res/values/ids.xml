@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <item name="imageloader_url" type="id">1234554321</item>
+    <item name="imageloader_url" type="id"/>
 </resources>
