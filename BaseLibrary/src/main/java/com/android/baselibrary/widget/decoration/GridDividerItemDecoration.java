@@ -1,4 +1,4 @@
-package com.android.baselibrary.widget;
+package com.android.baselibrary.widget.decoration;
 
 import android.content.Context;
 import android.graphics.Canvas;
