@@ -200,6 +200,12 @@ layout的方法的大致流程如下，首先会通过一个setFrame方法来设
 这个问题那就更好理解了，你要是不停止这个线程或者动画，容易导致内存溢出的，所以你要在一个合适的机会销毁这些资源，在Activity有生命周期，而在View中，当View被remove的时候，onDetachedFromWindow会被调用，和此方法对应的是onAttachedToWindow
 
 5. View带有滑动嵌套时，需要处理好滑动冲突
+
+## Android 自定义View，onMeasure 和 measure 、layout 和 onLayout 的区别
+1. measure()为final方法，不可重写；onMeasure()可重写。
+2. ViewGroup调用measure()，measure()调用onMeasure()。
+3. ViewGroup的layout()为final方法，不可重写，onLayout需要重写。
+4. View的layout()可重写，但是一般自定义View时，非ViewGroup的View只需要重写onMeasure和onDraw
 ## 参考
 源码分析可参考：[View绘制流程源码分析](https://juejin.im/post/5cb438695188257a9e31263a)
 自定义View可参考：[View之自定义全解析(入门)](https://juejin.im/post/5d160a4ce51d45773d46865a)
