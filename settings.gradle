@@ -36,4 +36,4 @@ gradle.buildFinished {
 }
 
 
-include ':App',':BaseLibrary', ':SourceCodeAnalysis', ':CustomWidget', ':Architecture', ':JavaLib', ':Kotlinlearn', ':PerformanceAnalysis', ':GradleLib'
+include ':App',':BaseLibrary', ':SourceCodeAnalysis', ':CustomWidget', ':Architecture', ':JavaLib', ':Kotlinlearn', ':PerformanceAnalysis', ':GradleLib', ':LeetCode'
