@@ -9,3 +9,8 @@
 * 通过签名工具对其进行签名。
 * 通过Zipalign进行优化，提升运行速度（原理后文会提及）。
 * 最终，一个可以安装在我们手机上的APK了。
+
+## 开源库
+一个简单易用的android apm框架（工具）：https://github.com/SusionSuc/rabbit-client
+
+性能优化：https://jsonchao.github.io/categories/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/
