@@ -54,6 +54,8 @@ public class LengthOfLongestSubstring {
      * 示例2：xyabcadeg，当右指针移动到第二个a时，左指针移动并删除最左边x元素，由于right没有增加，则继续判断set中是否包含a，此时依旧包括则继续移除y，继续判断继续移除a，最后right+1
      * @param s
      * @return
+     *
+     * 作者：学习滑动窗口后修改
      */
     public int lengthOfLongestSubstring3(String s) {
         if ("".equals(s)) return 0;
@@ -81,6 +83,8 @@ public class LengthOfLongestSubstring {
      * 内存消耗 :41.4 MB, 在所有 Java 提交中击败了5.01%的用户
      * @param s
      * @return
+     *
+     * 作者：自己
      */
     public int lengthOfLongestSubstring2(String s) {
         if ("".equals(s)) return 0;
