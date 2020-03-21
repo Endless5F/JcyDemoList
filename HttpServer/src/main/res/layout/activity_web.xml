@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".WebActivity">
+
+    <EditText
+        android:id="@+id/ip_edit"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <Button
+        android:id="@+id/start"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="开始服务" />
+
+    <Button
+        android:id="@+id/stop"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="关闭服务" />
+
+    <Button
+        android:id="@+id/getData"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="获取文件列表" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <EditText
+            android:id="@+id/download_edit"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:text="234567.mp4" />
+
+        <Button
+            android:id="@+id/downloadFile"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="下载文件" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <EditText
+            android:id="@+id/delete_edit"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:text="234567.mp4" />
+
+        <Button
+            android:id="@+id/deleteFile"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="删除文件" />
+    </LinearLayout>
+
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <EditText
+            android:id="@+id/upload_edit"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:text="234567.mp4" />
+
+        <Button
+            android:id="@+id/upload"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="上传文件" />
+    </LinearLayout>
+
+</LinearLayout>

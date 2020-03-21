@@ -1,4 +1,4 @@
-package com.android.baselibrary.util.log;
+package com.android.httpserver.utils;
 
 import android.util.Log;
 
@@ -8,7 +8,7 @@ import java.util.Locale;
  * 文件名 LogUtils.java
  * 描述 日志工具类
  */
-public class LoggerUtil {
+public class LogUtils {
     //获取项目状态
     public static boolean DEBUG = true;
     //public static boolean DEBUG = BuildConfig.DEBUG;
