@@ -9,7 +9,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -33,7 +35,6 @@ import okio.BufferedSink;
 import okio.ForwardingSink;
 import okio.Okio;
 import okio.Sink;
-import okio.Source;
 
 /**
  * @author jiaochengyun.ex
@@ -57,14 +58,17 @@ public class OkHttpUtils {
         private static OkHttpClient.Builder addInterceptor() {
             // 日志显示级别
 //            HttpLoggingInterceptor.Level level = HttpLoggingInterceptor.Level.BODY;
-            HttpLoggingInterceptor.Level level = HttpLoggingInterceptor.Level.HEADERS; // 若上传大文件时，需要使用这个级别，否则容易出现oom
+            // 若上传大文件时，需要使用这个级别，否则容易出现oom
+            HttpLoggingInterceptor.Level level = HttpLoggingInterceptor.Level.HEADERS;
+
             // 新建log拦截器
-            HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor(new HttpLoggingInterceptor.Logger() {
-                @Override
-                public void log(String message) {
+            HttpLoggingInterceptor loggingInterceptor =
+                    new HttpLoggingInterceptor(new HttpLoggingInterceptor.Logger() {
+                        @Override
+                        public void log(String message) {
 //                    LogUtils.i("OkHttp====Message:" + message);
-                }
-            });
+                        }
+                    });
             loggingInterceptor.setLevel(level);
             BUILDER.addInterceptor(loggingInterceptor);
             return BUILDER;
@@ -95,9 +99,9 @@ public class OkHttpUtils {
     private final ISuccess mSuccess;
     private final IFailure mFailure;
     /**
-     * 上传文件
+     * 上传文件，支持多文件
      */
-    private File mFile;
+    private List<File> mFiles;
     private final IProgress mProgress;
     /**
      * 下载路径
@@ -115,18 +119,20 @@ public class OkHttpUtils {
      * @param params   请求参数
      * @param success  请求成功回调
      * @param failure  请求失败回调
-     * @param file     上传文件路径(文件上传专用)
+     * @param files    上传文件路径(文件上传专用)
      * @param progress
      */
     private OkHttpUtils(String url, HashMap<String, String> header
             , HashMap<String, String> params, ISuccess success
-            , IFailure failure, File file, IProgress progress, String path, boolean breakpoint, IDownLoad download) {
+            , IFailure failure, List<File> files, IProgress progress, String path,
+                        boolean breakpoint,
+                        IDownLoad download) {
         mUrl = url;
         mHeader = header;
         mParams = params;
         mSuccess = success;
         mFailure = failure;
-        mFile = file;
+        mFiles = files;
         mProgress = progress;
         mPath = path;
         mBreakPoint = breakpoint;
@@ -143,7 +149,7 @@ public class OkHttpUtils {
         private ISuccess success;
         private IFailure failure;
         private HashMap<String, String> params = new HashMap<>();
-        private File file;
+        private List<File> files;
         private IProgress progress;
         private String path;
         private boolean breakpoint;
@@ -180,7 +186,13 @@ public class OkHttpUtils {
         }
 
         public final OkHttpUtilBuilder file(File file) {
-            this.file = file;
+            files = new ArrayList<>();
+            this.files.add(file);
+            return this;
+        }
+
+        public final OkHttpUtilBuilder files(List<File> files) {
+            this.files = files;
             return this;
         }
 
@@ -188,7 +200,8 @@ public class OkHttpUtils {
             File file = new File(filePath);
             // 若文件存在并且该file是文件(非文件夹)
             if (file.exists() && file.isFile()) {
-                this.file = file;
+                files = new ArrayList<>();
+                this.files.add(file);
             }
             return this;
         }
@@ -214,7 +227,8 @@ public class OkHttpUtils {
         }
 
         public final OkHttpUtils build() {
-            return new OkHttpUtils(url, header, params, success, failure, file, progress, path, breakpoint, download);
+            return new OkHttpUtils(url, header, params, success, failure, files, progress, path,
+                    breakpoint, download);
         }
     }
 
@@ -328,9 +342,11 @@ public class OkHttpUtils {
      *                         <p>
      *                         multipart/form-data：
      *                         1、既可以提交普通键值对，也可以提交(多个)文件键值对。
-     *                         2、HTTP规范中的Content-Type不包含此类型，只能用在POST提交方式下，属于http客户端(浏览器、java httpclient)的扩展
+     *                         2、HTTP规范中的Content-Type不包含此类型，只能用在POST提交方式下，属于http客户端(浏览器、java
+     *                         httpclient)的扩展
      *                         3、通常在浏览器表单中，或者http客户端(java httpclient)中使用。
-     *                         页面中，form的enctype是multipart/form-data,提交时，content-type也是multipart/form-data。
+     *                         页面中，form的enctype是multipart/form-data,
+     *                         提交时，content-type也是multipart/form-data。
      *                         <p>
      *                         application/octet-stream：
      *                         1、只能提交二进制，而且只能提交一个二进制，如果提交文件的话，只能提交一个文件,后台接收参数只能有一个，而且只能是流（或者字节数组）
@@ -338,74 +354,96 @@ public class OkHttpUtils {
      *                         3、很少使用
      *                         <p>
      *                         application/x-www-form-urlencoded
-     *                         1、不属于http content-type规范，通常用于浏览器表单提交，数据组织格式:name1=value1&name2=value2,post时会放入http body，get时，显示在在地址栏。
+     *                         1、不属于http
+     *                         content-type规范，通常用于浏览器表单提交，数据组织格式:name1=value1&name2=value2,
+     *                         post时会放入http body，get时，显示在在地址栏。
      *                         2、所有键与值，都会被urlencoded
      */
     public void postFile(final boolean isNeedMainLooper) {
-        if (mFile == null) {
-            LogUtils.i("mFile == null");
+        if (mFiles == null) {
+            LogUtils.i("mFiles == null");
             if (mFailure != null) {
                 mFailure.onFailure();
             }
             return;
         }
         // 1
+        // 参数请求体
 //        FormBody paramsBody = new FormBody.Builder()
-//                .add("fileName", URLEncoder.encode(mFile.getName(), "utf-8"))
+//                .add("fileName", encode(mFile.getName()))
 //                .build();
         // 2
         // 文件请求体
-        final RequestBody body = RequestBody.create(MediaType.parse(MultipartBody.FORM.toString()), mFile);
-        // 混合参数和文件请求
-        RequestBody requestBody = new MultipartBody.Builder()
-                // setType方法至关重要，该参数表明了整体按照什么类型传递
-                .setType(MultipartBody.FORM)
-                .addFormDataPart("fileName", encode(mFile.getName()))
-//                .addPart(Headers.of("Content-Disposition", "form-data; name=\"params\""), paramsBody) // 1 类似于上一行
-                .addPart(Headers.of("Content-Disposition", "form-data; name=\"file\"; filename=\"upload\""), body)
-                .build();
-        // 3
-//        RequestBody requestBody = new MultipartBody.Builder()
-//                .addFormDataPart("file", mFile.getName()
-//                        , createCustomRequestBody(MediaType.parse(MultipartBody.FORM.toString()), mFile, mProgress)).build();
+//        final RequestBody body =
+//                RequestBody.create(MediaType.parse(MultipartBody.FORM.toString()), mFile);
 
+
+        MediaType mutilpart_form_data = MediaType.parse("multipart/form-data; charset=utf-8");
+
+        // 混合参数和文件请求
+        MultipartBody.Builder builder = new MultipartBody.Builder()
+                // setType方法至关重要，该参数表明了整体按照什么类型传递
+                .setType(MultipartBody.FORM);
+        // 多文件上传
+        for (File file : mFiles) {
+            if (file.exists() && file.isFile()) {
+                LogUtils.i("fileName：" + file.getName());
+                builder.addFormDataPart("fileName", encode(file.getName()))
+//                .addPart(Headers.of("Content-Disposition", "form-data; name=\"params\""),
+//                paramsBody) // 1 类似于上一行
+                        .addPart(Headers.of("Content-Disposition", "form-data; name=\"file\"; " +
+                                "filename=\"upload\""), RequestBody.create(mutilpart_form_data,
+                                file));
+            } else {
+                LogUtils.d("!file.exists() || !file.isFile()");
+            }
+        }
+        MultipartBody requestBody = builder.build();
+
+        // 3
+        // 进度请求体，暂时不可用
 //        RequestBody requestBody1 = new MultipartBody.Builder()
 //                .addPart(new ProgressRequestBody(requestBody, mProgress))
 //                .build();
 
         // wrap your original request body with progress
         // 上传进度需要依赖库：implementation 'io.github.lizhangqu:coreprogress:1.0.2'
-        RequestBody requestBody1 = ProgressHelper.withProgress(requestBody, new ProgressUIListener() {
+        RequestBody requestBody1 = ProgressHelper.withProgress(requestBody,
+                new ProgressUIListener() {
 
-            //if you don't need this method, don't override this methd. It isn't an abstract method, just an empty method.
-            @Override
-            public void onUIProgressStart(long totalBytes) {
-                super.onUIProgressStart(totalBytes);
-                Log.e("TAG", "onUIProgressStart:" + totalBytes);
-            }
+                    //if you don't need this method, don't override this methd. It isn't an abstract
+                    // method, just an empty method.
+                    @Override
+                    public void onUIProgressStart(long totalBytes) {
+                        super.onUIProgressStart(totalBytes);
+                        Log.e("TAG", "onUIProgressStart:" + totalBytes);
+                    }
 
-            @Override
-            public void onUIProgressChanged(long numBytes, long totalBytes, float percent, float speed) {
-                Log.e("TAG", "=============start===============");
-                Log.e("TAG", "numBytes:" + numBytes);
-                Log.e("TAG", "totalBytes:" + totalBytes);
-                Log.e("TAG", "percent:" + percent);
-                Log.e("TAG", "speed:" + speed);
-                Log.e("TAG", "============= end ===============");
+                    @Override
+                    public void onUIProgressChanged(long numBytes, long totalBytes, float percent,
+                                                    float speed) {
+                        Log.e("TAG", "=============start===============");
+                        Log.e("TAG", "numBytes:" + numBytes);
+                        Log.e("TAG", "totalBytes:" + totalBytes);
+                        Log.e("TAG", "percent:" + percent);
+                        Log.e("TAG", "speed:" + speed);
+                        Log.e("TAG", "============= end ===============");
 //                uploadProgress.setProgress((int) (100 * percent));
-//                uploadInfo.setText("numBytes:" + numBytes + " bytes" + "\ntotalBytes:" + totalBytes + " bytes" + "\npercent:" + percent * 100 + " %" + "\nspeed:" + speed * 1000 / 1024 / 1024 + "  MB/秒");
-            }
+//                uploadInfo.setText("numBytes:" + numBytes + " bytes" + "\ntotalBytes:" +
+//                totalBytes + " bytes" + "\npercent:" + percent * 100 + " %" + "\nspeed:" +
+//                speed * 1000 / 1024 / 1024 + "  MB/秒");
+                    }
 
-            //if you don't need this method, don't override this methd. It isn't an abstract method, just an empty method.
-            @Override
-            public void onUIProgressFinish() {
-                super.onUIProgressFinish();
-                Log.e("TAG", "onUIProgressFinish:");
+                    //if you don't need this method, don't override this methd. It isn't an abstract
+                    // method, just an empty method.
+                    @Override
+                    public void onUIProgressFinish() {
+                        super.onUIProgressFinish();
+                        Log.e("TAG", "onUIProgressFinish:");
 //                Toast.makeText(getApplicationContext(), "结束上传", Toast.LENGTH_SHORT).show();
-            }
+                    }
 
-        });
-
+                });
 
         Request request = new Request.Builder()
                 .url(mUrl)
@@ -413,47 +451,6 @@ public class OkHttpUtils {
                 .build();
 
         callRequest(request, isNeedMainLooper);
-    }
-
-    /**
-     * 创建自定义请求主体，主要用于文件上传进度监听
-     *
-     * @param contentType 内容类型
-     * @param file        文件
-     * @param listener    进度监听
-     * @return 请求主体
-     */
-    private RequestBody createCustomRequestBody(final MediaType contentType, final File file, final IProgress listener) {
-        return new RequestBody() {
-            @Override
-            public MediaType contentType() {
-                return contentType;
-            }
-
-            @Override
-            public long contentLength() {
-                return file.length();
-            }
-
-            @Override
-            public void writeTo(@NonNull BufferedSink sink) throws IOException {
-                Source source;
-                try {
-                    source = Okio.source(file);
-                    //sink.writeAll(source);
-                    Buffer buf = new Buffer();
-                    Long remaining = contentLength();
-                    for (long readCount; (readCount = source.read(buf, 2048)) != -1; ) {
-                        sink.write(buf, readCount);
-                        if (listener != null) {
-                            listener.onProgress(contentLength(), remaining -= readCount, remaining == 0);
-                        }
-                    }
-                } catch (Exception e) {
-                    LogUtils.e(e.toString());
-                }
-            }
-        };
     }
 
     /**
@@ -621,7 +618,8 @@ public class OkHttpUtils {
 
                 @Override
                 public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
-                    long l = Objects.requireNonNull(getOkHttpClient().newCall(request1).execute().body()).contentLength();
+                    long l =
+                            Objects.requireNonNull(getOkHttpClient().newCall(request1).execute().body()).contentLength();
                     LogUtils.i("Length l: " + l + "----");
                     if (l != 0 && l == startPosition) {
                         mDownload.finishDownload(Objects.requireNonNull(finalDownloadFile).getAbsolutePath());
@@ -736,7 +734,8 @@ public class OkHttpUtils {
          * @param remainingBytes 剩余字节数
          * @param done           是否上传完成
          *                       <p>
-         *                       System.out.print((totalBytes - remainingBytes) * 100 / totalBytes + "%");
+         *                       System.out.print((totalBytes - remainingBytes) * 100 /
+         *                       totalBytes + "%");
          */
         void onProgress(long totalBytes, long remainingBytes, boolean done);
     }
@@ -831,7 +830,8 @@ public class OkHttpUtils {
                     }
                     bytesWritten += byteCount;
                     if (progressListener != null) {
-                        progressListener.onProgress(bytesWritten, contentLength, bytesWritten == contentLength);
+                        progressListener.onProgress(bytesWritten, contentLength,
+                                bytesWritten == contentLength);
                     }
                 }
             };

@@ -16,6 +16,8 @@ import com.android.httpserver.utils.PermissionsUtils;
 import com.android.httpserver.utils.WifiUtils;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author jiaochengyun
@@ -35,8 +37,7 @@ public class WebActivity extends AppCompatActivity {
         ipEdit = findViewById(R.id.ip_edit);
         ipEdit.setText("http://" + WifiUtils.getWifiIp(this) + ":" + WebService.HTTP_PORT + "/");
 
-        String[] permissions = new String[]{Manifest.permission.WRITE_CALENDAR,
-                Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_EXTERNAL_STORAGE};
+        String[] permissions = new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE};
         PermissionsUtils.getInstance().chekPermissions(this, permissions,
                 new PermissionsUtils.IPermissionsResult() {
                     @Override
@@ -159,15 +160,19 @@ public class WebActivity extends AppCompatActivity {
 
     private void uploadRequest() {
         EditText uploadEdit = findViewById(R.id.upload_edit);
-        // 152.84MB 4692/3225/2988/2639/2735 = 3255.8    //27.28MB 742/514/693/658/670 = 655.4
-        // 203019
         File file = new File(Environment.getExternalStorageDirectory().getPath(),
                 uploadEdit.getText().toString());
+//        List<File> fileList = new ArrayList<>();
+//        File file1 = new File(Environment.getExternalStorageDirectory().getPath(), "123456.mp4");
+//        fileList.add(file1);
+//        File file2 = new File(Environment.getExternalStorageDirectory().getPath(), "234567.mp4");
+//        fileList.add(file2);
         if (file.exists()) {
             long l = System.currentTimeMillis();
             OkHttpUtils.builder()
                     .url(ipEdit.getText().toString() + "upload")
                     .file(file)
+//                    .files(fileList)
                     .progress(new OkHttpUtils.IProgress() {
                         @Override
                         public void onProgress(long totalBytes, long remainingBytes, boolean done) {
