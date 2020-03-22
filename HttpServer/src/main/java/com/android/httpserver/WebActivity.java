@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @author jiaochengyun
+ * @author jcy
  * <p>
  * 基于https://github.com/koush/AndroidAsync库
  * 基于WIFI传书：https://github.com/baidusoso/WifiTransfer

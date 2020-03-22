@@ -37,7 +37,7 @@ import java.net.URLEncoder;
 import java.text.DecimalFormat;
 
 /**
- * @author jiaochengyun.ex
+ * @author jcy
  */
 public class WebService extends Service {
 

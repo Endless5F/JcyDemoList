@@ -37,7 +37,7 @@ import okio.Okio;
 import okio.Sink;
 
 /**
- * @author jiaochengyun.ex
+ * @author jcy
  * <p>
  * implementation 'com.squareup.okhttp3:okhttp:3.12.0'
  * implementation 'com.squareup.okhttp3:logging-interceptor:3.10.0'
