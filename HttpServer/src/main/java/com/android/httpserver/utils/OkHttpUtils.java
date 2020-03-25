@@ -5,8 +5,11 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -367,44 +370,44 @@ public class OkHttpUtils {
             }
             return;
         }
-        // 1
-        // 参数请求体
-//        FormBody paramsBody = new FormBody.Builder()
-//                .add("fileName", encode(mFile.getName()))
-//                .build();
-        // 2
-        // 文件请求体
-//        final RequestBody body =
-//                RequestBody.create(MediaType.parse(MultipartBody.FORM.toString()), mFile);
 
-
-        MediaType mutilpart_form_data = MediaType.parse("multipart/form-data; charset=utf-8");
 
         // 混合参数和文件请求
         MultipartBody.Builder builder = new MultipartBody.Builder()
                 // setType方法至关重要，该参数表明了整体按照什么类型传递
                 .setType(MultipartBody.FORM);
+        StringBuilder stringBuilder = new StringBuilder();
+        for (File file : mFiles) {
+            stringBuilder.append(file.getName()).append(",");
+        }
+        stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+        String fileList = stringBuilder.toString();
+        builder.addFormDataPart("fileList", fileList);
         // 多文件上传
         for (File file : mFiles) {
             if (file.exists() && file.isFile()) {
                 LogUtils.i("fileName：" + file.getName());
+
+                // 1
+                // 参数请求体
+//              FormBody paramsBody = new FormBody.Builder().add("fileName", encode(file.getName())).build();
+                // 2
+                // 文件请求体
+                final RequestBody requestBody = RequestBody.create(MediaType.parse(MultipartBody.FORM.toString()), file);
+                // 3
+                // 添加混合参数
+//                builder.addFormDataPart("fileName", encode(file.getName()))
+//                        .addPart(Headers.of("Content-Disposition", "form-data; name=params"), paramsBody) // 1 类似于上一行
+//                        .addPart(Headers.of("Content-Disposition", "form-data; type=File; " + "filename=" + file.getName()), requestBody);
+
+                // 可以将服务端需要的字段，直接在Header头信息"Content-Disposition"中配置
                 builder.addFormDataPart("fileName", encode(file.getName()))
-//                .addPart(Headers.of("Content-Disposition", "form-data; name=\"params\""),
-//                paramsBody) // 1 类似于上一行
-                        .addPart(Headers.of("Content-Disposition", "form-data; name=\"file\"; " +
-                                "filename=\"upload\""), RequestBody.create(mutilpart_form_data,
-                                file));
+                        .addPart(Headers.of("Content-Disposition", "filename=" + file.getName() + "; filelength=" + file.length()), requestBody);
             } else {
                 LogUtils.d("!file.exists() || !file.isFile()");
             }
         }
         MultipartBody requestBody = builder.build();
-
-        // 3
-        // 进度请求体，暂时不可用
-//        RequestBody requestBody1 = new MultipartBody.Builder()
-//                .addPart(new ProgressRequestBody(requestBody, mProgress))
-//                .build();
 
         // wrap your original request body with progress
         // 上传进度需要依赖库：implementation 'io.github.lizhangqu:coreprogress:1.0.2'
@@ -416,22 +419,17 @@ public class OkHttpUtils {
                     @Override
                     public void onUIProgressStart(long totalBytes) {
                         super.onUIProgressStart(totalBytes);
-                        Log.e("TAG", "onUIProgressStart:" + totalBytes);
+                        LogUtils.e("Progress onUIProgressStart:" + totalBytes);
                     }
 
                     @Override
-                    public void onUIProgressChanged(long numBytes, long totalBytes, float percent,
-                                                    float speed) {
-                        Log.e("TAG", "=============start===============");
-                        Log.e("TAG", "numBytes:" + numBytes);
-                        Log.e("TAG", "totalBytes:" + totalBytes);
-                        Log.e("TAG", "percent:" + percent);
-                        Log.e("TAG", "speed:" + speed);
-                        Log.e("TAG", "============= end ===============");
-//                uploadProgress.setProgress((int) (100 * percent));
-//                uploadInfo.setText("numBytes:" + numBytes + " bytes" + "\ntotalBytes:" +
-//                totalBytes + " bytes" + "\npercent:" + percent * 100 + " %" + "\nspeed:" +
-//                speed * 1000 / 1024 / 1024 + "  MB/秒");
+                    public void onUIProgressChanged(long numBytes, long totalBytes, float percent, float speed) {
+                        LogUtils.e("Progress =============start===============");
+                        LogUtils.i("Progress numBytes:" + numBytes);
+                        LogUtils.i("Progress totalBytes:" + totalBytes);
+                        LogUtils.i("Progress percent:" + percent);
+                        LogUtils.i("Progress speed:" + speed);
+                        LogUtils.e("Progress ============= end ===============");
                     }
 
                     //if you don't need this method, don't override this methd. It isn't an abstract
@@ -439,8 +437,7 @@ public class OkHttpUtils {
                     @Override
                     public void onUIProgressFinish() {
                         super.onUIProgressFinish();
-                        Log.e("TAG", "onUIProgressFinish:");
-//                Toast.makeText(getApplicationContext(), "结束上传", Toast.LENGTH_SHORT).show();
+                        LogUtils.e("Progress onUIProgressFinish");
                     }
 
                 });
@@ -842,13 +839,10 @@ public class OkHttpUtils {
      * Android之让代码跑在主线程(无context上下文)的封装
      */
     /*public class MainHandlerUtils extends Handler {
-
         private static volatile com.example.test.utils.MainHandlerUtils mInstance;
-
         private MainHandlerUtils() {
             super(Looper.getMainLooper());
         }
-
         public static com.example.test.utils.MainHandlerUtils getInstance() {
             if (mInstance == null) {
                 synchronized (com.example.test.utils.MainHandlerUtils.class) {

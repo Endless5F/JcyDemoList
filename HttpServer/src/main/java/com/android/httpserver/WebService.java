@@ -13,6 +13,8 @@ import com.android.httpserver.utils.LogUtils;
 import com.koushikdutta.async.AsyncServer;
 import com.koushikdutta.async.ByteBufferList;
 import com.koushikdutta.async.DataEmitter;
+import com.koushikdutta.async.http.Headers;
+import com.koushikdutta.async.http.Multimap;
 import com.koushikdutta.async.http.body.MultipartFormDataBody;
 import com.koushikdutta.async.http.body.Part;
 import com.koushikdutta.async.http.body.UrlEncodedFormBody;
@@ -36,8 +38,10 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.text.DecimalFormat;
 
+import static com.koushikdutta.async.http.body.Part.CONTENT_DISPOSITION;
+
 /**
- * @author jcy
+ * @author jiaochengyun.ex
  */
 public class WebService extends Service {
 
@@ -114,13 +118,13 @@ public class WebService extends Service {
      * 获取multipart/form-data请求体：MultipartFormDataBody body = (MultipartFormDataBody) request.getBody()
      * 发送文本：response.send("Hello world!");
      * 发送文件流：
-     *  BufferedInputStream bInputStream = ...
-     *   第一种. response.sendStream(bInputStream, bInputStream.available());
-     *   第二种. response.sendFile(...);
+     * BufferedInputStream bInputStream = ...
+     * 第一种. response.sendStream(bInputStream, bInputStream.available());
+     * 第二种. response.sendFile(...);
      * 发送Json：response.send(new JSONObject());
      * 发送Header：response.getHeaders().add("Content-Disposition", "attachment;filename=" + URLEncoder.encode(file.getName(), "utf-8"));
      * 发送特定的响应码：response.code(500);//这个一定要和send()或者end()一起使用
-     *
+     * <p>
      * 参考链接1：https://juejin.im/entry/5a5ea8c26fb9a01cb74e64c1
      * 参考链接2：https://blog.csdn.net/gorgle/article/details/52788701
      */
@@ -258,23 +262,51 @@ public class WebService extends Service {
                         // 注意此处，防止类型转换异常，客户端请求时需要将整体Content-type设置为MultipartBody.FORM(multipart/form-data)
                         MultipartFormDataBody body = (MultipartFormDataBody) request.getBody();
                         body.setMultipartCallback((Part part) -> {
+                            // 参数key
+                            String name = part.getName();
+                            switch (name != null ? name : "") {
+                                case "fileList":
+                                    if (body.getDataCallback() == null) {
+                                        body.setDataCallback((emitter, bb) -> {
+                                            try {
+                                                String fileList = URLDecoder.decode(new String(bb.getAllByteArray()), "UTF-8");
+                                                LogUtils.i("fileList：" + fileList);
+                                            } catch (UnsupportedEncodingException e) {
+                                                e.printStackTrace();
+                                            }
+                                            bb.recycle();
+                                        });
+                                    }
+                                    return;
+                                case "fileName":
+                                    if (body.getDataCallback() == null) {
+                                        body.setDataCallback((DataEmitter emitter, ByteBufferList bb) -> {
+                                            try {
+                                                String fileName = URLDecoder.decode(new String(bb.getAllByteArray()), "UTF-8");
+                                                fileUploadHolder.setFileName(fileName);
+                                            } catch (UnsupportedEncodingException e) {
+                                                e.printStackTrace();
+                                            }
+                                            bb.recycle();
+                                        });
+                                    }
+                                    return;
+                                default:
+                                    break;
+                            }
+
+                            LogUtils.i("getRawHeaders：" + part.getRawHeaders());
+                            // 获取客户端配置的CONTENT_DISPOSITION头信息字段中的数据
+                            Headers rawHeaders = part.getRawHeaders();
+                            Multimap nameValuePairs = Multimap.parseSemicolonDelimited(rawHeaders.get(CONTENT_DISPOSITION));
+                            String filelength = nameValuePairs.getString("filelength");
+                            LogUtils.i("filelength：" + filelength);
                             if (part.isFile()) {
+                                // isFile()方法，Headers头信息Content-Disposition中，需要配置"filename="xxx""才可以
                                 body.setDataCallback((DataEmitter emitter, ByteBufferList bb) -> {
                                     fileUploadHolder.write(bb.getAllByteArray());
                                     bb.recycle();
                                 });
-                            } else {
-                                if (body.getDataCallback() == null) {
-                                    body.setDataCallback((DataEmitter emitter, ByteBufferList bb) -> {
-                                        try {
-                                            String fileName = URLDecoder.decode(new String(bb.getAllByteArray()), "UTF-8");
-                                            fileUploadHolder.setFileName(fileName);
-                                        } catch (UnsupportedEncodingException e) {
-                                            e.printStackTrace();
-                                        }
-                                        bb.recycle();
-                                    });
-                                }
                             }
                         });
                         request.setEndCallback((Exception e) -> {
@@ -427,6 +459,7 @@ public class WebService extends Service {
                 }
             }
             totalSize += data.length;
+            LogUtils.e("totalSize：" + totalSize);
         }
     }
 }
