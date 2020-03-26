@@ -10,7 +10,7 @@
         -> Process.start（进程的创建） -> ActivityThread（单独进程app的入口类似main）
         -> bindApplication（通过反射创建Application） -> LifeCycle（我们的activity） -> ViewRootImpl（界面的绘制）
 2. 热启动：后台 -> 前台（最快）
-3. LifeCycle（只重走activity的生命周期，较快）
+3. 温启动：LifeCycle（只重走activity的生命周期，较快）
 ### 相关任务
 1. 冷启动之前：启动app、加载空白window、创建进程（这三个都是系统行为，无法多做干涉）
 2. 创建Application、创建主线程、创建MainActivity、加载布局、布置屏幕、首帧绘制
