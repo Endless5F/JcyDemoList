@@ -1,5 +1,6 @@
 package com.android.performanceanalysis.activity;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.Application;
 import android.app.job.JobInfo;
@@ -9,12 +10,14 @@ import android.content.Context;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
+import android.widget.Toast;
 
 import com.android.performanceanalysis.R;
 import com.android.performanceanalysis.adapter.HomePageAdapter;
@@ -22,6 +25,7 @@ import com.android.performanceanalysis.data.HomeData;
 import com.android.performanceanalysis.service.JobSchedulerService;
 import com.android.performanceanalysis.utils.DateUtils;
 import com.android.performanceanalysis.utils.NetStatusUtils;
+import com.android.performanceanalysis.utils.PermissionsUtils;
 import com.android.performanceanalysis.utils.WakeLockUtils;
 
 import java.util.concurrent.Executors;
@@ -40,6 +44,20 @@ public class MainActivity extends AppCompatActivity {
         setTheme(R.style.AppTheme);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        String[] permissions = new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE};
+        PermissionsUtils.getInstance().chekPermissions(this, permissions,
+                new PermissionsUtils.IPermissionsResult() {
+                    @Override
+                    public void passPermissons() {
+                        Toast.makeText(MainActivity.this, "权限通过，可以做其他事情!", Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void forbitPermissons() {
+                        Toast.makeText(MainActivity.this, "权限不通过!", Toast.LENGTH_SHORT).show();
+                    }
+                });
 
         RecyclerView rl_demo_list = findViewById(R.id.rl_demo_list);
         rl_demo_list.setLayoutManager(new LinearLayoutManager(this));//线性布局
@@ -149,5 +167,14 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        // 多一个参数this
+        PermissionsUtils.getInstance().onRequestPermissionsResult(this, requestCode, permissions,
+                grantResults);
     }
 }

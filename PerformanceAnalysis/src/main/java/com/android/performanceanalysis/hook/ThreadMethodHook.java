@@ -2,7 +2,7 @@ package com.android.performanceanalysis.hook;
 
 import android.util.Log;
 
-import com.taobao.android.dexposed.XC_MethodHook;
+import de.robv.android.xposed.XC_MethodHook;
 
 /**
  * 监控Java线程的创建和销毁

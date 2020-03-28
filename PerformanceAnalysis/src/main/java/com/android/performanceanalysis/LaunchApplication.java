@@ -1,6 +1,7 @@
 package com.android.performanceanalysis;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -16,7 +17,6 @@ import com.android.performanceanalysis.data.HomeData;
 import com.android.performanceanalysis.hook.ImageHook;
 import com.android.performanceanalysis.hook.ThreadMethodHook;
 import com.android.performanceanalysis.launchstarter.TaskDispatcher;
-import com.android.performanceanalysis.service.LeadCanaryService;
 import com.android.performanceanalysis.task.InitJPushTask;
 import com.android.performanceanalysis.task.InitStethoTask;
 import com.android.performanceanalysis.task.InitWeexTask;
@@ -24,18 +24,17 @@ import com.android.performanceanalysis.utils.LaunchTimerUtil;
 import com.android.performanceanalysis.utils.LogUtils;
 import com.github.anrwatchdog.ANRWatchDog;
 import com.github.moduth.blockcanary.BlockCanary;
-import com.squareup.leakcanary.AndroidExcludedRefs;
 import com.squareup.leakcanary.LeakCanary;
-import com.taobao.android.dexposed.DexposedBridge;
-import com.taobao.android.dexposed.XC_MethodHook;
 
 import dalvik.system.DexFile;
+import de.robv.android.xposed.DexposedBridge;
+import de.robv.android.xposed.XC_MethodHook;
 
 public class LaunchApplication extends Application {
 
     private static final String TAG = "LaunchApplication";
     private static LaunchApplication app;
-
+    public static Activity currentActivity;
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
@@ -109,19 +108,20 @@ public class LaunchApplication extends Application {
 
         // IPC监控（卡顿优化）
         // 所有的ipc操作都走BinderProxy的  https://www.jianshu.com/p/afa794939379 （震惊！Binder机制竟然恐怖如斯！）
-        try {
-            DexposedBridge.findAndHookMethod(Class.forName("android.os.BinderProxy"), "transact",
-                    int.class, Parcel.class, Parcel.class, int.class, new XC_MethodHook() {
-                        @Override
-                        protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                            LogUtils.i("BinderProxy beforeHookedMethod " + param.thisObject.getClass().getSimpleName()
-                                    + "\n" + Log.getStackTraceString(new Throwable()));
-                            super.beforeHookedMethod(param);
-                        }
-                    });
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+        // 0.8.1-c在Android 9上对此方法不兼容
+//        try {
+//            DexposedBridge.findAndHookMethod(Class.forName("android.os.BinderProxy"), "transact",
+//                    int.class, Parcel.class, Parcel.class, int.class, new XC_MethodHook() {
+//                        @Override
+//                        protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+//                            LogUtils.i( "BinderProxy beforeHookedMethod " + param.thisObject.getClass().getSimpleName()
+//                                    + "\n" + Log.getStackTraceString(new Throwable()));
+//                            super.beforeHookedMethod(param);
+//                        }
+//                    });
+//        } catch (ClassNotFoundException e) {
+//            e.printStackTrace();
+//        }
 
         // 线程优化
         // hook Thread的构造方法，然后打印Thread初始化时的堆栈信息，就可以了解到当前Thread被调用的位置

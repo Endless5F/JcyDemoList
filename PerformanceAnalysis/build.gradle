@@ -64,8 +64,8 @@ dependencies {
     // AOP
     implementation 'org.aspectj:aspectjrt:1.8.14'
 
-    // ARTHoook：Epic
-    implementation 'me.weishu:epic:0.6.0'
+    // ARTHook：Epic
+    implementation 'me.weishu:epic:0.8.0-c'
 
     // AndroidPerformanceMonitor 内存卡顿
     implementation 'com.github.markzhai:blockcanary-android:1.5.0'

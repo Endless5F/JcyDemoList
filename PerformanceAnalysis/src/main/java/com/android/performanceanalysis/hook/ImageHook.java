@@ -9,7 +9,7 @@ import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 
 import com.android.performanceanalysis.utils.LogUtils;
-import com.taobao.android.dexposed.XC_MethodHook;
+import de.robv.android.xposed.XC_MethodHook;
 
 /**
  * 完整版的图片尺寸监控

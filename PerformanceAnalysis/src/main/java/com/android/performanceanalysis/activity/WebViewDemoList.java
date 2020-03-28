@@ -1,6 +1,7 @@
 package com.android.performanceanalysis.activity;
 
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
@@ -16,6 +17,7 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.AutoCompleteTextView;
 import android.widget.TextView;
 
+import com.android.performanceanalysis.LaunchApplication;
 import com.android.performanceanalysis.R;
 import com.android.performanceanalysis.webview.WebViewActivity;
 import com.android.performanceanalysis.webview.utils.StatusBarUtil;
@@ -28,7 +30,7 @@ public class WebViewDemoList  extends AppCompatActivity implements View.OnClickL
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_web_view_demo_list);
-
+//        LaunchApplication.currentActivity = this;
         StatusBarUtil.setColor(this, ContextCompat.getColor(this, R.color.colorPrimary), 0);
         initView();
     }

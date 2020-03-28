@@ -57,7 +57,10 @@ Lancet仅支持hook具体的方法，不能像AspectJ一样根据自定义的注
 #### 使用场景建议
 1. 如果只是相对特定的函数，aar中函数、项目中的函数、Android系统源码中的函数进行Hook，可以选择使用Lancet。
 2. 如果需要使用注解对某一类操作进行Hook时，例如，权限检查、性能检测等函数，可以使用AspectJ。
+### LeakCanary 与 鹅场Matrix ResourceCanary对比分析
+https://www.cnblogs.com/sihaixuan/p/11140479.html
 
+对比图：PerformanceAnalysis/性能分析相关图/LeakCanary 与 鹅场Matrix ResourceCanary对比分析.png
 ## 开源库
 一个简单易用的android apm框架（工具）：https://github.com/SusionSuc/rabbit-client
 
