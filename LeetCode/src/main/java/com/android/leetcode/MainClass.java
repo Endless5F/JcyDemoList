@@ -7,7 +7,53 @@ public class MainClass {
 
     public static void main(String[] args) {
 //        runTwoSum();
-        runFindMedianSortedArrays();
+        runQuickSort();
+//        runFindMedianSortedArrays();
+    }
+
+    private static void runQuickSort() {
+        QuickSort quickSort = new QuickSort();
+        int[] ints = {7, 1, 3, 5, 13, 9, 3, 6, 11};
+//        quickSort.quickSort2(ints, 0, ints.length-1);
+        quicksort(ints, 0, ints.length-1);
+        for (int i = 0; i < ints.length; i++) {
+            System.out.println(ints[i]);
+        }
+    }
+
+    private static void quicksort(int[] array, int startIndex, int endIndex) {
+        if (startIndex > endIndex) {
+            return;
+        }
+        // 坑位置
+        int index = startIndex;
+        // 基准元素
+        int base = array[startIndex];
+        int left = startIndex, right = endIndex;
+        while (left <= right) {
+            while (right >= left) {
+                if (array[right] < base) {
+                    array[left] = array[right];
+                    index = right;
+                    left++;
+                    break;
+                }
+                right--;
+            }
+
+            while (right >= left) {
+                if (array[left] > base) {
+                    array[right] = array[left];
+                    index = left;
+                    right--;
+                    break;
+                }
+                left++;
+            }
+        }
+        array[index] = base;
+        quicksort(array, startIndex, index - 1);
+        quicksort(array, index + 1, endIndex);
     }
 
     private static void runTwoSum() {
