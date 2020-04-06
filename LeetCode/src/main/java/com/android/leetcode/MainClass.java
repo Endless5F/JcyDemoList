@@ -1,5 +1,6 @@
 package com.android.leetcode;
 
+import java.util.Arrays;
 import java.util.HashMap;
 
 public class MainClass {
@@ -7,8 +8,17 @@ public class MainClass {
 
     public static void main(String[] args) {
 //        runTwoSum();
-        runQuickSort();
+//        runQuickSort();
+        runHeapSort();
 //        runFindMedianSortedArrays();
+    }
+
+    private static void runHeapSort() {
+        HeapSort heapSort = new HeapSort();
+        int[] arr = new int[]{1, 3, 5,2, 0,10,6};
+        System.out.println(Arrays.toString(arr));
+        arr = heapSort.heapSort(arr, arr.length);
+        System.out.println(Arrays.toString(arr));
     }
 
     private static void runQuickSort() {
