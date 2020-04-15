@@ -16,7 +16,7 @@
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true"
         tools:ignore="GoogleAppIndexingWarning">
-
+        <activity android:name=".launch.activity.MixedItemActivity"></activity>
         <activity android:name=".launch.activity.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -43,7 +43,7 @@
             android:name=".launch.activity.InputActivity"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustNothing" />
-        <activity android:name=".launch.activity.TransitionEnterActivity"/>
+        <activity android:name=".launch.activity.TransitionEnterActivity" />
         <activity android:name=".launch.activity.TransitionExitActivity" />
     </application>
 

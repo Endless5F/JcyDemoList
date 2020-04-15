@@ -18,6 +18,7 @@ public class HomeData {
         addDeviceItem("&#xe620;", "LayoutInflater.setFactory2");
         addDeviceItem("&#xe620;", "RecycleView+ViewPager联动");
         addDeviceItem("&#xe620;", "自定义键盘");
+        addDeviceItem("&#xe620;", "混合Item单层RecycleView");
     }
 
     private static void addDeviceItem(String icon, String desc) {

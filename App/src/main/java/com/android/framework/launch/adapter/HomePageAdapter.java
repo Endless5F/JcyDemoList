@@ -13,6 +13,7 @@ import android.widget.TextView;
 
 import com.android.baselibrary.util.ToastUtil;
 import com.android.framework.R;
+import com.android.framework.launch.activity.MixedItemActivity;
 import com.android.framework.launch.activity.StrategyActivity;
 import com.android.framework.launch.activity.BgLibActivity;
 import com.android.framework.launch.activity.DialogActivity;
@@ -101,6 +102,10 @@ public class HomePageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                     case 6:
                         Intent intent6 = new Intent(mContext, InputActivity.class);
                         mContext.startActivity(intent6);
+                        break;
+                    case 7:
+                        Intent intent7 = new Intent(mContext, MixedItemActivity.class);
+                        mContext.startActivity(intent7);
                         break;
                     default:
                         break;
