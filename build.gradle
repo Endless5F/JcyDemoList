@@ -24,7 +24,7 @@ buildscript {
         maven { url "https://jitpack.io" }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.4.2'
+        classpath 'com.android.tools.build:gradle:3.6.3'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath 'com.hujiang.aspectjx:gradle-android-plugin-aspectjx:2.0.6'
         classpath 'me.ele:lancet-plugin:1.0.5'
