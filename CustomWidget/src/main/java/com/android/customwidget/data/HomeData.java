@@ -23,6 +23,7 @@ public class HomeData {
         addDeviceItem("&#xe620;", "综合练习 之 即刻app点赞效果");
         addDeviceItem("&#xe620;", "综合练习 之 RecycleView滑动触摸监听");
         addDeviceItem("&#xe620;", "综合练习 之 Scroller弹性滑动");
+        addDeviceItem("&#xe620;", "自定义View 之 双RecycleView左右联动");
     }
 
     private static void addDeviceItem(String icon, String desc) {

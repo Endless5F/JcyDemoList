@@ -23,6 +23,7 @@ import com.android.customwidget.exerciseList.hencoderpracticedraw5.DrawOrderActi
 import com.android.customwidget.exerciseList.hencoderpracticedraw6.Animation1Activity;
 import com.android.customwidget.exerciseList.hencoderpracticedraw7.Animation2Activity;
 import com.android.customwidget.exerciseList.hencoderpracticelayout1.LayoutBasicActivity;
+import com.android.customwidget.kotlin.activity.LinkageNavigationActivity;
 import com.android.customwidget.kotlin.activity.ScrollRecycleViewActivity;
 
 import java.util.List;
@@ -130,6 +131,10 @@ public class HomePageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                         case 11:
                             Intent intent11 = new Intent(mContext, ScrollerDemoActivity.class);
                             mContext.startActivity(intent11);
+                            break;
+                        case 12:
+                            Intent intent12 = new Intent(mContext, LinkageNavigationActivity.class);
+                            mContext.startActivity(intent12);
                             break;
                         default:
                             break;

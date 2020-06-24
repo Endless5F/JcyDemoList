@@ -13,5 +13,6 @@
     <color name="colorWhite">#ffffff</color>
 
     <color name="colorTransparent">#00000000</color>
+    <color name="color_f2">#f2000000</color>
 
 </resources>
