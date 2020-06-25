@@ -12,7 +12,9 @@ class LinkageNavigationActivity : AppCompatActivity() {
         setContentView(R.layout.activity_linkage_navigation)
 
         val transaction = supportFragmentManager.beginTransaction()
-        transaction.add(R.id.rootView, NavigationFragment())
+        val fragment = NavigationFragment()
+        transaction.add(R.id.rootView, fragment)
+        transaction.show(fragment)
         transaction.commitAllowingStateLoss()
     }
 }
