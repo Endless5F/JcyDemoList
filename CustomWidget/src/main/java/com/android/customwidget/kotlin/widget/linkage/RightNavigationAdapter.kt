@@ -8,12 +8,9 @@ import android.view.ViewGroup
 import android.widget.TextView
 import com.android.customwidget.R
 import com.android.customwidget.kotlin.ext.dp
-import com.android.customwidget.kotlin.ext.sp
 import com.android.customwidget.kotlin.widget.linkage.bean.NavigationBean
 import kotlinx.android.synthetic.main.navigation_item_right.view.*
-import org.jetbrains.anko.backgroundResource
 import org.jetbrains.anko.padding
-import org.jetbrains.anko.view
 
 class RightNavigationAdapter(val context: Context) : RecyclerView.Adapter<RightNavigationAdapter.ViewHolder>() {
 
