@@ -5,17 +5,18 @@ import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
+import android.support.v7.widget.SimpleItemAnimator
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.*
 import com.android.customwidget.R
 import com.android.customwidget.kotlin.ext.dispatchMainLoopWork
 import com.android.customwidget.kotlin.ext.dispatchSerialWork
 import com.android.customwidget.kotlin.ext.getAssetsFileJson
 import com.android.customwidget.kotlin.widget.linkage.LeftNavigationAdapter
 import com.android.customwidget.kotlin.widget.linkage.RightNavigationAdapter
-import com.android.customwidget.kotlin.widget.linkage.TopItemDecoration
 import com.android.customwidget.kotlin.widget.linkage.bean.Navigation
 import com.android.customwidget.kotlin.widget.linkage.bean.NavigationBean
 import com.google.gson.Gson
@@ -28,6 +29,7 @@ import kotlinx.android.synthetic.main.fragment_navigation.*
 
 class Navigation3Fragment : Fragment() {
 
+    var currentPosition = 0
     var leftList = mutableListOf<NavigationBean>()
 
     //初始化左侧recyclerview的adapter
@@ -46,8 +48,6 @@ class Navigation3Fragment : Fragment() {
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
-        rvLeft.adapter = leftNavigationAdapter
-        rvRight.adapter = rightNavigationAdapter
         recyclerViewLinkage()
         super.onActivityCreated(savedInstanceState)
     }
@@ -61,6 +61,12 @@ class Navigation3Fragment : Fragment() {
         rvLeft.layoutManager = LinearLayoutManager(context)
         rvRight.layoutManager = LinearLayoutManager(context)
 
+//        closeDefaultAnimator(rvRight)
+        (rvRight.itemAnimator as SimpleItemAnimator).supportsChangeAnimations = false
+
+        rvLeft.adapter = leftNavigationAdapter
+        rvRight.adapter = rightNavigationAdapter
+
         if (mRefreshView == null) {
             val parent = rvRight.parent as ViewGroup
             parent.removeView(rvRight)
@@ -70,46 +76,104 @@ class Navigation3Fragment : Fragment() {
             parent.addView(mRefreshView)
 
             mRefreshView?.setRefreshHeader(ClassicsHeader(context));
-            mRefreshView?.setRefreshFooter(ClassicsFooter(context).setSpinnerStyle(SpinnerStyle.Scale));
+            mRefreshView?.setRefreshFooter(ClassicsFooter(context).setSpinnerStyle(SpinnerStyle.Scale))
         }
 
         mRefreshView?.apply {
             setOnRefreshListener {
-                Log.e("mRefreshView","setOnRefreshListener")
+                Log.e("mRefreshView", "setOnRefreshListener")
                 finishRefresh(true)
+                updata()
                 return@setOnRefreshListener
             }
 
             setOnLoadMoreListener {
-                Log.e("mRefreshView","setOnLoadMoreListener")
+                Log.e("mRefreshView", "setOnLoadMoreListener")
                 finishLoadMore(true)
+                downdata()
                 return@setOnLoadMoreListener
             }
         }
 
-        val manager = rvRight.layoutManager as LinearLayoutManager
+        /**
+         * 既然是动画，就会有时间，我们把动画执行时间变大一点来看一看效果
+         */
+//        val defaultItemAnimator = DefaultItemAnimator()
+//        defaultItemAnimator.addDuration = 300
+//        defaultItemAnimator.removeDuration = 300
+//        rvRight.itemAnimator = null
+
         //左边联动右边
         leftNavigationAdapter.setOnItemClickListener { position ->
+            if (currentPosition == position) {
+                return@setOnItemClickListener
+            }
+            currentPosition = position
+            update(currentPosition)
+        }
+    }
+
+    private fun closeDefaultAnimator(mRvCustomer: RecyclerView?) {
+        if (null == mRvCustomer) return
+        mRvCustomer.itemAnimator!!.addDuration = 0
+        mRvCustomer.itemAnimator!!.changeDuration = 0
+        mRvCustomer.itemAnimator!!.moveDuration = 0
+        mRvCustomer.itemAnimator!!.removeDuration = 0
+        (mRvCustomer.itemAnimator as SimpleItemAnimator?)!!.supportsChangeAnimations = false
+    }
+
+    private fun updata() {
+        if (currentPosition > 0) {
+            currentPosition--
+            update(currentPosition)
+        }
+    }
+
+    private fun downdata() {
+        if (currentPosition < leftList.size) {
+            currentPosition++
+            update(currentPosition)
+        }
+    }
+
+    private fun update(position: Int) {
+        rvRight.postDelayed({
+            anim()
             leftNavigationAdapter.setChoose(position)
-//            manager.scrollToPositionWithOffset(position, 0)
             val singleList = mutableListOf<NavigationBean>()
             singleList.add(leftList[position])
+            singleList.add(leftList[position])
+            singleList.add(leftList[position])
+            singleList.add(leftList[position])
+            singleList.add(leftList[position])
             rightNavigationAdapter.setDataList(singleList)
-        }
+        }, 500)
+    }
 
-        //右边联动左边
-        rvRight.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                super.onScrolled(recyclerView, dx, dy)
-                Log.e("onScrolled","onScrolled")
-                val firstItemPosition = manager.findFirstVisibleItemPosition()
-                if (firstItemPosition != -1) {
-                    rvLeft.smoothScrollToPosition(firstItemPosition)
-                    leftNavigationAdapter.setChoose(firstItemPosition)
-                }
+    private fun anim() {
+        val animationSet = AnimationSet(false)
+        animationSet.addAnimation(AlphaAnimation(0f, 1f))
+        animationSet.addAnimation(TranslateAnimation(0f, 0f, 1800f, 0f))
+        animationSet.duration = 1000
+        //如果不添加setFillEnabled和setFillAfter则动画执行结束后会自动回到远点
+        animationSet.isFillEnabled = true //使其可以填充效果从而不回到原地
+        animationSet.fillAfter = true //不回到起始位置
+//        animationSet.interpolator = AccelerateDecelerateInterpolator()
+        animationSet.setAnimationListener(object : Animation.AnimationListener {
+            override fun onAnimationRepeat(animation: Animation?) {
+
+            }
+
+            override fun onAnimationEnd(animation: Animation?) {
+                animationSet.reset()
+            }
+
+            override fun onAnimationStart(animation: Animation?) {
+
             }
 
         })
+        rvRight.startAnimation(animationSet)
     }
 
     /**
@@ -130,12 +194,12 @@ class Navigation3Fragment : Fragment() {
                 singleList.add(nav.data[0])
                 rightNavigationAdapter.setDataList(singleList)
                 //右侧recyclerview悬浮置顶效果
-                val top = TopItemDecoration(context as Activity).apply {
-                    this.tagListener = {
-                        leftList[it].name
-                    }
-                }
-                rvRight.addItemDecoration(top)
+//                val top = TopItemDecoration(context as Activity).apply {
+//                    this.tagListener = {
+//                        leftList[it].name
+//                    }
+//                }
+//                rvRight.addItemDecoration(top)
             }
         }
     }

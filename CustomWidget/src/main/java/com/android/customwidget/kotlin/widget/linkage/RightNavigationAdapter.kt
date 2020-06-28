@@ -20,7 +20,8 @@ class RightNavigationAdapter(val context: Context) : RecyclerView.Adapter<RightN
 
     fun setDataList(datas: MutableList<NavigationBean>) {
         mDatas = datas
-        notifyDataSetChanged()
+//        notifyDataSetChanged()
+        notifyItemRangeChanged(0,mDatas.size)
     }
 
     override fun onCreateViewHolder(p0: ViewGroup, p1: Int): ViewHolder {
@@ -33,7 +34,7 @@ class RightNavigationAdapter(val context: Context) : RecyclerView.Adapter<RightN
     }
 
     override fun onBindViewHolder(p0: ViewHolder, p1: Int) {
-//        p0.itemView.sub_title.text = mDatas[p1].name
+        p0.itemView.sub_title.text = mDatas[p1].name
         p0.itemView.flow_content.removeAllViews()
         mDatas[p1].articles.forEach { data ->
             p0.itemView.flow_content.apply {
