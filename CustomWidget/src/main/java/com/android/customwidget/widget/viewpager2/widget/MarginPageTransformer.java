@@ -16,15 +16,15 @@ package com.android.customwidget.widget.viewpager2.widget;
  * limitations under the License.
  */
 
-package androidx.viewpager2.widget;
 
+import android.annotation.SuppressLint;
+import android.support.annotation.NonNull;
+import android.support.annotation.Px;
+import android.support.v4.util.Preconditions;
+import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.view.ViewParent;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Px;
-import androidx.core.util.Preconditions;
-import androidx.recyclerview.widget.RecyclerView;
 
 /**
  * Adds space between pages via the {@link ViewPager2.PageTransformer} API.
@@ -46,6 +46,7 @@ public final class MarginPageTransformer implements ViewPager2.PageTransformer {
      *
      * @param marginPx non-negative margin
      */
+    @SuppressLint("RestrictedApi")
     public MarginPageTransformer(@Px int marginPx) {
         Preconditions.checkArgumentNonnegative(marginPx, "Margin must be non-negative");
         mMarginPx = marginPx;

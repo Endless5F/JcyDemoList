@@ -16,22 +16,20 @@ package com.android.customwidget.widget.viewpager2.widget;
  * limitations under the License.
  */
 
-package androidx.viewpager2.widget;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Px;
-import androidx.viewpager2.widget.ViewPager2.OnPageChangeCallback;
+import android.support.annotation.NonNull;
+import android.support.annotation.Px;
 
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 
 /**
- * Dispatches {@link OnPageChangeCallback} events to subscribers.
+ * Dispatches @link OnPageChangeCallback} events to subscribers.
  */
-final class CompositeOnPageChangeCallback extends OnPageChangeCallback {
+final class CompositeOnPageChangeCallback extends ViewPager2.OnPageChangeCallback {
     @NonNull
-    private final List<OnPageChangeCallback> mCallbacks;
+    private final List<ViewPager2.OnPageChangeCallback> mCallbacks;
 
     CompositeOnPageChangeCallback(int initialCapacity) {
         mCallbacks = new ArrayList<>(initialCapacity);
@@ -40,24 +38,21 @@ final class CompositeOnPageChangeCallback extends OnPageChangeCallback {
     /**
      * Adds the given callback to the list of subscribers
      */
-    void addOnPageChangeCallback(OnPageChangeCallback callback) {
+    void addOnPageChangeCallback(ViewPager2.OnPageChangeCallback callback) {
         mCallbacks.add(callback);
     }
 
     /**
      * Removes the given callback from the list of subscribers
      */
-    void removeOnPageChangeCallback(OnPageChangeCallback callback) {
+    void removeOnPageChangeCallback(ViewPager2.OnPageChangeCallback callback) {
         mCallbacks.remove(callback);
     }
 
-    /**
-     * @see OnPageChangeCallback#onPageScrolled(int, float, int)
-     */
     @Override
     public void onPageScrolled(int position, float positionOffset, @Px int positionOffsetPixels) {
         try {
-            for (OnPageChangeCallback callback : mCallbacks) {
+            for (ViewPager2.OnPageChangeCallback callback : mCallbacks) {
                 callback.onPageScrolled(position, positionOffset, positionOffsetPixels);
             }
         } catch (ConcurrentModificationException ex) {
@@ -65,13 +60,10 @@ final class CompositeOnPageChangeCallback extends OnPageChangeCallback {
         }
     }
 
-    /**
-     * @see OnPageChangeCallback#onPageSelected(int)
-     */
     @Override
     public void onPageSelected(int position) {
         try {
-            for (OnPageChangeCallback callback : mCallbacks) {
+            for (ViewPager2.OnPageChangeCallback callback : mCallbacks) {
                 callback.onPageSelected(position);
             }
         } catch (ConcurrentModificationException ex) {
@@ -79,13 +71,11 @@ final class CompositeOnPageChangeCallback extends OnPageChangeCallback {
         }
     }
 
-    /**
-     * @see OnPageChangeCallback#onPageScrollStateChanged(int)
-     */
+
     @Override
     public void onPageScrollStateChanged(@ViewPager2.ScrollState int state) {
         try {
-            for (OnPageChangeCallback callback : mCallbacks) {
+            for (ViewPager2.OnPageChangeCallback callback : mCallbacks) {
                 callback.onPageScrollStateChanged(state);
             }
         } catch (ConcurrentModificationException ex) {

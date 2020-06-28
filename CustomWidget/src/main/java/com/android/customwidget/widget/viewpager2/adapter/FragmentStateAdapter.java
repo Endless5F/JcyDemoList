@@ -17,6 +17,7 @@ package com.android.customwidget.widget.viewpager2.adapter;
  */
 
 
+import android.annotation.SuppressLint;
 import android.arch.lifecycle.Lifecycle;
 import android.arch.lifecycle.LifecycleOwner;
 import android.os.Bundle;
@@ -29,6 +30,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.util.ArraySet;
 import android.support.v4.util.LongSparseArray;
 import android.support.v4.view.ViewCompat;
@@ -39,10 +41,14 @@ import android.view.ViewParent;
 import android.widget.FrameLayout;
 
 
+import com.android.customwidget.widget.viewpager2.widget.ViewPager2;
+
 import java.util.Set;
 
+import static android.arch.lifecycle.Lifecycle.State.RESUMED;
 import static android.arch.lifecycle.Lifecycle.State.STARTED;
 import static android.support.v4.util.Preconditions.checkArgument;
+import static android.support.v7.widget.RecyclerView.NO_ID;
 
 /**
  * Similar in behavior to @link FragmentStatePagerAdapter}
@@ -121,6 +127,7 @@ public abstract class FragmentStateAdapter extends
         super.setHasStableIds(true);
     }
 
+    @SuppressLint("RestrictedApi")
     @CallSuper
     @Override
     public void onAttachedToRecyclerView(@NonNull RecyclerView recyclerView) {
@@ -329,9 +336,10 @@ public abstract class FragmentStateAdapter extends
         // { f:notAdded, v:notCreated, v:notAttached } -> add, create, attach
         if (!shouldDelayFragmentTransactions()) {
             scheduleViewAttach(fragment, container);
+            // TODO 注释
             mFragmentManager.beginTransaction()
                     .add(fragment, "f" + holder.getItemId())
-                    .setMaxLifecycle(fragment, STARTED)
+//                    .setMaxLifecycle(fragment, STARTED)
                     .commitNow();
             mFragmentMaxLifecycleEnforcer.updateFragmentMaxLifecycle(false);
         } else {
@@ -705,7 +713,8 @@ public abstract class FragmentStateAdapter extends
                 }
 
                 if (itemId != mPrimaryItemId) {
-                    transaction.setMaxLifecycle(fragment, STARTED);
+                    // TODO 注释
+//                    transaction.setMaxLifecycle(fragment, STARTED);
                 } else {
                     toResume = fragment; // itemId map key, so only one can match the predicate
                 }
@@ -713,7 +722,8 @@ public abstract class FragmentStateAdapter extends
                 fragment.setMenuVisibility(itemId == mPrimaryItemId);
             }
             if (toResume != null) { // in case the Fragment wasn't added yet
-                transaction.setMaxLifecycle(toResume, RESUMED);
+                // TODO 注释
+//                transaction.setMaxLifecycle(toResume, RESUMED);
             }
 
             if (!transaction.isEmpty()) {

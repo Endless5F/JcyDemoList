@@ -16,17 +16,15 @@ package com.android.customwidget.widget.viewpager2.widget;
  * limitations under the License.
  */
 
-package androidx.viewpager2.widget;
-
-import static androidx.viewpager2.widget.ViewPager2.ORIENTATION_HORIZONTAL;
-
 import android.os.SystemClock;
+import android.support.annotation.UiThread;
+import android.support.v7.widget.RecyclerView;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.ViewConfiguration;
 
-import androidx.annotation.UiThread;
-import androidx.recyclerview.widget.RecyclerView;
+import static com.android.customwidget.widget.viewpager2.widget.ViewPager2.ORIENTATION_HORIZONTAL;
+
 
 /**
  * Provides fake dragging functionality to {@link ViewPager2}.

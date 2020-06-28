@@ -12,6 +12,7 @@ import com.android.customwidget.kotlin.ext.dispatchMainLoopWork
 import com.android.customwidget.kotlin.ext.dispatchSerialWork
 import com.android.customwidget.kotlin.ext.getAssetsFileJson
 import com.android.customwidget.kotlin.widget.ViewPager2
+import com.android.customwidget.kotlin.widget.ViewPager2.Orientation.VERTICAL
 import com.android.customwidget.kotlin.widget.linkage.LeftNavigationAdapter
 import com.android.customwidget.kotlin.widget.linkage.RightNavigation2Adapter
 import com.android.customwidget.kotlin.widget.linkage.bean.Navigation
@@ -55,31 +56,27 @@ class Navigation5Fragment : Fragment() {
 
         rvLeft.adapter = leftNavigationAdapter
 
-        rvRight.orientation = ViewPager2.Orientation.VERTICAL
+        rvRight.orientation = VERTICAL
         rvRight.setAdapter(rightNavigationAdapter)
 
 
         //左边联动右边
-        val manager = rvRight.recyclerView.layoutManager as LinearLayoutManager
-        //左边联动右边
         leftNavigationAdapter.setOnItemClickListener { position ->
             leftNavigationAdapter.setChoose(position)
-            manager.scrollToPositionWithOffset(position, 0)
+            rvRight.currentItem = position
         }
 
         rightNavigationAdapter.addRefreshListener { position ->
             if (position >= 0) {
                 leftNavigationAdapter.setChoose(position)
-                rvRight.setCurrentItemInternal(position, true)
-//                manager.scrollToPositionWithOffset(position, 0)
+                rvRight.currentItem = position
             }
         }
 
         rightNavigationAdapter.addLoadMoreListener { position ->
             if (position < commonList.size) {
                 leftNavigationAdapter.setChoose(position)
-                rvRight.setCurrentItemInternal(position, true)
-//                manager.scrollToPositionWithOffset(position, 0)
+                rvRight.currentItem = position
             }
         }
     }

@@ -16,31 +16,27 @@ package com.android.customwidget.widget.viewpager2.widget;
  * limitations under the License.
  */
 
-package androidx.viewpager2.widget;
 
-import static androidx.viewpager2.widget.ViewPager2.ORIENTATION_HORIZONTAL;
-import static androidx.viewpager2.widget.ViewPager2.SCROLL_STATE_DRAGGING;
-import static androidx.viewpager2.widget.ViewPager2.SCROLL_STATE_IDLE;
-import static androidx.viewpager2.widget.ViewPager2.SCROLL_STATE_SETTLING;
-import static androidx.viewpager2.widget.ViewPager2.ScrollState;
 
+import static com.android.customwidget.widget.viewpager2.widget.ViewPager2.ORIENTATION_HORIZONTAL;
+import static com.android.customwidget.widget.viewpager2.widget.ViewPager2.SCROLL_STATE_DRAGGING;
+import static com.android.customwidget.widget.viewpager2.widget.ViewPager2.SCROLL_STATE_IDLE;
+import static com.android.customwidget.widget.viewpager2.widget.ViewPager2.SCROLL_STATE_SETTLING;
 import static java.lang.annotation.RetentionPolicy.SOURCE;
 
+import android.support.annotation.IntDef;
+import android.support.annotation.NonNull;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
 import android.view.ViewGroup.MarginLayoutParams;
-
-import androidx.annotation.IntDef;
-import androidx.annotation.NonNull;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.viewpager2.widget.ViewPager2.OnPageChangeCallback;
 
 import java.lang.annotation.Retention;
 import java.util.Locale;
 
 /**
- * Translates {@link RecyclerView.OnScrollListener} events to {@link OnPageChangeCallback} events
+ * Translates @link RecyclerView.OnScrollListener} events to @link OnPageChangeCallback} events
  * for {@link ViewPager2}. As part of this process, it keeps track of the current scroll position
  * relative to the pages and exposes this position via ({@link #getRelativeScrollPosition()}.
  */
@@ -60,10 +56,12 @@ final class ScrollEventAdapter extends RecyclerView.OnScrollListener {
 
     private static final int NO_POSITION = -1;
 
-    private OnPageChangeCallback mCallback;
-    private final @NonNull ViewPager2 mViewPager;
+    private ViewPager2.OnPageChangeCallback mCallback;
+    private final @NonNull
+    ViewPager2 mViewPager;
     private final @NonNull RecyclerView mRecyclerView;
-    private final @NonNull LinearLayoutManager mLayoutManager;
+    private final @NonNull
+    LinearLayoutManager mLayoutManager;
 
     // state related fields
     private @AdapterState int mAdapterState;
@@ -354,7 +352,7 @@ final class ScrollEventAdapter extends RecyclerView.OnScrollListener {
         }
     }
 
-    void setOnPageChangeCallback(OnPageChangeCallback callback) {
+    void setOnPageChangeCallback(ViewPager2.OnPageChangeCallback callback) {
         mCallback = callback;
     }
 
@@ -410,7 +408,7 @@ final class ScrollEventAdapter extends RecyclerView.OnScrollListener {
         return mScrollValues.mPosition + (double) mScrollValues.mOffset;
     }
 
-    private void dispatchStateChanged(@ScrollState int state) {
+    private void dispatchStateChanged(@ViewPager2.ScrollState int state) {
         // Callback contract for immediate-scroll requires not having state change notifications,
         // but only when there was no smooth scroll in progress.
         // By putting a suppress statement in here (rather than next to dispatch calls) we are
