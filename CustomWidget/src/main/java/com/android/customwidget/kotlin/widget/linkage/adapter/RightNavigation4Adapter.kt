@@ -1,4 +1,4 @@
-package com.android.customwidget.kotlin.widget.linkage
+package com.android.customwidget.kotlin.widget.linkage.adapter
 
 import android.content.Context
 import android.support.v7.widget.LinearLayoutManager
@@ -7,25 +7,31 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.LinearLayout
 import com.android.customwidget.R
 import com.android.customwidget.kotlin.ext.addRefresh
 import com.android.customwidget.kotlin.widget.linkage.bean.NavigationBean
 import com.scwang.smart.refresh.footer.ClassicsFooter
 import com.scwang.smart.refresh.header.ClassicsHeader
 import com.scwang.smart.refresh.layout.SmartRefreshLayout
-import com.scwang.smart.refresh.layout.constant.SpinnerStyle
 import kotlinx.android.synthetic.main.navigation_item_right2.view.*
 
 
-class RightNavigation2Adapter(val context: Context) : RecyclerView.Adapter<RightNavigation2Adapter.ViewHolder>() {
-
+class RightNavigation4Adapter(val context: Context) : RecyclerView.Adapter<RightNavigation4Adapter.ViewHolder>() {
 
     class ViewHolder(item: View) : RecyclerView.ViewHolder(item) {
         var mRefreshView: SmartRefreshLayout? = null
         init {
             item.layoutParams = RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT)
+
+            item.item_category.apply {
+                if (mRefreshView == null) {
+                    mRefreshView = addRefresh(this)
+                    mRefreshView?.setEnableAutoLoadMore(false)
+                    mRefreshView?.setRefreshHeader(ClassicsHeader(context))
+                    mRefreshView?.setRefreshFooter(ClassicsFooter(context))
+                }
+            }
         }
     }
 
@@ -55,11 +61,6 @@ class RightNavigation2Adapter(val context: Context) : RecyclerView.Adapter<Right
             val navigationAdapter = RightNavigationAdapter(context)
             adapter = navigationAdapter
             setItemData(p1, navigationAdapter)
-            if (p0.mRefreshView == null) {
-                p0.mRefreshView = addRefresh(this)
-                p0.mRefreshView?.setRefreshHeader(ClassicsHeader(context));
-                p0.mRefreshView?.setRefreshFooter(ClassicsFooter(context).setSpinnerStyle(SpinnerStyle.Scale))
-            }
 
             p0.mRefreshView?.apply {
                 setOnRefreshListener {
@@ -87,7 +88,7 @@ class RightNavigation2Adapter(val context: Context) : RecyclerView.Adapter<Right
         singleList.add(mDatas[position])
         singleList.add(mDatas[position])
         adapter.setDataList(singleList)
-        Log.e("mRefreshView", "setItemData $position ${singleList.toString()}")
+//        Log.e("mRefreshView", "setItemData $position ${singleList.toString()}")
     }
 
     fun addRefreshListener(callback: (position: Int) -> Unit) {

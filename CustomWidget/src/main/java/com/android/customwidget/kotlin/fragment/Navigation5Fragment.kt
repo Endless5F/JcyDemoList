@@ -4,6 +4,7 @@ import android.app.Activity
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v7.widget.LinearLayoutManager
+import android.support.v7.widget.LinearLayoutManager.VERTICAL
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,14 +12,11 @@ import com.android.customwidget.R
 import com.android.customwidget.kotlin.ext.dispatchMainLoopWork
 import com.android.customwidget.kotlin.ext.dispatchSerialWork
 import com.android.customwidget.kotlin.ext.getAssetsFileJson
-import com.android.customwidget.kotlin.widget.ViewPager2
-import com.android.customwidget.kotlin.widget.ViewPager2.Orientation.VERTICAL
-import com.android.customwidget.kotlin.widget.linkage.LeftNavigationAdapter
-import com.android.customwidget.kotlin.widget.linkage.RightNavigation2Adapter
+import com.android.customwidget.kotlin.widget.linkage.adapter.LeftNavigationAdapter
+import com.android.customwidget.kotlin.widget.linkage.adapter.RightNavigation4Adapter
 import com.android.customwidget.kotlin.widget.linkage.bean.Navigation
 import com.android.customwidget.kotlin.widget.linkage.bean.NavigationBean
 import com.google.gson.Gson
-import com.scwang.smart.refresh.layout.SmartRefreshLayout
 import kotlinx.android.synthetic.main.fragment_navigation2.*
 
 
@@ -32,8 +30,8 @@ class Navigation5Fragment : Fragment() {
     }
 
     //初始化右侧recyclerview的adapter
-    private val rightNavigationAdapter: RightNavigation2Adapter by lazy {
-        RightNavigation2Adapter(context as Activity)
+    private val rightNavigationAdapter: RightNavigation4Adapter by lazy {
+        RightNavigation4Adapter(context as Activity)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -46,8 +44,6 @@ class Navigation5Fragment : Fragment() {
         super.onActivityCreated(savedInstanceState)
     }
 
-    protected var mRefreshView: SmartRefreshLayout? = null
-
     /**
      * 左右两个RecyclerView联动
      */
@@ -57,7 +53,8 @@ class Navigation5Fragment : Fragment() {
         rvLeft.adapter = leftNavigationAdapter
 
         rvRight.orientation = VERTICAL
-        rvRight.setAdapter(rightNavigationAdapter)
+        rvRight.adapter = rightNavigationAdapter
+        rvRight.isUserInputEnabled = false
 
 
         //左边联动右边

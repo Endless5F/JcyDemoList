@@ -12,8 +12,8 @@ import com.android.customwidget.kotlin.ext.dispatchMainLoopWork
 import com.android.customwidget.kotlin.ext.dispatchSerialWork
 import com.android.customwidget.kotlin.ext.getAssetsFileJson
 import com.android.customwidget.kotlin.widget.linkage.CustomLinearLayoutManager
-import com.android.customwidget.kotlin.widget.linkage.LeftNavigationAdapter
-import com.android.customwidget.kotlin.widget.linkage.RightNavigation2Adapter
+import com.android.customwidget.kotlin.widget.linkage.adapter.LeftNavigationAdapter
+import com.android.customwidget.kotlin.widget.linkage.adapter.RightNavigation4Adapter
 import com.android.customwidget.kotlin.widget.linkage.bean.Navigation
 import com.android.customwidget.kotlin.widget.linkage.bean.NavigationBean
 import com.google.gson.Gson
@@ -31,8 +31,8 @@ class Navigation4Fragment : Fragment() {
     }
 
     //初始化右侧recyclerview的adapter
-    private val rightNavigationAdapter: RightNavigation2Adapter by lazy {
-        RightNavigation2Adapter(context as Activity)
+    private val rightNavigationAdapter: RightNavigation4Adapter by lazy {
+        RightNavigation4Adapter(context as Activity)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {

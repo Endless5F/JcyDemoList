@@ -11,6 +11,9 @@ import android.view.View
 import com.android.customwidget.R
 import java.lang.Math.min
 
+/**
+ * 悬浮置顶效果
+ */
 class TopItemDecoration(context: Context) : RecyclerView.ItemDecoration() {
 
     //间隔高度

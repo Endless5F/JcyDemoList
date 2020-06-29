@@ -1,4 +1,4 @@
-package com.android.customwidget.kotlin.widget.linkage
+package com.android.customwidget.kotlin.widget.linkage.adapter
 
 import android.content.Context
 import android.support.v7.widget.RecyclerView

@@ -12,8 +12,8 @@ import com.android.customwidget.R
 import com.android.customwidget.kotlin.ext.dispatchMainLoopWork
 import com.android.customwidget.kotlin.ext.dispatchSerialWork
 import com.android.customwidget.kotlin.ext.getAssetsFileJson
-import com.android.customwidget.kotlin.widget.linkage.LeftNavigationAdapter
-import com.android.customwidget.kotlin.widget.linkage.RightNavigationAdapter
+import com.android.customwidget.kotlin.widget.linkage.adapter.LeftNavigationAdapter
+import com.android.customwidget.kotlin.widget.linkage.adapter.RightNavigationAdapter
 import com.android.customwidget.kotlin.widget.linkage.TopItemDecoration
 import com.android.customwidget.kotlin.widget.linkage.bean.Navigation
 import com.android.customwidget.kotlin.widget.linkage.bean.NavigationBean

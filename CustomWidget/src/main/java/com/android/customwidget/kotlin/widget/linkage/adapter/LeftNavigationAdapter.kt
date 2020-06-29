@@ -1,18 +1,14 @@
-package com.android.customwidget.kotlin.widget.linkage
+package com.android.customwidget.kotlin.widget.linkage.adapter
 
 import android.content.Context
 import android.graphics.Color
-import android.support.design.internal.FlowLayout
 import android.support.v7.widget.RecyclerView
-import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import com.android.customwidget.kotlin.ext.dp
-import com.android.customwidget.kotlin.ext.sp
 import com.android.customwidget.kotlin.widget.linkage.bean.NavigationBean
 import org.jetbrains.anko.backgroundColor
-import org.jetbrains.anko.padding
 
 class LeftNavigationAdapter(val context: Context) : RecyclerView.Adapter<LeftNavigationAdapter.ViewHolder>() {
 
