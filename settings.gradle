@@ -36,4 +36,16 @@ gradle.buildFinished {
 }
 
 
-include ':App',':BaseLibrary', ':SourceCodeAnalysis', ':CustomWidget', ':Architecture', ':JavaLib', ':Kotlinlearn', ':PerformanceAnalysis', ':GradleLib', ':LeetCode', ':HttpServer'
+include ':App',
+        ':BaseLibrary',
+        ':SourceCodeAnalysis',
+        ':CustomWidget',
+        ':Architecture',
+        ':JavaLib',
+        ':Kotlinlearn' ,
+        ':PerformanceAnalysis',
+        ':GradleLib',
+        ':LeetCode',
+        ':HttpServer',
+        ':Lib-Common:viewpager2'
+
