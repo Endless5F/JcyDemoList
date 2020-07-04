@@ -26,3 +26,12 @@ private fun createRefreshView(context:Context): SmartRefreshLayout {
 
     return refreshView
 }
+
+fun getUnDisplayViewWidth(view: View): Int {
+    val width = View.MeasureSpec.makeMeasureSpec(0,
+            View.MeasureSpec.UNSPECIFIED)
+    val height = View.MeasureSpec.makeMeasureSpec(0,
+            View.MeasureSpec.UNSPECIFIED)
+    view.measure(width, height)
+    return view.measuredWidth
+}

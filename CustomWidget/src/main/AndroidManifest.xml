@@ -11,7 +11,8 @@
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true"
         tools:ignore="GoogleAppIndexingWarning">
-        <activity android:name=".kotlin.activity.LinkageNavigationActivity"/>
+        <activity android:name=".kotlin.activity.LinearGridActivity"></activity>
+        <activity android:name=".kotlin.activity.LinkageNavigationActivity" />
         <activity android:name=".activity.ScrollerDemoActivity" />
         <activity android:name=".kotlin.activity.ScrollRecycleViewActivity" />
         <activity android:name=".activity.MainActivity">

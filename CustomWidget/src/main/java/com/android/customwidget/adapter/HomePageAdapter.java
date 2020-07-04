@@ -23,6 +23,7 @@ import com.android.customwidget.exerciseList.hencoderpracticedraw5.DrawOrderActi
 import com.android.customwidget.exerciseList.hencoderpracticedraw6.Animation1Activity;
 import com.android.customwidget.exerciseList.hencoderpracticedraw7.Animation2Activity;
 import com.android.customwidget.exerciseList.hencoderpracticelayout1.LayoutBasicActivity;
+import com.android.customwidget.kotlin.activity.LinearGridActivity;
 import com.android.customwidget.kotlin.activity.LinkageNavigationActivity;
 import com.android.customwidget.kotlin.activity.ScrollRecycleViewActivity;
 
@@ -135,6 +136,10 @@ public class HomePageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                         case 12:
                             Intent intent12 = new Intent(mContext, LinkageNavigationActivity.class);
                             mContext.startActivity(intent12);
+                            break;
+                        case 13:
+                            Intent intent13 = new Intent(mContext, LinearGridActivity.class);
+                            mContext.startActivity(intent13);
                             break;
                         default:
                             break;
