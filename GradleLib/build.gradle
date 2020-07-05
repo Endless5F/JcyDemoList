@@ -1,22 +1,25 @@
 apply plugin: 'com.android.library'
 apply plugin: 'com.android.gradle'
 
+println '你好gradlelib start '
 android {
     compileSdkVersion 28
 
-
+    println '你好gradlelib android '
     defaultConfig {
         minSdkVersion 22
         targetSdkVersion 28
         versionCode 1
         versionName "1.0"
-
+        println '你好gradlelib defaultConfig '
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 
     }
 
     buildTypes {
+        println '你好gradlelib buildTypes '
         release {
+            println '你好gradlelib buildTypes buildTypes'
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
@@ -24,6 +27,7 @@ android {
 
     // 配置so库位置和分模块资源目录
     sourceSets {
+        println '你好gradlelib sourceSets'
         main {
             jniLibs.srcDirs = ['libs']
             res.srcDirs = ['src/main/res',
@@ -34,6 +38,7 @@ android {
 }
 
 dependencies {
+    println '你好gradlelib dependencies'
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
     implementation 'com.android.support:appcompat-v7:28.0.0'
@@ -44,6 +49,7 @@ dependencies {
 
 // 自定义插件配置信息，配合自定义Task(ReleaseInfoTask)完成更新版本信息。作用：同gradlew执行下面'Task实战'中的taskTest
 releaseInfo {
+    println '你好gradlelib releaseInfo'
     versionCode = '1.0.0'
     versionName = '100'
     versionInfo = '第一个app信息'
@@ -51,6 +57,7 @@ releaseInfo {
 }
 
 /**
+ *
  * 问：什么是gradle wrapper？
  * 答：gradle wrapper 就是由gradle 帮我们生成的gradlew脚本，里面包含了用到的gradle版本信息，
  * 我们编译代码的时候不直接运行gradle命令，而是运行gradlew 命令，
@@ -170,6 +177,8 @@ releaseInfo {
  * 2. 配置阶段：解析所有project对象中的task对象，构建好所有task的拓扑图
  * 3. 执行阶段：执行具体的task以及依赖的task
  *
+ *
+ * gradle 配置阶段执行每个module的配置文件(build.gradle)时，是从上到下依次执行的(包括插件)，来构建有向无环图task。最后执行阶段执行所有的task
  */
 
 /**
