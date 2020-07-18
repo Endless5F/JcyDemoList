@@ -3,11 +3,8 @@ package com.android.customwidget.kotlin.widget.lineargrid
 import android.content.Context
 import android.graphics.Typeface
 import android.support.v7.widget.GridLayoutManager
-import android.util.AttributeSet
-import android.util.Log
 import android.util.TypedValue
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -15,33 +12,45 @@ import com.android.customwidget.R
 import com.android.customwidget.kotlin.ext.dp
 import kotlinx.android.synthetic.main.linear_gird_item.view.*
 
-class HotPartView : LinearLayout {
+/**
+ * 使用方法示例：
+ * LinearGridView(context).apply {
+ *     val layoutParams = RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+ *     layoutParams.setMargins(leftMargin, topMargin, rightMargin, bottomMargin)
+ *     this.layoutParams = layoutParams
+ *
+ *     spanCount = 4 // 一行显示4个
+ *     itemWidth = 45.dp // 单个item的宽(高同宽)
+ *     itemTopMargin = 15.dp // 每行之间的间距
+ *     // HotPartView 整体最大宽度 = 屏幕宽 - 左外边距宽 - 右外边距宽 - 左侧menu列表布局宽
+ *     viewMaxWidth = resources.displayMetrics.widthPixels - leftMargin - rightMargin - context.resources.getDimension(R.dimen.main_menu_width).toInt()
+ * }
+ *
+ */
+class LinearGridView(context: Context) : LinearLayout(context) {
 
-    private val spanCount = 4
-    private val dividerWidth = 24.dp
-    private var leftMargin = 0
-    private var leftPadding = 10.dp
-    private val rightMargin = 15.dp
-    private val itemTopMargin = 15.dp
-    private val screenWidth = resources.displayMetrics.widthPixels
+    var spanCount = 4
+    var itemWidth = 45.dp
+    var itemTopMargin = 15.dp
+    var viewMaxWidth = resources.displayMetrics.widthPixels
+
+    private val titleText: TextView by lazy {
+        createTitleView()
+    }
+
+    private fun createTitleView(): TextView {
+        val textView = TextView(context)
+        textView.text = "测试项目"
+        textView.typeface = Typeface.defaultFromStyle(Typeface.BOLD)
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_PX, context.resources.getDimension(R.dimen.dp_14))
+        return textView
+    }
 
     private val hotPartAdapter: GridItemAdapter by lazy {
         GridItemAdapter(context)
     }
 
-    constructor(context: Context) : super(context) {
-        initialize(context)
-    }
-
-    constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
-        initialize(context)
-    }
-
-    constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr) {
-        initialize(context)
-    }
-
-    private fun initialize(context: Context) {
+    init {
         orientation = VERTICAL
 
 //        LayoutInflater.from(context).inflate(R.layout.linear_grid_layout, this)
@@ -53,7 +62,6 @@ class HotPartView : LinearLayout {
     fun setData(data: Any?) {
         when (data) {
             is Data -> {
-                visibility = View.VISIBLE
 //                hotPartAdapter.setData(data.hotParts)
                 addItems(data.list)
             }
@@ -63,12 +71,12 @@ class HotPartView : LinearLayout {
 
     private fun addItems(dataList: ArrayList<DataEntity>) {
         removeAllViews()
-        createTitleView()
+        addView(titleText)
 
-        val viewMaxWidth = screenWidth
-        val itemWidth = (viewMaxWidth - dividerWidth * (spanCount - 1)) / spanCount
-        Log.e("addItems", "itemWidth  $viewMaxWidth $itemWidth")
+        // 计算item之间 间距的宽度
+        val dividerWidth = (viewMaxWidth - itemWidth * spanCount) / (spanCount - 1)
         var rowView: LinearLayout? = null
+
         dataList.forEachIndexed { index, data ->
             val params = LayoutParams(itemWidth, LayoutParams.WRAP_CONTENT)
             if (index % spanCount == 0) {
@@ -77,37 +85,29 @@ class HotPartView : LinearLayout {
             } else {
                 params.marginStart = dividerWidth
             }
-            params.weight = 1f
             val view = LayoutInflater.from(context).inflate(R.layout.linear_gird_item, null)
             view.tv_hot_part_item.text = data.display_name
 
+            view.iv_hot_part_item.layoutParams.apply {
+                width = itemWidth
+                height = itemWidth
+            }
             rowView!!.addView(view, params)
         }
     }
 
-    private fun createTitleView() {
-        var topMargin = 12.dp
-        val textView = TextView(context)
-        textView.text = "测试项目"
-        textView.typeface = Typeface.defaultFromStyle(Typeface.BOLD)
-        textView.setTextSize(TypedValue.COMPLEX_UNIT_PX, context.resources.getDimension(R.dimen.dp_14))
-        val layoutParams = LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        layoutParams.setMargins(leftPadding, topMargin, 0, 0)
-        textView.layoutParams = layoutParams
-        addView(textView)
-    }
-
+    /**
+     * 创建新的一行View
+     */
     private fun createRowLinearLayout(): LinearLayout {
         val linearLayout = LinearLayout(context)
         linearLayout.orientation = HORIZONTAL
         val layoutParams = LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        layoutParams.weight = 1f
-        layoutParams.setMargins(leftPadding, itemTopMargin, rightMargin, 0)
+        layoutParams.setMargins(0, itemTopMargin, 0, 0)
         linearLayout.layoutParams = layoutParams
         return linearLayout
     }
 }
-
 
 /**
  * 不可滑动

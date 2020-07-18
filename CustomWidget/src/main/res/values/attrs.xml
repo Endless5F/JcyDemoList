@@ -19,4 +19,9 @@
         <attr name="isMarkProgress" format="boolean" />
     </declare-styleable>
 
+    <declare-styleable name="RoundFrameLayout">
+        <attr name="radius" format="dimension" />
+        <attr name="borderwidth" format="dimension" />
+        <attr name="borderColor" format="color" />
+    </declare-styleable>
 </resources>
