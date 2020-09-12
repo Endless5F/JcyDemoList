@@ -1,6 +1,6 @@
 package com.android.customwidget.kotlin.activity
 
-import android.support.v7.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import com.android.customwidget.R
 import com.android.customwidget.kotlin.fragment.*

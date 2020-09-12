@@ -41,9 +41,9 @@ public class EventBean {
 
     @Override
     public String toString() {
-        return "Member{" +
+        return "EventBean{" +
                 "username='" + username + '\'' +
-                ", age='" + age + '\'' +
+                ", age=" + age +
                 ", mobile='" + mobile + '\'' +
                 '}';
     }

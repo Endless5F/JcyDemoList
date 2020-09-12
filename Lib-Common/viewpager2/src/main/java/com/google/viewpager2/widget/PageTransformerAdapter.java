@@ -17,8 +17,8 @@ package com.google.viewpager2.widget;
  */
 
 
-import android.support.annotation.Nullable;
-import android.support.v7.widget.LinearLayoutManager;
+import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import android.view.View;
 
 import java.util.Locale;

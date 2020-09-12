@@ -1,14 +1,14 @@
 package com.android.customwidget.kotlin.widget.lineargrid
 
 import android.content.Context
-import android.support.v7.widget.RecyclerView
+import androidx.recyclerview.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.android.customwidget.R
 import kotlinx.android.synthetic.main.linear_gird_item.view.*
 
-class GridItemAdapter : RecyclerView.Adapter<GridItemAdapter.ViewHolder> {
+class GridItemAdapter : androidx.recyclerview.widget.RecyclerView.Adapter<GridItemAdapter.ViewHolder> {
 
     var mContext: Context? = null
     var mDataList: MutableList<DataEntity> = mutableListOf()
@@ -23,7 +23,7 @@ class GridItemAdapter : RecyclerView.Adapter<GridItemAdapter.ViewHolder> {
         notifyDataSetChanged()
     }
 
-    class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView)
+    class ViewHolder(itemView: View) : androidx.recyclerview.widget.RecyclerView.ViewHolder(itemView)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(mContext).inflate(R.layout.linear_gird_item, null)

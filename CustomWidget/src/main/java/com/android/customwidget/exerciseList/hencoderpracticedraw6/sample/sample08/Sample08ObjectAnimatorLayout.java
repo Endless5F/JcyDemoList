@@ -2,7 +2,7 @@ package com.android.customwidget.exerciseList.hencoderpracticedraw6.sample.sampl
 
 import android.animation.ObjectAnimator;
 import android.content.Context;
-import android.support.v4.view.animation.FastOutSlowInInterpolator;
+import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
 import android.util.AttributeSet;
 import android.view.View;
 import android.widget.Button;

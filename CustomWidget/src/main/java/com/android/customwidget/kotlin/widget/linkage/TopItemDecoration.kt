@@ -4,9 +4,9 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Rect
-import android.support.v4.content.ContextCompat
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
+import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import android.view.View
 import com.android.customwidget.R
 import java.lang.Math.min
@@ -14,7 +14,7 @@ import java.lang.Math.min
 /**
  * 悬浮置顶效果
  */
-class TopItemDecoration(context: Context) : RecyclerView.ItemDecoration() {
+class TopItemDecoration(context: Context) : androidx.recyclerview.widget.RecyclerView.ItemDecoration() {
 
     //间隔高度
     private val mHeight = 100
@@ -25,7 +25,7 @@ class TopItemDecoration(context: Context) : RecyclerView.ItemDecoration() {
     private val mContext: Context = context
     private val mRound: Rect = Rect()
 
-    override fun onDraw(c: Canvas, parent: RecyclerView, state: RecyclerView.State) {
+    override fun onDraw(c: Canvas, parent: androidx.recyclerview.widget.RecyclerView, state: androidx.recyclerview.widget.RecyclerView.State) {
         super.onDraw(c, parent, state)
         mPaint.apply {
             color = ContextCompat.getColor(mContext, R.color.color_f2)
@@ -51,17 +51,17 @@ class TopItemDecoration(context: Context) : RecyclerView.ItemDecoration() {
         }
     }
 
-    override fun getItemOffsets(outRect: Rect, view: View, parent: RecyclerView, state: RecyclerView.State) {
+    override fun getItemOffsets(outRect: Rect, view: View, parent: androidx.recyclerview.widget.RecyclerView, state: androidx.recyclerview.widget.RecyclerView.State) {
         super.getItemOffsets(outRect, view, parent, state)
         //设置间隔高度
         outRect.top = mHeight
     }
 
-    override fun onDrawOver(c: Canvas, parent: RecyclerView, state: RecyclerView.State) {
+    override fun onDrawOver(c: Canvas, parent: androidx.recyclerview.widget.RecyclerView, state: androidx.recyclerview.widget.RecyclerView.State) {
         super.onDrawOver(c, parent, state)
         val left = parent.paddingLeft.toFloat()
         val right = (parent.width - parent.paddingRight).toFloat()
-        val manager = parent.layoutManager as LinearLayoutManager
+        val manager = parent.layoutManager as androidx.recyclerview.widget.LinearLayoutManager
         //第一个可见item位置
         val index = manager.findFirstVisibleItemPosition()
         if (index != -1) {

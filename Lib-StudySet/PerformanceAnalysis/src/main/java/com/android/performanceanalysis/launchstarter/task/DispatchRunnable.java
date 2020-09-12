@@ -2,7 +2,7 @@ package com.android.performanceanalysis.launchstarter.task;
 
 import android.os.Looper;
 import android.os.Process;
-import android.support.v4.os.TraceCompat;
+import androidx.core.os.TraceCompat;
 
 import com.android.performanceanalysis.launchstarter.TaskDispatcher;
 import com.android.performanceanalysis.launchstarter.stat.TaskStat;

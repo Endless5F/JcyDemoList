@@ -4,17 +4,17 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v4.app.DialogFragment;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v4.content.ContextCompat;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.DialogFragment;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
+import androidx.core.content.ContextCompat;
 import android.util.Log;
 
 import com.android.baselibrary.base.bus.BusEvent;
-import com.android.baselibrary.util.AppUtil;
-import com.android.baselibrary.util.log.LoggerUtil;
+import com.android.baselibrary.util.AppUtils;
+import com.android.baselibrary.util.LogUtils;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -55,11 +55,11 @@ public abstract class BaseFragment extends Fragment {
             EventBus.getDefault().unregister(this);
         }
         //添加内存泄漏监控
-        AppUtil.getRefWatcher().watch(this);
+        AppUtils.getRefWatcher().watch(this);
         try {
             m_handler.removeCallbacksAndMessages(null);
         } catch (Exception e) {
-            LoggerUtil.e(TAG, "onDestroy" + this.getClass().getSimpleName() + Log.getStackTraceString(e));
+            LogUtils.e(TAG, "onDestroy" + this.getClass().getSimpleName() + Log.getStackTraceString(e));
         }
     }
 
@@ -365,7 +365,7 @@ public abstract class BaseFragment extends Fragment {
      */
     protected void onPermissionGranted(String permission) {
         if (isActive) {
-            LoggerUtil.d(TAG, String.format(Locale.getDefault(), "%s %s", permission, "request_success"));
+            LogUtils.d(TAG, String.format(Locale.getDefault(), "%s %s", permission, "request_success"));
         }
     }
 
@@ -376,7 +376,7 @@ public abstract class BaseFragment extends Fragment {
      */
     protected void onPermissionFailed(String permission) {
         if (isActive) {
-            LoggerUtil.d(TAG, String.format(Locale.getDefault(), "%s %s", permission, "request_failed"));
+            LogUtils.d(TAG, String.format(Locale.getDefault(), "%s %s", permission, "request_failed"));
         }
     }
 

@@ -21,8 +21,8 @@ import static com.android.customwidget.widget.viewpager2.widget.ViewPager2.ORIEN
 
 
 import android.animation.LayoutTransition;
-import android.support.annotation.NonNull;
-import android.support.v7.widget.LinearLayoutManager;
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import android.view.View;
 import android.view.ViewGroup;
 

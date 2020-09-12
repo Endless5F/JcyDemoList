@@ -6,7 +6,7 @@ import android.widget.TextView;
 
 import com.android.baselibrary.base.BaseToolbarCompatActivity;
 import com.android.baselibrary.bean.EventBean;
-import com.android.baselibrary.util.ToastUtil;
+import com.android.baselibrary.util.ToastUtils;
 import com.android.framework.R;
 import com.facebook.stetho.common.LogUtil;
 
@@ -66,7 +66,7 @@ public class EventActivity1 extends BaseToolbarCompatActivity {
         LogUtil.i(member.toString());
         TextView viewById = (TextView) findViewById(R.id.tv_event1);
         viewById.setText(member.toString());
-        ToastUtil.showShortToast(member.toString());
+        ToastUtils.showShortToast(member.toString());
         LogUtil.i("onMessageEventMain(), current thread is " + Thread.currentThread().getName());
     }
 

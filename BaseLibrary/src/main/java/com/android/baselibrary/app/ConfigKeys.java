@@ -4,9 +4,6 @@ public enum ConfigKeys {
     API_HOST,//配置域名
     APPLICATION_CONTEXT,//配置全局上下文
     CONFIG_READY,//配置状态，是否准备好
-    ICON, //自定义
-    LOADER_DELAYED,
-    INTERCEPTOR,
     WE_CHAT_APP_ID,
     WE_CHAT_APP_SECRET,
     ACTIVITY,

@@ -1,12 +1,12 @@
 package com.android.framework.launch.activity;
 
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.GridLayoutManager;
-import android.support.v7.widget.RecyclerView;
+
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.baselibrary.base.BaseToolbarCompatActivity;
-import com.android.baselibrary.util.ThreadPoolUtil;
+import com.android.baselibrary.util.ThreadPoolUtils;
 import com.android.framework.R;
 import com.android.framework.launch.adapter.MixedItemAdapter;
 import com.android.framework.launch.data.MixedResourceBean;
@@ -29,7 +29,7 @@ public class MixedItemActivity extends BaseToolbarCompatActivity {
         itemAdapter.addHeaderView(R.layout.adapter_mixed_item_header);
         rlMixed.setAdapter(itemAdapter);
 
-        ThreadPoolUtil.getInstance().execute(new Runnable() {
+        ThreadPoolUtils.getInstance().execute(new Runnable() {
             @Override
             public void run() {
                 initData();

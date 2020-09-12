@@ -6,13 +6,13 @@
     android:background="@color/colorWhite"
     android:orientation="horizontal">
 
-    <android.support.v7.widget.RecyclerView
+    <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvLeft"
         android:layout_width="120dp"
         android:layout_height="wrap_content"
         android:orientation="vertical" />
 
-    <android.support.v7.widget.RecyclerView
+    <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvRight"
         android:layout_width="match_parent"
         android:layout_height="match_parent"

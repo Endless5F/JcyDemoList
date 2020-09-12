@@ -17,8 +17,8 @@ package com.android.customwidget.widget.viewpager2.widget;
  */
 
 import android.os.SystemClock;
-import android.support.annotation.UiThread;
-import android.support.v7.widget.RecyclerView;
+import androidx.annotation.UiThread;
+import androidx.recyclerview.widget.RecyclerView;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.ViewConfiguration;

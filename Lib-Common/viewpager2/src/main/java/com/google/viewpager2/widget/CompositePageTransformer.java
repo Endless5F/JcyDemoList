@@ -17,7 +17,7 @@ package com.google.viewpager2.widget;
  */
 
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 import android.view.View;
 
 import java.util.ArrayList;

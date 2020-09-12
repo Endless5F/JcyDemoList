@@ -2,10 +2,10 @@ package com.android.baselibrary.base;
 
 import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.ColorRes;
-import android.support.v4.view.ActionProvider;
-import android.support.v4.view.MenuItemCompat;
-import android.support.v7.widget.Toolbar;
+import androidx.annotation.ColorRes;
+import androidx.core.view.ActionProvider;
+import androidx.core.view.MenuItemCompat;
+import androidx.appcompat.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -16,8 +16,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.android.baselibrary.R;
-import com.android.baselibrary.util.ScreenUtil;
-import com.android.baselibrary.util.StatusBarUtil;
+import com.android.baselibrary.util.ScreenUtils;
+import com.android.baselibrary.util.StatusBarUtils;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -44,13 +44,13 @@ public abstract class BaseToolbarCompatActivity extends BaseCompatActivity {
         super.setContentView(R.layout.base_activity_toolbar);
         //适配全尺寸屏幕
         //在serContentView之前调用,资源放在 xxhdpi，那么我们宽度转换为 dp 就是 1080 / 3 = 360dp
-        if (ScreenUtil.isPortrait()) {
-            ScreenUtil.adaptScreen4VerticalSlide(this, 360);
+        if (ScreenUtils.isPortrait()) {
+            ScreenUtils.adaptScreen4VerticalSlide(this, 360);
         } else {
-            ScreenUtil.adaptScreen4HorizontalSlide(this, 360);
+            ScreenUtils.adaptScreen4HorizontalSlide(this, 360);
         }
         //统一控制状态栏颜色渐变色
-        StatusBarUtil.setDrawable(this, R.drawable.shape_statusbar_toolbar_bg2);
+        StatusBarUtils.setDrawable(this, R.drawable.shape_statusbar_toolbar_bg2);
         leftText = findViewById(R.id.toolbar_left_title);
         middleTitle = findViewById(R.id.toolbar_middle_title);
         rightText = findViewById(R.id.toolbar_right_text);
@@ -130,9 +130,9 @@ public abstract class BaseToolbarCompatActivity extends BaseCompatActivity {
      * @return 自定义View
      */
     protected View addCustomToolbar(View view) {
-        android.support.v7.app.ActionBar.LayoutParams layout = new android.support.v7.app.ActionBar.LayoutParams(
-                android.support.v7.app.ActionBar.LayoutParams.MATCH_PARENT,
-                android.support.v7.app.ActionBar.LayoutParams.MATCH_PARENT);
+        androidx.appcompat.app.ActionBar.LayoutParams layout = new androidx.appcompat.app.ActionBar.LayoutParams(
+                androidx.appcompat.app.ActionBar.LayoutParams.MATCH_PARENT,
+                androidx.appcompat.app.ActionBar.LayoutParams.MATCH_PARENT);
         if (mToolbar != null) {
             mToolbar.addView(view, layout);
             mToolbar.setContentInsetsAbsolute(0, 0);
@@ -151,9 +151,9 @@ public abstract class BaseToolbarCompatActivity extends BaseCompatActivity {
             return null;
         }
         final ViewGroup actionBarLayout = (ViewGroup) getLayoutInflater().inflate(layoutResId, null);
-        android.support.v7.app.ActionBar.LayoutParams layout = new android.support.v7.app.ActionBar.LayoutParams(
-                android.support.v7.app.ActionBar.LayoutParams.MATCH_PARENT,
-                android.support.v7.app.ActionBar.LayoutParams.MATCH_PARENT);
+        androidx.appcompat.app.ActionBar.LayoutParams layout = new androidx.appcompat.app.ActionBar.LayoutParams(
+                androidx.appcompat.app.ActionBar.LayoutParams.MATCH_PARENT,
+                androidx.appcompat.app.ActionBar.LayoutParams.MATCH_PARENT);
         mToolbar.addView(actionBarLayout, layout);
         mToolbar.setContentInsetsAbsolute(0, 0);
 

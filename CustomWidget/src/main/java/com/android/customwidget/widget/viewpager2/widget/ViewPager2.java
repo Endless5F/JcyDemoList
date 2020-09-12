@@ -17,7 +17,7 @@ package com.android.customwidget.widget.viewpager2.widget;
  */
 
 
-import static android.support.v7.util.DiffUtil.DiffResult.NO_POSITION;
+import static androidx.recyclerview.widget.DiffUtil.DiffResult.NO_POSITION;
 
 import static java.lang.annotation.RetentionPolicy.SOURCE;
 
@@ -29,18 +29,18 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.support.annotation.IntDef;
-import android.support.annotation.IntRange;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.annotation.Px;
-import android.support.annotation.RequiresApi;
-import android.support.annotation.RestrictTo;
-import android.support.v4.view.ViewCompat;
-import android.support.v4.view.accessibility.AccessibilityNodeInfoCompat;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.PagerSnapHelper;
-import android.support.v7.widget.RecyclerView;
+import androidx.annotation.IntDef;
+import androidx.annotation.IntRange;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.Px;
+import androidx.annotation.RequiresApi;
+import androidx.annotation.RestrictTo;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.PagerSnapHelper;
+import androidx.recyclerview.widget.RecyclerView;
 import android.util.AttributeSet;
 import android.util.SparseArray;
 import android.view.Gravity;

@@ -7,8 +7,8 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.Parcel;
 import android.os.StrictMode;
-import android.support.multidex.MultiDex;
-import android.support.v4.os.TraceCompat;
+import androidx.multidex.MultiDex;
+import androidx.core.os.TraceCompat;
 import android.util.Log;
 import android.widget.ImageView;
 

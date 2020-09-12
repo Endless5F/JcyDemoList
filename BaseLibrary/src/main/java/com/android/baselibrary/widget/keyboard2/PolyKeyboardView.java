@@ -15,7 +15,7 @@ import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
 
-import com.android.baselibrary.util.log.LoggerUtil;
+import com.android.baselibrary.util.LogUtils;
 
 import java.lang.reflect.Field;
 import java.util.List;
@@ -154,7 +154,7 @@ public class PolyKeyboardView extends KeyboardView {
             }
             clazz = clazz.getSuperclass();
         }
-        LoggerUtil.d(TAG, "error reflecting field = " + fieldName);
+        LogUtils.d(TAG, "error reflecting field = " + fieldName);
         return null;
     }
 

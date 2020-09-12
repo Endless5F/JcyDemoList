@@ -12,7 +12,7 @@
 
         <variable
             name="activity"
-            type="android.support.v4.app.FragmentActivity"/>
+            type="androidx.core.app.FragmentActivity"/>
 
         <variable
             name="isEnable"

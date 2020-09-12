@@ -1,7 +1,5 @@
 package com.android.baselibrary.util;
 
-import com.android.baselibrary.util.log.LoggerUtil;
-
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.HashMap;
@@ -37,7 +35,7 @@ public class OkHttpUtils {
                     new HttpLoggingInterceptor(new HttpLoggingInterceptor.Logger() {
                 @Override
                 public void log(String message) {
-                    LoggerUtil.d("OkHttpClient", "OkHttp====Message:" + message);
+                    LogUtils.d("OkHttpClient", "OkHttp====Message:" + message);
                 }
             });
             loggingInterceptor.setLevel(level);
@@ -146,7 +144,7 @@ public class OkHttpUtils {
                 builder.addHeader(entry.getKey(), entry.getValue());
             }
         }
-        LoggerUtil.d("url ====" + mUrl);
+        LogUtils.d("url ====" + mUrl);
         // 创建请求的Request 对象
         Request request = builder
                 .url(mUrl)
@@ -157,17 +155,17 @@ public class OkHttpUtils {
             @Override
             public void onFailure(Call call, IOException e) {
                 if (call.isCanceled()) {
-                    LoggerUtil.d("call is cancel");
+                    LogUtils.d("call is cancel");
                 } else {
                     sendFailure(isNeedMainLooper);
                 }
-                LoggerUtil.d("onFailure :  " + e.getMessage());
+                LogUtils.d("onFailure :  " + e.getMessage());
             }
 
             @Override
             public void onResponse(Call call, Response response) {
                 if (call.isCanceled()) {
-                    LoggerUtil.d("call is cancel");
+                    LogUtils.d("call is cancel");
                 } else {
                     responseProcess(response, isNeedMainLooper);
                 }
@@ -245,18 +243,18 @@ public class OkHttpUtils {
             @Override
             public void onFailure(Call call, IOException e) {
                 if (call.isCanceled()) {
-                    LoggerUtil.d("call is cancel");
+                    LogUtils.d("call is cancel");
                 } else {
                     sendFailure(isNeedMainLooper);
                 }
 
-                LoggerUtil.d("onFailure :  " + e.getMessage());
+                LogUtils.d("onFailure :  " + e.getMessage());
             }
 
             @Override
             public void onResponse(Call call, Response response) {
                 if (call.isCanceled()) {
-                    LoggerUtil.d("call is cancel");
+                    LogUtils.d("call is cancel");
                 } else {
                     responseProcess(response, isNeedMainLooper);
                 }
@@ -278,15 +276,15 @@ public class OkHttpUtils {
                 } catch (IOException e) {
                     e.printStackTrace();
                     sendFailure(isNeedMainLooper);
-                    LoggerUtil.d("onFailure :  " + e.getMessage());
+                    LogUtils.d("onFailure :  " + e.getMessage());
                 }
             } else {
                 sendFailure(isNeedMainLooper);
-                LoggerUtil.d("onFailure :  response.body() == null");
+                LogUtils.d("onFailure :  response.body() == null");
             }
         } else {
             sendFailure(isNeedMainLooper);
-            LoggerUtil.d("onFailure : response == null or response.code() == " + response.code() + ",msg = " + response.message());
+            LogUtils.d("onFailure : response == null or response.code() == " + response.code() + ",msg = " + response.message());
         }
     }
 

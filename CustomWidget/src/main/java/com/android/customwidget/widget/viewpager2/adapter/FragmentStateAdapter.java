@@ -18,23 +18,23 @@ package com.android.customwidget.widget.viewpager2.adapter;
 
 
 import android.annotation.SuppressLint;
-import android.arch.lifecycle.Lifecycle;
-import android.arch.lifecycle.LifecycleOwner;
+import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.LifecycleOwner;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Parcelable;
-import android.support.annotation.CallSuper;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentActivity;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v4.util.ArraySet;
-import android.support.v4.util.LongSparseArray;
-import android.support.v4.view.ViewCompat;
-import android.support.v7.widget.RecyclerView;
+import androidx.annotation.CallSuper;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
+import androidx.collection.ArraySet;
+import androidx.collection.LongSparseArray;
+import androidx.core.view.ViewCompat;
+import androidx.recyclerview.widget.RecyclerView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
@@ -45,10 +45,10 @@ import com.android.customwidget.widget.viewpager2.widget.ViewPager2;
 
 import java.util.Set;
 
-import static android.arch.lifecycle.Lifecycle.State.RESUMED;
-import static android.arch.lifecycle.Lifecycle.State.STARTED;
-import static android.support.v4.util.Preconditions.checkArgument;
-import static android.support.v7.widget.RecyclerView.NO_ID;
+import static androidx.lifecycle.Lifecycle.State.RESUMED;
+import static androidx.lifecycle.Lifecycle.State.STARTED;
+import static androidx.core.util.Preconditions.checkArgument;
+import static androidx.recyclerview.widget.RecyclerView.NO_ID;
 
 /**
  * Similar in behavior to @link FragmentStatePagerAdapter}

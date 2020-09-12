@@ -2,9 +2,9 @@ package com.android.customwidget.kotlin.fragment
 
 import android.app.Activity
 import android.os.Bundle
-import android.support.v4.app.Fragment
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
+import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -20,7 +20,7 @@ import com.android.customwidget.kotlin.widget.linkage.bean.NavigationBean
 import com.google.gson.Gson
 import kotlinx.android.synthetic.main.fragment_navigation.*
 
-class NavigationFragment : Fragment() {
+class NavigationFragment : androidx.fragment.app.Fragment() {
 
     var leftList = mutableListOf<NavigationBean>()
 
@@ -50,9 +50,9 @@ class NavigationFragment : Fragment() {
      * 左右两个RecyclerView联动
      */
     private fun recyclerViewLinkage() {
-        rvLeft.layoutManager = LinearLayoutManager(context)
-        rvRight.layoutManager = LinearLayoutManager(context)
-        val manager = rvRight.layoutManager as LinearLayoutManager
+        rvLeft.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(context)
+        rvRight.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(context)
+        val manager = rvRight.layoutManager as androidx.recyclerview.widget.LinearLayoutManager
         //左边联动右边
         leftNavigationAdapter.setOnItemClickListener { position ->
             leftNavigationAdapter.setChoose(position)
@@ -64,8 +64,8 @@ class NavigationFragment : Fragment() {
         }
 
         //右边联动左边
-        rvRight.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+        rvRight.addOnScrollListener(object : androidx.recyclerview.widget.RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: androidx.recyclerview.widget.RecyclerView, dx: Int, dy: Int) {
                 super.onScrolled(recyclerView, dx, dy)
                 val firstItemPosition = manager.findFirstVisibleItemPosition()
                 if (firstItemPosition != -1) {

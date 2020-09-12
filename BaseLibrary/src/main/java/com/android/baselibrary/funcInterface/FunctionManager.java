@@ -2,7 +2,7 @@ package com.android.baselibrary.funcInterface;
 
 import android.text.TextUtils;
 
-import com.android.baselibrary.util.log.LoggerUtil;
+import com.android.baselibrary.util.LogUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -53,7 +53,7 @@ public class FunctionManager {
             if (f != null) {
                 f.function();
             } else {
-                LoggerUtil.d("没有找到该方法：" + functionName);
+                LogUtils.d("没有找到该方法：" + functionName);
             }
         }
     }
@@ -79,7 +79,7 @@ public class FunctionManager {
                     return r.cast(f.function());
                 }
             } else {
-                LoggerUtil.d("没有找到该方法：" + functionName);
+                LogUtils.d("没有找到该方法：" + functionName);
             }
         }
         return null;
@@ -106,7 +106,7 @@ public class FunctionManager {
                     f.function(t);
                 }
             } else {
-                LoggerUtil.d("没有找到该方法：" + functionName);
+                LogUtils.d("没有找到该方法：" + functionName);
             }
         }
     }
@@ -132,7 +132,7 @@ public class FunctionManager {
                     return r.cast(f.function(t));
                 }
             } else {
-                LoggerUtil.d("没有找到该方法：" + functionName);
+                LogUtils.d("没有找到该方法：" + functionName);
             }
         }
         return null;

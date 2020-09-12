@@ -1,6 +1,6 @@
 package com.android.performanceanalysis.http.listener;
 
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 import android.util.Log;
 
 import com.android.performanceanalysis.http.bean.OkHttpEvent;

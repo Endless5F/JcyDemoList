@@ -2,7 +2,7 @@ package com.android.performanceanalysis.launchstarter;
 
 import android.content.Context;
 import android.os.Looper;
-import android.support.annotation.UiThread;
+import androidx.annotation.UiThread;
 import android.util.Log;
 
 import com.android.performanceanalysis.launchstarter.sort.TaskSortUtil;

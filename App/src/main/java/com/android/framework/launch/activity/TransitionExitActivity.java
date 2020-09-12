@@ -3,14 +3,12 @@ package com.android.framework.launch.activity;
 import android.app.ActivityOptions;
 import android.content.Intent;
 import android.os.Build;
-import android.support.annotation.RequiresApi;
-import android.support.v7.app.AppCompatActivity;
+import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import android.transition.ChangeBounds;
-import android.transition.Fade;
 import android.transition.Slide;
 import android.transition.TransitionInflater;
-import android.util.Pair;
 import android.view.Gravity;
 import android.view.View;
 

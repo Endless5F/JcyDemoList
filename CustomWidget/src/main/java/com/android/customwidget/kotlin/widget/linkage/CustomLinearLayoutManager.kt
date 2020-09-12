@@ -1,14 +1,14 @@
 package com.android.customwidget.kotlin.widget.linkage
 
 import android.content.Context
-import android.support.v7.widget.LinearLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
 import android.util.AttributeSet
 
 
 /**
  * 开启或关闭滑动
  */
-class CustomLinearLayoutManager : LinearLayoutManager {
+class CustomLinearLayoutManager : androidx.recyclerview.widget.LinearLayoutManager {
     private var isScrollEnabled = true
 
     constructor(context: Context?) : super(context) {}

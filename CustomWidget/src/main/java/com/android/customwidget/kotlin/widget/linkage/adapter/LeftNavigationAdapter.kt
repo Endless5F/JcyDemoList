@@ -2,7 +2,7 @@ package com.android.customwidget.kotlin.widget.linkage.adapter
 
 import android.content.Context
 import android.graphics.Color
-import android.support.v7.widget.RecyclerView
+import androidx.recyclerview.widget.RecyclerView
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
@@ -10,9 +10,9 @@ import com.android.customwidget.kotlin.ext.dp
 import com.android.customwidget.kotlin.widget.linkage.bean.NavigationBean
 import org.jetbrains.anko.backgroundColor
 
-class LeftNavigationAdapter(val context: Context) : RecyclerView.Adapter<LeftNavigationAdapter.ViewHolder>() {
+class LeftNavigationAdapter(val context: Context) : androidx.recyclerview.widget.RecyclerView.Adapter<LeftNavigationAdapter.ViewHolder>() {
 
-    class ViewHolder(item: View) : RecyclerView.ViewHolder(item)
+    class ViewHolder(item: View) : androidx.recyclerview.widget.RecyclerView.ViewHolder(item)
 
     var mDatas = mutableListOf<NavigationBean>()
     var mItemClickListener: ((Int) -> Unit)? = null

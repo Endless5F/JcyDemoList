@@ -3,15 +3,15 @@ package com.android.framework.launch.adapter;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
-import android.support.annotation.NonNull;
-import android.support.v4.util.SparseArrayCompat;
-import android.support.v7.widget.RecyclerView;
+import androidx.annotation.NonNull;
+import androidx.collection.SparseArrayCompat;
+import androidx.recyclerview.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.android.baselibrary.util.ToastUtil;
+import com.android.baselibrary.util.ToastUtils;
 import com.android.framework.R;
 import com.android.framework.launch.activity.MixedItemActivity;
 import com.android.framework.launch.activity.StrategyActivity;
@@ -62,7 +62,7 @@ public class HomePageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         if (mHeaderViews.get(viewType) != null) {
             HeadViewHolder headViewHolder = (HeadViewHolder) viewHolder;
             headViewHolder.scan.setOnClickListener(v -> {
-                ToastUtil.showShortToast("扫一扫");
+                ToastUtils.showShortToast("扫一扫");
             });
             return;
         } else {

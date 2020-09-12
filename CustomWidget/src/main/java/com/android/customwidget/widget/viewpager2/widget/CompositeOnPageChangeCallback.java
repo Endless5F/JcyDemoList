@@ -17,8 +17,8 @@ package com.android.customwidget.widget.viewpager2.widget;
  */
 
 
-import android.support.annotation.NonNull;
-import android.support.annotation.Px;
+import androidx.annotation.NonNull;
+import androidx.annotation.Px;
 
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;

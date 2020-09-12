@@ -17,7 +17,7 @@ package com.android.customwidget.widget.viewpager2.widget;
  */
 
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 import android.view.View;
 
 

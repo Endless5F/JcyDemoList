@@ -2,9 +2,9 @@ package com.android.customwidget.kotlin.fragment
 
 import android.app.Activity
 import android.os.Bundle
-import android.support.v4.app.Fragment
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.LinearLayoutManager.VERTICAL
+import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager.VERTICAL
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -20,7 +20,7 @@ import com.google.gson.Gson
 import kotlinx.android.synthetic.main.fragment_navigation2.*
 
 
-class Navigation5Fragment : Fragment() {
+class Navigation5Fragment : androidx.fragment.app.Fragment() {
 
     var commonList = mutableListOf<NavigationBean>()
 
@@ -48,7 +48,7 @@ class Navigation5Fragment : Fragment() {
      * 左右两个RecyclerView联动
      */
     private fun recyclerViewLinkage() {
-        rvLeft.layoutManager = LinearLayoutManager(context)
+        rvLeft.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(context)
 
         rvLeft.adapter = leftNavigationAdapter
 

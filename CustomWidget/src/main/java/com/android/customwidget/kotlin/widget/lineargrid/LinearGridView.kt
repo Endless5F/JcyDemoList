@@ -2,7 +2,7 @@ package com.android.customwidget.kotlin.widget.lineargrid
 
 import android.content.Context
 import android.graphics.Typeface
-import android.support.v7.widget.GridLayoutManager
+import androidx.recyclerview.widget.GridLayoutManager
 import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -112,7 +112,7 @@ class LinearGridView(context: Context) : LinearLayout(context) {
 /**
  * 不可滑动
  */
-class CustomGridLayoutManager(context: Context?, spanCount: Int) : GridLayoutManager(context, spanCount) {
+class CustomGridLayoutManager(context: Context?, spanCount: Int) : androidx.recyclerview.widget.GridLayoutManager(context, spanCount) {
     private var isScrollEnabled = false
     fun setScrollEnabled(flag: Boolean) {
         isScrollEnabled = flag

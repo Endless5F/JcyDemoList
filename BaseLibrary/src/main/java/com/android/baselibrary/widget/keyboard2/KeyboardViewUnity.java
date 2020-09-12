@@ -8,7 +8,7 @@ import android.view.LayoutInflater;
 import android.widget.RelativeLayout;
 
 import com.android.baselibrary.R;
-import com.android.baselibrary.util.log.LoggerUtil;
+import com.android.baselibrary.util.LogUtils;
 
 public class KeyboardViewUnity extends RelativeLayout {
     private static final String TAG = "KeyboardViewUnity";
@@ -110,7 +110,7 @@ public class KeyboardViewUnity extends RelativeLayout {
 
             @Override
             public void onKey(int primaryCode, int[] keyCodes) {
-                LoggerUtil.d(TAG, "onKey = " + primaryCode);
+                LogUtils.d(TAG, "onKey = " + primaryCode);
                 if (handleFunctionalKey(primaryCode)) return;
                 if (null != mListener) {
                     mListener.onKey(primaryCode);
@@ -127,7 +127,7 @@ public class KeyboardViewUnity extends RelativeLayout {
 
             @Override
             public void onText(CharSequence text) {
-                LoggerUtil.d(TAG, "onText = " + text.toString());
+                LogUtils.d(TAG, "onText = " + text.toString());
             }
 
             @Override

@@ -11,7 +11,7 @@ import android.graphics.Path;
 import android.graphics.PathDashPathEffect;
 import android.graphics.PathEffect;
 import android.graphics.SumPathEffect;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.View;
 

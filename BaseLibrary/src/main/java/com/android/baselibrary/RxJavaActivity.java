@@ -1,16 +1,15 @@
 package com.android.baselibrary;
 
 import android.annotation.SuppressLint;
-import android.arch.lifecycle.Lifecycle;
+import androidx.lifecycle.Lifecycle;
 import android.hardware.SensorManager;
-import android.support.v7.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.OrientationEventListener;
-import android.view.View;
 import android.widget.Button;
 
-import com.android.baselibrary.util.ScreenUtil;
+import com.android.baselibrary.util.ScreenUtils;
 import com.uber.autodispose.AutoDispose;
 import com.uber.autodispose.android.lifecycle.AndroidLifecycleScopeProvider;
 
@@ -37,8 +36,8 @@ public class RxJavaActivity extends AppCompatActivity {
             @Override
             public void onOrientationChanged(int orientation) {
                 Log.e(DEBUG_TAG, "Orientation changed to " + orientation);
-                Log.e(DEBUG_TAG, "Orientation changed  width to " + ScreenUtil.getScreenWidth());
-                Log.e(DEBUG_TAG, "Orientation changed height to " + ScreenUtil.getScreenHeight());
+                Log.e(DEBUG_TAG, "Orientation changed  width to " + ScreenUtils.getScreenWidth());
+                Log.e(DEBUG_TAG, "Orientation changed height to " + ScreenUtils.getScreenHeight());
             }
         };
 

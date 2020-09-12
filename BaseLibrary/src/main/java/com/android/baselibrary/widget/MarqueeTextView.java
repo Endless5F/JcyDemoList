@@ -2,8 +2,8 @@ package com.android.baselibrary.widget;
 
 import android.content.Context;
 import android.graphics.Rect;
-import android.support.annotation.Nullable;
-import android.support.v7.widget.AppCompatTextView;
+import androidx.annotation.Nullable;
+import androidx.appcompat.widget.AppCompatTextView;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 

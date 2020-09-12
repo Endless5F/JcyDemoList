@@ -2,10 +2,10 @@ package com.android.customwidget.kotlin.fragment
 
 import android.app.Activity
 import android.os.Bundle
-import android.support.v4.app.Fragment
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
-import android.support.v7.widget.SimpleItemAnimator
+import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.SimpleItemAnimator
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -27,7 +27,7 @@ import com.scwang.smart.refresh.layout.constant.SpinnerStyle
 import kotlinx.android.synthetic.main.fragment_navigation.*
 
 
-class Navigation3Fragment : Fragment() {
+class Navigation3Fragment : androidx.fragment.app.Fragment() {
 
     var currentPosition = 0
     var leftList = mutableListOf<NavigationBean>()
@@ -58,11 +58,11 @@ class Navigation3Fragment : Fragment() {
      * 左右两个RecyclerView联动
      */
     private fun recyclerViewLinkage() {
-        rvLeft.layoutManager = LinearLayoutManager(context)
-        rvRight.layoutManager = LinearLayoutManager(context)
+        rvLeft.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(context)
+        rvRight.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(context)
 
 //        closeDefaultAnimator(rvRight)
-        (rvRight.itemAnimator as SimpleItemAnimator).supportsChangeAnimations = false
+        (rvRight.itemAnimator as androidx.recyclerview.widget.SimpleItemAnimator).supportsChangeAnimations = false
 
         rvLeft.adapter = leftNavigationAdapter
         rvRight.adapter = rightNavigationAdapter
@@ -113,13 +113,13 @@ class Navigation3Fragment : Fragment() {
         }
     }
 
-    private fun closeDefaultAnimator(mRvCustomer: RecyclerView?) {
+    private fun closeDefaultAnimator(mRvCustomer: androidx.recyclerview.widget.RecyclerView?) {
         if (null == mRvCustomer) return
         mRvCustomer.itemAnimator!!.addDuration = 0
         mRvCustomer.itemAnimator!!.changeDuration = 0
         mRvCustomer.itemAnimator!!.moveDuration = 0
         mRvCustomer.itemAnimator!!.removeDuration = 0
-        (mRvCustomer.itemAnimator as SimpleItemAnimator?)!!.supportsChangeAnimations = false
+        (mRvCustomer.itemAnimator as androidx.recyclerview.widget.SimpleItemAnimator?)!!.supportsChangeAnimations = false
     }
 
     private fun updata() {

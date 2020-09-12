@@ -1,14 +1,13 @@
 package com.android.customwidget.exerciseList.hencoderpracticelayout1.practice;
 
 import android.content.Context;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 import android.util.AttributeSet;
-import android.widget.ImageView;
 
 /**
  * 需要把它写成正方形的 ImageView
  */
-public class Practice01SquareImageView extends android.support.v7.widget.AppCompatImageView {
+public class Practice01SquareImageView extends androidx.appcompat.widget.AppCompatImageView {
     public Practice01SquareImageView(Context context) {
         super(context);
     }

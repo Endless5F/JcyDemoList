@@ -1,14 +1,14 @@
 package com.android.baselibrary.base.adapter.kotlin
 
-import android.support.annotation.NonNull
-import android.support.v7.widget.GridLayoutManager
-import android.support.v7.widget.RecyclerView
-import android.support.v7.widget.StaggeredGridLayoutManager
+import androidx.annotation.NonNull
+import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import android.view.View
 import android.view.ViewGroup
 import java.util.*
 
-abstract class RecyclerAdapter: RecyclerView.Adapter<RecyclerAdapter.RecyclerViewHolder>() {
+abstract class RecyclerAdapter: androidx.recyclerview.widget.RecyclerView.Adapter<RecyclerAdapter.RecyclerViewHolder>() {
 
     var fromType: String? = null
 
@@ -227,15 +227,15 @@ abstract class RecyclerAdapter: RecyclerView.Adapter<RecyclerAdapter.RecyclerVie
         return innerViewType
     }
 
-    override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
+    override fun onAttachedToRecyclerView(recyclerView: androidx.recyclerview.widget.RecyclerView) {
         super.onAttachedToRecyclerView(recyclerView)
         val layoutManager = recyclerView.layoutManager
-        if (layoutManager is GridLayoutManager) {
+        if (layoutManager is androidx.recyclerview.widget.GridLayoutManager) {
             val spanSizeLookup = layoutManager.spanSizeLookup
             /**
              * 配置网格列表时，Header和Footer需要独占一行
              */
-            layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
+            layoutManager.spanSizeLookup = object : androidx.recyclerview.widget.GridLayoutManager.SpanSizeLookup() {
                 override fun getSpanSize(position: Int): Int {
                     if (getHeaderIndex(position) != -1) {
                         return layoutManager.spanCount
@@ -253,7 +253,7 @@ abstract class RecyclerAdapter: RecyclerView.Adapter<RecyclerAdapter.RecyclerVie
     override fun onViewAttachedToWindow(holder: RecyclerViewHolder) {
         super.onViewAttachedToWindow(holder)
         val lp = holder.itemView.layoutParams
-        if (lp is StaggeredGridLayoutManager.LayoutParams) {
+        if (lp is androidx.recyclerview.widget.StaggeredGridLayoutManager.LayoutParams) {
             lp.isFullSpan = holder is HeaderHolder || holder is FooterHolder
         }
     }
@@ -262,5 +262,5 @@ abstract class RecyclerAdapter: RecyclerView.Adapter<RecyclerAdapter.RecyclerVie
 
     internal inner class FooterHolder(itemView: View) : RecyclerViewHolder(itemView)
 
-    open class RecyclerViewHolder(val view: View) : RecyclerView.ViewHolder(view)
+    open class RecyclerViewHolder(val view: View) : androidx.recyclerview.widget.RecyclerView.ViewHolder(view)
 }

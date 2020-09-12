@@ -2,10 +2,10 @@ package com.android.customwidget.kotlin.widget
 
 import android.content.Context
 import android.graphics.Rect
-import android.support.v4.view.MotionEventCompat
-import android.support.v4.view.ViewCompat
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
+import androidx.core.view.MotionEventCompat
+import androidx.core.view.ViewCompat
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import android.util.AttributeSet
 import android.util.Log
 import android.view.MotionEvent
@@ -52,7 +52,7 @@ constructor(context: Context, attrs: AttributeSet? = null
     private var mScrollState = SCROLL_STATE_IDLE
     // 指定当前移动遵循的是哪一个手指
     private var mScrollPointerId = INVALID_POINTER
-    private var touchRecyclerView: RecyclerView? = null
+    private var touchRecyclerView: androidx.recyclerview.widget.RecyclerView? = null
 
     private val mViewFlinger = ViewFlinger()
     private var velocityTracker : VelocityTracker? = null
@@ -64,7 +64,7 @@ constructor(context: Context, attrs: AttributeSet? = null
 
 
 
-    fun setDragRecycleView(recyclerView: RecyclerView) {
+    fun setDragRecycleView(recyclerView: androidx.recyclerview.widget.RecyclerView) {
         touchRecyclerView = recyclerView
     }
 
@@ -263,7 +263,7 @@ constructor(context: Context, attrs: AttributeSet? = null
     @Deprecated("由于Move过程中无法正确判断是否左滑还是右滑，导致此方法无法正确判断是否滑动")
     private fun isScroll(direction : Int) : Boolean{
         var isScroll = true
-        val touchManager = touchRecyclerView?.layoutManager as LinearLayoutManager
+        val touchManager = touchRecyclerView?.layoutManager as androidx.recyclerview.widget.LinearLayoutManager
         val positionFirst = touchManager?.findFirstCompletelyVisibleItemPosition()
         val positionLast = touchManager?.findLastCompletelyVisibleItemPosition()
         if (direction < 0 && positionFirst != null && positionFirst == 0) isScroll = false

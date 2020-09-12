@@ -1,8 +1,8 @@
 package com.android.customwidget.kotlin.activity
 
-import android.support.v7.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.support.v7.widget.LinearLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
 
 import com.android.customwidget.R
 import com.android.customwidget.kotlin.adapter.ContentRvAdapter
@@ -20,12 +20,12 @@ class ScrollRecycleViewActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_scroll_recycle_view)
 
-        val linearManager = LinearLayoutManager(this)
-        linearManager.orientation = LinearLayoutManager.HORIZONTAL
+        val linearManager = androidx.recyclerview.widget.LinearLayoutManager(this)
+        linearManager.orientation = androidx.recyclerview.widget.LinearLayoutManager.HORIZONTAL
         rv_time.layoutManager = linearManager
 
-        val linearManager2 = LinearLayoutManager(this)
-        linearManager2.orientation = LinearLayoutManager.VERTICAL
+        val linearManager2 = androidx.recyclerview.widget.LinearLayoutManager(this)
+        linearManager2.orientation = androidx.recyclerview.widget.LinearLayoutManager.VERTICAL
         rv_content.layoutManager = linearManager2
 
         initData()

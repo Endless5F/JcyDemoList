@@ -2,10 +2,7 @@ package com.android.baselibrary.app;
 
 import android.app.Activity;
 import android.os.Handler;
-import android.support.annotation.NonNull;
-
-import com.orhanobut.logger.AndroidLogAdapter;
-import com.orhanobut.logger.Logger;
+import androidx.annotation.NonNull;
 
 import java.util.ArrayList;
 import java.util.WeakHashMap;
@@ -42,28 +39,10 @@ public class Configurator {
 
     public final void configure() {
         APP_CONFIGS.put(ConfigKeys.CONFIG_READY.name(), true);
-        Logger.addLogAdapter(new AndroidLogAdapter());
     }
 
     public final Configurator withApiHost(String host) {
         APP_CONFIGS.put(ConfigKeys.API_HOST.name(), host);
-        return this;
-    }
-
-    public final Configurator withLoaderDelayed(long delayed) {
-        APP_CONFIGS.put(ConfigKeys.LOADER_DELAYED.name(), delayed);
-        return this;
-    }
-
-    public final Configurator withInterceptor(Interceptor interceptor) {
-        INTERCEPTORS.add(interceptor);
-        APP_CONFIGS.put(ConfigKeys.INTERCEPTOR.name(), INTERCEPTORS);
-        return this;
-    }
-
-    public final Configurator withInterceptors(ArrayList<Interceptor> interceptors) {
-        INTERCEPTORS.addAll(interceptors);
-        APP_CONFIGS.put(ConfigKeys.INTERCEPTOR.name(), INTERCEPTORS);
         return this;
     }
 

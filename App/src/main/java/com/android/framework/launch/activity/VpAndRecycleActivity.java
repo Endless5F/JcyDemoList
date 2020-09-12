@@ -1,9 +1,9 @@
 package com.android.framework.launch.activity;
 
 import android.os.Bundle;
-import android.support.v4.view.ViewPager;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
+import androidx.viewpager.widget.ViewPager;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.baselibrary.base.BaseToolbarCompatActivity;
 import com.android.framework.R;

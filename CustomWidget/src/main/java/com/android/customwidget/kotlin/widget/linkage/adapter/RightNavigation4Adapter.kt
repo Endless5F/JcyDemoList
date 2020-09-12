@@ -1,8 +1,8 @@
 package com.android.customwidget.kotlin.widget.linkage.adapter
 
 import android.content.Context
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -16,12 +16,12 @@ import com.scwang.smart.refresh.layout.SmartRefreshLayout
 import kotlinx.android.synthetic.main.navigation_item_right2.view.*
 
 
-class RightNavigation4Adapter(val context: Context) : RecyclerView.Adapter<RightNavigation4Adapter.ViewHolder>() {
+class RightNavigation4Adapter(val context: Context) : androidx.recyclerview.widget.RecyclerView.Adapter<RightNavigation4Adapter.ViewHolder>() {
 
-    class ViewHolder(item: View) : RecyclerView.ViewHolder(item) {
+    class ViewHolder(item: View) : androidx.recyclerview.widget.RecyclerView.ViewHolder(item) {
         var mRefreshView: SmartRefreshLayout? = null
         init {
-            item.layoutParams = RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+            item.layoutParams = androidx.recyclerview.widget.RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT)
 
             item.item_category.apply {
@@ -57,7 +57,7 @@ class RightNavigation4Adapter(val context: Context) : RecyclerView.Adapter<Right
 
     override fun onBindViewHolder(p0: ViewHolder, p1: Int) {
         p0.itemView.item_category.apply {
-            layoutManager = LinearLayoutManager(context)
+            layoutManager = androidx.recyclerview.widget.LinearLayoutManager(context)
             val navigationAdapter = RightNavigationAdapter(context)
             adapter = navigationAdapter
             setItemData(p1, navigationAdapter)

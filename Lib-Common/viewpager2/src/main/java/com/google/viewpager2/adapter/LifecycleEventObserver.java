@@ -1,9 +1,9 @@
 package com.google.viewpager2.adapter;
 
-import android.arch.lifecycle.Lifecycle;
-import android.arch.lifecycle.LifecycleObserver;
-import android.arch.lifecycle.LifecycleOwner;
-import android.support.annotation.NonNull;
+import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.LifecycleObserver;
+import androidx.lifecycle.LifecycleOwner;
+import androidx.annotation.NonNull;
 
 public interface LifecycleEventObserver extends LifecycleObserver {
     /**

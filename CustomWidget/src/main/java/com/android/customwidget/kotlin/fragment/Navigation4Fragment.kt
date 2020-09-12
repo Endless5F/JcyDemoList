@@ -2,8 +2,8 @@ package com.android.customwidget.kotlin.fragment
 
 import android.app.Activity
 import android.os.Bundle
-import android.support.v4.app.Fragment
-import android.support.v7.widget.LinearLayoutManager
+import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.LinearLayoutManager
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -21,7 +21,7 @@ import com.scwang.smart.refresh.layout.SmartRefreshLayout
 import kotlinx.android.synthetic.main.fragment_navigation.*
 
 
-class Navigation4Fragment : Fragment() {
+class Navigation4Fragment : androidx.fragment.app.Fragment() {
 
     var commonList = mutableListOf<NavigationBean>()
 
@@ -51,7 +51,7 @@ class Navigation4Fragment : Fragment() {
      * 左右两个RecyclerView联动
      */
     private fun recyclerViewLinkage() {
-        rvLeft.layoutManager = LinearLayoutManager(context)
+        rvLeft.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(context)
         val layoutManager = CustomLinearLayoutManager(context)
         layoutManager.setScrollEnabled(false)
         rvRight.layoutManager = layoutManager
@@ -60,7 +60,7 @@ class Navigation4Fragment : Fragment() {
         rvRight.adapter = rightNavigationAdapter
 
         //左边联动右边
-        val manager = rvRight.layoutManager as LinearLayoutManager
+        val manager = rvRight.layoutManager as androidx.recyclerview.widget.LinearLayoutManager
         //左边联动右边
         leftNavigationAdapter.setOnItemClickListener { position ->
             leftNavigationAdapter.setChoose(position)

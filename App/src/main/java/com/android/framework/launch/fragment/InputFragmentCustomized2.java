@@ -5,8 +5,8 @@ import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.support.v4.app.Fragment;
-import android.support.v4.view.GestureDetectorCompat;
+import androidx.fragment.app.Fragment;
+import androidx.core.view.GestureDetectorCompat;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.GestureDetector;
@@ -22,7 +22,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 
-import com.android.baselibrary.util.log.LoggerUtil;
+import com.android.baselibrary.util.LogUtils;
 import com.android.baselibrary.widget.keyboard2.KeyboardViewUnity;
 import com.android.framework.R;
 
@@ -194,17 +194,17 @@ public class InputFragmentCustomized2 extends Fragment
             }
             sendKeys(key);
         } else {
-            LoggerUtil.d(TAG, "sendContent(String keyCode is null)");
+            LogUtils.d(TAG, "sendContent(String keyCode is null)");
         }
     }
 
     private void sendKeys(String key) {
-        LoggerUtil.d("InputFragmentCustomized",
+        LogUtils.d("InputFragmentCustomized",
                 "keyCode send : " + key + " time :" + System.currentTimeMillis());
     }
 
     private String conversionSpecialChar(String keyCode) {
-        LoggerUtil.d("InputFragmentCustomized", "keyCode : " + keyCode);
+        LogUtils.d("InputFragmentCustomized", "keyCode : " + keyCode);
         if ("!".equals(keyCode)) {
             return "SHIFT_1";
         } else if ("@".equals(keyCode)) {
@@ -308,7 +308,7 @@ public class InputFragmentCustomized2 extends Fragment
     }
 
     private void onLongEnd() {
-        LoggerUtil.d("liuyuanyuan", "onLongEnd");
+        LogUtils.d("liuyuanyuan", "onLongEnd");
         isLongStarted = false;
     }
 

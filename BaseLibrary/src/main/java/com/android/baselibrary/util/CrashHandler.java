@@ -59,7 +59,7 @@ public class CrashHandler implements UncaughtExceptionHandler {
      * 保证只有一个CrashHandler实例
      */
     private CrashHandler() {
-        DRINAME = AppUtil.getApp().getExternalFilesDir("Crash").toString();
+        DRINAME = AppUtils.getApp().getExternalFilesDir("Crash").toString();
     }
 
     /**
@@ -262,7 +262,7 @@ public class CrashHandler implements UncaughtExceptionHandler {
      * The component launched as the first activity in the task.
      */
     public Class getBaseActivity() {
-        ActivityManager manager = (ActivityManager) AppUtil.getApp().getSystemService(ACTIVITY_SERVICE);
+        ActivityManager manager = (ActivityManager) AppUtils.getApp().getSystemService(ACTIVITY_SERVICE);
         String className = manager.getRunningTasks(1).get(0).baseActivity.getClassName();
         if (className.equals(manager.getRunningTasks(1).get(0).topActivity.getClassName())) {
             //若主界面就崩溃，返回null防止循环重启

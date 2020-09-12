@@ -6,7 +6,7 @@
     android:orientation="vertical"
     tools:context=".kotlin.activity.ScrollRecycleViewActivity">
 
-    <android.support.v7.widget.RecyclerView
+    <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_time"
         android:layout_width="match_parent"
         android:layout_height="48dp" />
@@ -16,7 +16,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <android.support.v7.widget.RecyclerView
+        <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_content"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />

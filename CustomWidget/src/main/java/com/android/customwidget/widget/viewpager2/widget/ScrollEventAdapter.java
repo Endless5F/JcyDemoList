@@ -24,10 +24,10 @@ import static com.android.customwidget.widget.viewpager2.widget.ViewPager2.SCROL
 import static com.android.customwidget.widget.viewpager2.widget.ViewPager2.SCROLL_STATE_SETTLING;
 import static java.lang.annotation.RetentionPolicy.SOURCE;
 
-import android.support.annotation.IntDef;
-import android.support.annotation.NonNull;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
+import androidx.annotation.IntDef;
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
 import android.view.ViewGroup.MarginLayoutParams;

@@ -10,7 +10,7 @@ import android.content.pm.PackageManager;
 import android.net.NetworkCapabilities;
 import android.os.Build;
 import android.os.RemoteException;
-import android.support.v4.app.ActivityCompat;
+import androidx.core.app.ActivityCompat;
 import android.telephony.TelephonyManager;
 
 public class NetStatusUtils {

@@ -1,7 +1,7 @@
 package com.android.customwidget.kotlin.adapter
 
 import android.content.Context
-import android.support.v7.widget.RecyclerView
+import androidx.recyclerview.widget.RecyclerView
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -12,7 +12,7 @@ import com.android.customwidget.kotlin.bean.Program
 import kotlinx.android.synthetic.main.content_item.view.*
 
 class ContentRvAdapter(private val mContext: Context
-                       , private val dataList: List<Program>) : RecyclerView.Adapter<ContentRvAdapter.ContentViewHodler>() {
+                       , private val dataList: List<Program>) : androidx.recyclerview.widget.RecyclerView.Adapter<ContentRvAdapter.ContentViewHodler>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ContentViewHodler {
         val view = LayoutInflater.from(mContext).inflate(R.layout.content_item, parent, false)
@@ -35,5 +35,5 @@ class ContentRvAdapter(private val mContext: Context
         }
     }
 
-    class ContentViewHodler constructor(itemView: View) : RecyclerView.ViewHolder(itemView)
+    class ContentViewHodler constructor(itemView: View) : androidx.recyclerview.widget.RecyclerView.ViewHolder(itemView)
 }

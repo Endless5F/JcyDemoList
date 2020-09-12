@@ -6,21 +6,21 @@
     android:background="@drawable/bg_corner"
     android:padding="10dp"
     android:orientation="vertical">
-    <android.support.v7.widget.AppCompatTextView
+    <androidx.appcompat.widget.AppCompatTextView
         android:id="@+id/title"
         android:text="提示"
         android:gravity="center"
         android:layout_marginTop="5dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
-    <android.support.v7.widget.AppCompatTextView
+    <androidx.appcompat.widget.AppCompatTextView
         android:id="@+id/content"
         android:text="内容"
         android:gravity="center"
         android:layout_marginTop="15dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
-    <android.support.v7.widget.AppCompatEditText
+    <androidx.appcompat.widget.AppCompatEditText
         android:id="@+id/editContent"
         android:hint="编辑区"
         android:gravity="center"
@@ -33,14 +33,14 @@
         android:layout_marginTop="15dp"
         android:layout_marginBottom="5dp"
         android:orientation="horizontal">
-        <android.support.v7.widget.AppCompatTextView
+        <androidx.appcompat.widget.AppCompatTextView
             android:id="@+id/negative"
             android:text="取消"
             android:gravity="center"
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content" />
-        <android.support.v7.widget.AppCompatTextView
+        <androidx.appcompat.widget.AppCompatTextView
             android:id="@+id/positive"
             android:text="确定"
             android:gravity="center"

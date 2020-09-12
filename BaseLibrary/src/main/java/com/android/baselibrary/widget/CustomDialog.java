@@ -2,13 +2,11 @@ package com.android.baselibrary.widget;
 
 import android.app.Activity;
 import android.app.Dialog;
-import android.content.Context;
-import android.content.DialogInterface;
 import android.graphics.Color;
-import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.v7.widget.AppCompatEditText;
-import android.support.v7.widget.AppCompatTextView;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.widget.AppCompatEditText;
+import androidx.appcompat.widget.AppCompatTextView;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.DisplayMetrics;
@@ -17,11 +15,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.TextView;
 
 import com.android.baselibrary.R;
 import com.android.baselibrary.lambdaInterface.Functional1;
-import com.android.baselibrary.lambdaInterface.Functional2;
 
 import java.util.Objects;
 

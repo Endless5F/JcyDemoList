@@ -1,7 +1,7 @@
 package com.android.performanceanalysis.launchstarter.task;
 
 import android.os.Process;
-import android.support.annotation.IntRange;
+import androidx.annotation.IntRange;
 
 import java.util.List;
 import java.util.concurrent.Executor;

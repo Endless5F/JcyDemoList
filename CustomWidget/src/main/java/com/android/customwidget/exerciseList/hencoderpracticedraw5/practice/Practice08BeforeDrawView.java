@@ -3,8 +3,8 @@ package com.android.customwidget.exerciseList.hencoderpracticedraw5.practice;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.support.annotation.Nullable;
-import android.support.v7.widget.AppCompatEditText;
+import androidx.annotation.Nullable;
+import androidx.appcompat.widget.AppCompatEditText;
 import android.util.AttributeSet;
 
 public class Practice08BeforeDrawView extends AppCompatEditText {

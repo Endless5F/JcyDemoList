@@ -4,7 +4,6 @@ import android.os.Bundle;
 
 import com.android.baselibrary.base.BaseToolbarCompatActivity;
 import com.android.baselibrary.bean.EventBean;
-import com.android.baselibrary.bean.Member;
 import com.android.framework.R;
 import com.facebook.stetho.common.LogUtil;
 

@@ -11,22 +11,23 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.provider.Settings;
-import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.DialogFragment;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v4.content.ContextCompat;
-import android.support.v4.view.LayoutInflaterCompat;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.app.AppCompatDelegate;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.core.view.LayoutInflaterCompat;
+import androidx.fragment.app.DialogFragment;
+import androidx.fragment.app.FragmentTransaction;
+
 import com.android.baselibrary.base.bus.BusEvent;
-import com.android.baselibrary.util.log.LoggerUtil;
+import com.android.baselibrary.util.LogUtils;
 import com.noober.background.BackgroundLibrary;
 
 import org.greenrobot.eventbus.EventBus;
@@ -66,26 +67,22 @@ public abstract class BaseCompatActivity extends AppCompatActivity {
         if (setFactory2()) {
             BackgroundLibrary.inject2(this);
         } else {
-            LayoutInflaterCompat.setFactory2(LayoutInflater.from(this),
-                    new LayoutInflater.Factory2() {
-                        @Override
-                        public View onCreateView(String parent, Context context,
-                                                 AttributeSet attrs) {
-                            return null;
-                        }
+            LayoutInflaterCompat.setFactory2(LayoutInflater.from(this), new LayoutInflater.Factory2() {
+                @Override
+                public View onCreateView(String parent, Context context, AttributeSet attrs) {
+                    return null;
+                }
 
-                        @Override
-                        public View onCreateView(View parent, String name, Context context,
-                                                 AttributeSet attributeSet) {
-
-                            AppCompatDelegate delegate = getDelegate();
-                            View view = delegate.createView(parent, name, context, attributeSet);
-                            if (view != null && (view instanceof TextView)) {
-                                ((TextView) view).setTypeface(typeface);
-                            }
-                            return view;
-                        }
-                    });
+                @Override
+                public View onCreateView(View parent, String name, Context context, AttributeSet attributeSet) {
+                    AppCompatDelegate delegate = getDelegate();
+                    View view = delegate.createView(parent, name, context, attributeSet);
+                    if ((view instanceof TextView)) {
+                        ((TextView) view).setTypeface(typeface);
+                    }
+                    return view;
+                }
+            });
         }
 
         super.onCreate(savedInstanceState);
@@ -128,7 +125,7 @@ public abstract class BaseCompatActivity extends AppCompatActivity {
             m_handler.removeCallbacksAndMessages(null);
             m_handler = null;
         } catch (Exception e) {
-            LoggerUtil.e(TAG,
+            LogUtils.e(TAG,
                     "onDestroy" + this.getClass().getSimpleName() + Log.getStackTraceString(e));
         }
         isDestroy = true;
@@ -241,7 +238,7 @@ public abstract class BaseCompatActivity extends AppCompatActivity {
      */
     protected void onPermissionGranted(String permission) {
         if (isActive) {
-            LoggerUtil.d(TAG, String.format(Locale.getDefault(), "%s %s", permission,
+            LogUtils.d(TAG, String.format(Locale.getDefault(), "%s %s", permission,
                     "request_success"));
         }
     }
@@ -253,7 +250,7 @@ public abstract class BaseCompatActivity extends AppCompatActivity {
      */
     protected void onPermissionFailed(String permission) {
         if (isActive) {
-            LoggerUtil.d(TAG, String.format(Locale.getDefault(), "%s %s", permission,
+            LogUtils.d(TAG, String.format(Locale.getDefault(), "%s %s", permission,
                     "request_failed"));
         }
     }
@@ -263,7 +260,7 @@ public abstract class BaseCompatActivity extends AppCompatActivity {
      */
     protected void onPermissionListGranted() {
         if (isActive) {
-            LoggerUtil.d(TAG, String.format(Locale.getDefault(), "%s", "request_list_success"));
+            LogUtils.d(TAG, String.format(Locale.getDefault(), "%s", "request_list_success"));
         }
     }
 
