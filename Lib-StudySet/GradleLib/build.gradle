@@ -304,7 +304,7 @@ ext {
 }
 
 // 打印common.gradle文件内容
-println getContent('../common.gradle')
+println getContent('common.gradle')
 
 def getContent(String path) {
     try {

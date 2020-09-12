@@ -247,7 +247,7 @@ AsyncTask对THREAD_POOL_EXECUTOR这个线程池进行了配置，配置后的线
 通过Executors的newScheduleThreadPool(int corePoolSize)方法来创建，他的核心线程数量是固定的，而非核心线程是没有限制id，并且当非核心线程闲置时会立即回收，ScheduleThreadPool这类主要用于定时任务和具有固定周期的重复任务。
 #### SingleTheardExecutor
 通过Executors的newSingleTheardExecutor创建，内部只有一个核心线程，确保所有的任务都在同一个线程按顺序执行，SingleTheardExecutor的意义是统一所有的外界任务到同一个线程中，这使得这些任务之间不需要处理线程同步的问题。
-## [**线程安全(高并发)面试笔记**](https://github.com/Endless5F/JcyDemoList/blob/master/%E9%9D%A2%E8%AF%95%E7%9B%B8%E5%85%B3%E6%80%BB%E7%BB%93/2.%20%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8(%E9%AB%98%E5%B9%B6%E5%8F%91)%E7%AC%94%E8%AE%B0.md)
+## [**线程安全(高并发)面试笔记**](https://github.com/Endless5F/JcyDemoList/blob/master/Lib-StudySet/面试相关总结/2.%20线程安全%28高并发%29笔记.md)
 ## 参考链接
 [Android 多线程：手把手教你使用AsyncTask](https://www.jianshu.com/p/ee1342fcf5e7)
 

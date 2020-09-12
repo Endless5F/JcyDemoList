@@ -38,14 +38,17 @@ gradle.buildFinished {
 
 include ':App',
         ':BaseLibrary',
-        ':SourceCodeAnalysis',
         ':CustomWidget',
-        ':Architecture',
-        ':JavaLib',
-        ':Kotlinlearn' ,
-        ':PerformanceAnalysis',
-        ':GradleLib',
-        ':LeetCode',
-        ':HttpServer',
         ':Lib-Common:viewpager2'
+
+//include ':Lib-StudySet:Architecture',
+//        ':Lib-StudySet:GradleLib',
+//        ':Lib-StudySet:HttpServer',
+//        ':Lib-StudySet:JavaLib',
+//        ':Lib-StudySet:KotlinLearn',
+//        ':Lib-StudySet:LeetCode',
+//        ':Lib-StudySet:PerformanceAnalysis',
+//        ':Lib-StudySet:SourceCodeAnalysis'
+
+
 
