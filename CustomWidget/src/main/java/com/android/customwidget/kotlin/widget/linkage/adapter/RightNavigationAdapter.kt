@@ -9,6 +9,7 @@ import android.widget.TextView
 import com.android.customwidget.R
 import com.android.customwidget.kotlin.ext.dp
 import com.android.customwidget.kotlin.widget.linkage.bean.NavigationBean
+import com.zhy.view.flowlayout.TagView
 import kotlinx.android.synthetic.main.navigation_item_right.view.*
 import org.jetbrains.anko.padding
 
@@ -38,12 +39,14 @@ class RightNavigationAdapter(val context: Context) : androidx.recyclerview.widge
         p0.itemView.flow_content.removeAllViews()
         mDatas[p1].articles.forEach { data ->
             p0.itemView.flow_content.apply {
+                val tag = TagView(context)
                 val text = TextView(context)
                 text.text = data.title
                 text.textSize = 14f
                 text.padding = 3.dp
                 text.setBackgroundResource(R.drawable.common_bg_rect)
-                addView(text)
+                tag.addView(text)
+                addView(tag)
             }
         }
     }

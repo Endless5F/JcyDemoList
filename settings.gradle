@@ -38,8 +38,7 @@ gradle.buildFinished {
 
 include ':App',
         ':BaseLibrary',
-        ':CustomWidget',
-        ':Lib-Common:viewpager2'
+        ':CustomWidget'
 
 //include ':Lib-StudySet:Architecture',
 //        ':Lib-StudySet:GradleLib',

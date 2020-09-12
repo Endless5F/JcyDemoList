@@ -1,5 +1,6 @@
 package com.android.customwidget.kotlin.fragment
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.os.Bundle
 import androidx.fragment.app.Fragment
@@ -47,6 +48,7 @@ class Navigation5Fragment : androidx.fragment.app.Fragment() {
     /**
      * 左右两个RecyclerView联动
      */
+    @SuppressLint("WrongConstant")
     private fun recyclerViewLinkage() {
         rvLeft.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(context)
 

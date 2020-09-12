@@ -6,9 +6,6 @@ import android.animation.PropertyValuesHolder
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.os.Bundle
-import androidx.fragment.app.Fragment
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -16,9 +13,9 @@ import com.android.customwidget.R
 import com.android.customwidget.kotlin.ext.dispatchMainLoopWork
 import com.android.customwidget.kotlin.ext.dispatchSerialWork
 import com.android.customwidget.kotlin.ext.getAssetsFileJson
+import com.android.customwidget.kotlin.widget.linkage.TopItemDecoration
 import com.android.customwidget.kotlin.widget.linkage.adapter.LeftNavigationAdapter
 import com.android.customwidget.kotlin.widget.linkage.adapter.RightNavigationAdapter
-import com.android.customwidget.kotlin.widget.linkage.TopItemDecoration
 import com.android.customwidget.kotlin.widget.linkage.bean.Navigation
 import com.android.customwidget.kotlin.widget.linkage.bean.NavigationBean
 import com.google.gson.Gson

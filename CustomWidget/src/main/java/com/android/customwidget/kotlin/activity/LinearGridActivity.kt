@@ -13,7 +13,7 @@ class LinearGridActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_linear_grid)
-        val hotPart = HotPartView(this)
+        val gridView = LinearGridView(this)
         hotParts.apply {
             add(DataEntity("数据1", ""))
             add(DataEntity("数据2", ""))
@@ -24,9 +24,9 @@ class LinearGridActivity : AppCompatActivity() {
             add(DataEntity("数据7", ""))
             add(DataEntity("数据8", ""))
         }
-        hotPart.apply {
+        gridView.apply {
             setData(Data(hotParts))
         }
-        rootView.addView(hotPart)
+        rootView.addView(gridView)
     }
 }
