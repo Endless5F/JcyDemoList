@@ -1,12 +1,14 @@
 package com.android.customwidget.kotlin.activity
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import com.android.customwidget.BaseActivity
 import com.android.customwidget.R
-import com.android.customwidget.kotlin.widget.lineargrid.*
+import com.android.customwidget.kotlin.widget.lineargrid.Data
+import com.android.customwidget.kotlin.widget.lineargrid.DataEntity
+import com.android.customwidget.kotlin.widget.lineargrid.LinearGridView
 import kotlinx.android.synthetic.main.activity_linear_grid.*
 
-class LinearGridActivity : AppCompatActivity() {
+class LinearGridActivity : BaseActivity() {
 
     var hotParts = ArrayList<DataEntity>()
 

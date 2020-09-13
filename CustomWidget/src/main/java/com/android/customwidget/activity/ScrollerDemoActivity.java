@@ -1,13 +1,13 @@
 package com.android.customwidget.activity;
 
-import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 
+import com.android.customwidget.BaseActivity;
 import com.android.customwidget.R;
 import com.android.customwidget.widget.CustomScrollerView;
 
-public class ScrollerDemoActivity extends AppCompatActivity {
+public class ScrollerDemoActivity extends BaseActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

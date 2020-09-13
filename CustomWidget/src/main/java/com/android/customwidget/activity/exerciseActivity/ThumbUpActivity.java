@@ -1,9 +1,10 @@
 package com.android.customwidget.activity.exerciseActivity;
 
 import android.os.Bundle;
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
 
+import androidx.annotation.Nullable;
+
+import com.android.customwidget.BaseActivity;
 import com.android.customwidget.R;
 import com.android.customwidget.widget.BarChart;
 
@@ -11,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-public class ThumbUpActivity extends AppCompatActivity {
+public class ThumbUpActivity extends BaseActivity {
 
     private Random mRandom;
     @Override
@@ -31,5 +32,11 @@ public class ThumbUpActivity extends AppCompatActivity {
         }
 
         return data;
+    }
+
+    @org.jetbrains.annotations.Nullable
+    @Override
+    public String touchFloatBackEvent() {
+        return "https://www.baidu.com/";
     }
 }
