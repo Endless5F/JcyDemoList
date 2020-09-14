@@ -1,4 +1,4 @@
-package com.android.baselibrary.util;
+package com.android.baselibrary.utils;
 
 import android.content.ContentResolver;
 import android.content.Context;

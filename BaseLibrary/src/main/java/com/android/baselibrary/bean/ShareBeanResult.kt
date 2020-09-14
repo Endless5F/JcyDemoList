@@ -1,7 +1,7 @@
 package com.android.baselibrary.bean
 
 import com.android.baselibrary.http.common.HttpResult
-import com.android.baselibrary.util.JsonUtils
+import com.android.baselibrary.utils.JsonUtils
 import com.google.gson.JsonObject
 
 open class ShareBeanResult: HttpResult() {

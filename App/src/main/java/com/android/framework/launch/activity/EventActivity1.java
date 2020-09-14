@@ -6,7 +6,7 @@ import android.widget.TextView;
 
 import com.android.baselibrary.base.BaseToolbarCompatActivity;
 import com.android.baselibrary.bean.EventBean;
-import com.android.baselibrary.util.ToastUtils;
+import com.android.baselibrary.utils.ToastUtils;
 import com.android.framework.R;
 import com.facebook.stetho.common.LogUtil;
 

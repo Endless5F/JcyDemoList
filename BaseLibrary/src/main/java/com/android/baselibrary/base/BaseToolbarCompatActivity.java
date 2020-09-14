@@ -16,8 +16,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.android.baselibrary.R;
-import com.android.baselibrary.util.ScreenUtils;
-import com.android.baselibrary.util.StatusBarUtils;
+import com.android.baselibrary.utils.ScreenUtils;
+import com.android.baselibrary.utils.StatusBarUtils;
 
 import java.util.HashMap;
 import java.util.Iterator;

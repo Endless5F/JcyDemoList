@@ -6,7 +6,7 @@ import com.android.baselibrary.base.globalConf.AppConf;
 import com.android.baselibrary.http.callBack.ObserverCallBack;
 import com.android.baselibrary.http.common.ResultException;
 import com.android.baselibrary.http.download.DownloadListener;
-import com.android.baselibrary.util.FileUtils;
+import com.android.baselibrary.utils.FileUtils;
 
 import java.io.File;
 import java.io.IOException;

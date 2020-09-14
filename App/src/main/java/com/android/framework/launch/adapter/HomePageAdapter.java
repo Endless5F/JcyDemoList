@@ -11,7 +11,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.android.baselibrary.util.ToastUtils;
+import com.android.baselibrary.utils.ToastUtils;
 import com.android.framework.R;
 import com.android.framework.launch.activity.MixedItemActivity;
 import com.android.framework.launch.activity.StrategyActivity;

@@ -4,7 +4,7 @@ import android.text.TextUtils;
 
 import com.android.baselibrary.http.common.HttpResult;
 import com.android.baselibrary.http.common.ResultException;
-import com.android.baselibrary.util.LogUtils;
+import com.android.baselibrary.utils.LogUtils;
 import com.google.gson.Gson;
 
 import java.io.IOException;

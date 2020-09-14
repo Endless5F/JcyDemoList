@@ -3,7 +3,7 @@ package com.android.framework.launch.activity;
 import android.os.Bundle;
 
 import com.android.baselibrary.base.BaseCompatActivity;
-import com.android.baselibrary.util.ScreenUtils;
+import com.android.baselibrary.utils.ScreenUtils;
 import com.android.framework.R;
 
 public class LoginActivity extends BaseCompatActivity {

@@ -9,7 +9,7 @@ import android.util.Log;
 import android.view.OrientationEventListener;
 import android.widget.Button;
 
-import com.android.baselibrary.util.ScreenUtils;
+import com.android.baselibrary.utils.ScreenUtils;
 import com.uber.autodispose.AutoDispose;
 import com.uber.autodispose.android.lifecycle.AndroidLifecycleScopeProvider;
 

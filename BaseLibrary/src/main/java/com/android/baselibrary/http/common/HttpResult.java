@@ -1,6 +1,6 @@
 package com.android.baselibrary.http.common;
 
-import com.android.baselibrary.util.JsonUtils;
+import com.android.baselibrary.utils.JsonUtils;
 import com.google.gson.JsonObject;
 
 /**

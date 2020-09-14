@@ -2,7 +2,7 @@ package com.android.baselibrary.funcInterface;
 
 import android.text.TextUtils;
 
-import com.android.baselibrary.util.LogUtils;
+import com.android.baselibrary.utils.LogUtils;
 
 import java.util.HashMap;
 import java.util.Map;

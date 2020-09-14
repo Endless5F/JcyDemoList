@@ -6,7 +6,7 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.baselibrary.base.BaseToolbarCompatActivity;
-import com.android.baselibrary.util.ThreadPoolUtils;
+import com.android.baselibrary.utils.ThreadPoolUtils;
 import com.android.framework.R;
 import com.android.framework.launch.adapter.MixedItemAdapter;
 import com.android.framework.launch.data.MixedResourceBean;

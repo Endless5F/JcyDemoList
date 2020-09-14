@@ -4,7 +4,7 @@ import android.annotation.SuppressLint;
 import android.os.Bundle;
 
 import com.android.baselibrary.base.BaseToolbarCompatActivity;
-import com.android.baselibrary.util.ToastUtils;
+import com.android.baselibrary.utils.ToastUtils;
 import com.android.baselibrary.widget.CustomDialog;
 import com.android.framework.R;
 

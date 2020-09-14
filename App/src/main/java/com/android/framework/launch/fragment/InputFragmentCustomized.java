@@ -22,7 +22,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 
-import com.android.baselibrary.util.LogUtils;
+import com.android.baselibrary.utils.LogUtils;
 import com.android.baselibrary.widget.keyboard1.KeyboardViewUnity;
 import com.android.framework.R;
 

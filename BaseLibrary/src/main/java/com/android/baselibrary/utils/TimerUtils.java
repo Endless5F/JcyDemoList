@@ -1,4 +1,4 @@
-package com.android.baselibrary.util;
+package com.android.baselibrary.utils;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 

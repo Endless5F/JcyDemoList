@@ -13,8 +13,8 @@ import androidx.core.content.ContextCompat;
 import android.util.Log;
 
 import com.android.baselibrary.base.bus.BusEvent;
-import com.android.baselibrary.util.AppUtils;
-import com.android.baselibrary.util.LogUtils;
+import com.android.baselibrary.utils.AppUtils;
+import com.android.baselibrary.utils.LogUtils;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;

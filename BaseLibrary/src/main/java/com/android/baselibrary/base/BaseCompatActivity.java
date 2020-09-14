@@ -27,7 +27,7 @@ import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.android.baselibrary.base.bus.BusEvent;
-import com.android.baselibrary.util.LogUtils;
+import com.android.baselibrary.utils.LogUtils;
 import com.noober.background.BackgroundLibrary;
 
 import org.greenrobot.eventbus.EventBus;

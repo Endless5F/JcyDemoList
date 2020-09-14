@@ -1,4 +1,4 @@
-package com.android.baselibrary.util;
+package com.android.baselibrary.utils;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;

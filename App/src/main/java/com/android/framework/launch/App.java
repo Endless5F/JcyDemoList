@@ -8,8 +8,8 @@ import android.util.Log;
 
 import com.android.baselibrary.app.AppGlobal;
 import com.android.baselibrary.common.GlobalActivityLifecycle;
-import com.android.baselibrary.util.AppUtils;
-import com.android.baselibrary.util.CrashHandler;
+import com.android.baselibrary.utils.AppUtils;
+import com.android.baselibrary.utils.CrashHandler;
 import com.android.framework.CustomEventBusIndex;
 
 import org.greenrobot.eventbus.EventBus;

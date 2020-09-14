@@ -1,4 +1,4 @@
-package com.android.baselibrary.util;
+package com.android.baselibrary.utils;
 
 import java.io.IOException;
 import java.net.URLEncoder;

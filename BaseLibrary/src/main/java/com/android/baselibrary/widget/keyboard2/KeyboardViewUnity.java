@@ -8,7 +8,7 @@ import android.view.LayoutInflater;
 import android.widget.RelativeLayout;
 
 import com.android.baselibrary.R;
-import com.android.baselibrary.util.LogUtils;
+import com.android.baselibrary.utils.LogUtils;
 
 public class KeyboardViewUnity extends RelativeLayout {
     private static final String TAG = "KeyboardViewUnity";
