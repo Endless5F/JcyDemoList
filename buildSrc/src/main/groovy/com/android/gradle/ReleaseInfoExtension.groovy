@@ -1,3 +1,5 @@
+package com.android.gradle
+
 class ReleaseInfoExtension {
     String versionCode
     String versionName

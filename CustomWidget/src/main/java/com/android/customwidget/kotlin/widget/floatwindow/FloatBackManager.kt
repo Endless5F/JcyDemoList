@@ -9,7 +9,6 @@ import android.widget.FrameLayout
 import android.widget.Toast
 import com.android.customwidget.BuildConfig
 import com.android.customwidget.util.AppUtils
-import org.jetbrains.anko.runOnUiThread
 
 class FloatBackManager private constructor() {
 
@@ -51,7 +50,7 @@ class FloatBackManager private constructor() {
             mFloatBackView = activity?.let { FloatBackView(it) }
         }
         mFloatBackView?.apply {
-            setOnBackViewClickListener(object : FloatBackView.OnBackViewClickListener {
+            setOnViewClickListener(object : BaseFloatWindow.OnViewClickListener {
                 override fun onCloseBtnClick() {
                     removeFloatBackView(parent)
                 }

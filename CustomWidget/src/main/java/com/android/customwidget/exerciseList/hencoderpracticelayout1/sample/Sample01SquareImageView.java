@@ -1,12 +1,12 @@
 package com.android.customwidget.exerciseList.hencoderpracticelayout1.sample;
 
 import android.content.Context;
-import androidx.annotation.Nullable;
 import android.util.AttributeSet;
-import android.widget.ImageView;
+
+import androidx.annotation.Nullable;
 
 
-public class Sample01SquareImageView extends ImageView {
+public class Sample01SquareImageView extends androidx.appcompat.widget.AppCompatImageView {
     public Sample01SquareImageView(Context context) {
         super(context);
     }

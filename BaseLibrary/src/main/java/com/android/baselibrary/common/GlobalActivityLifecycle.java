@@ -1,5 +1,6 @@
 package com.android.baselibrary.common;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Application;
 import android.os.Bundle;
@@ -14,6 +15,7 @@ public class GlobalActivityLifecycle implements Application.ActivityLifecycleCal
     private final String TAG = "GlobalActivityLifecycle";
     private static int mResumed = 0;
     private static int mPaused = 0;
+    @SuppressLint("StaticFieldLeak")
     private static Activity newActivity;
     @Override
     public void onActivityCreated(Activity activity, Bundle bundle) {
