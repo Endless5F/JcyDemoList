@@ -17,8 +17,15 @@
         android:padding="10dp"/>
 
 
-    <com.android.customwidget.widget.BarChart
-        android:id="@+id/barChart"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+<!--    <com.android.customwidget.widget.BarChart-->
+<!--        android:id="@+id/barChart"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="match_parent"/>-->
+
+    <com.android.customwidget.widget.dragfloatlayer.DragFloatActionButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:clickable="true"
+        android:src="@mipmap/ic_launcher"/>
 </LinearLayout>

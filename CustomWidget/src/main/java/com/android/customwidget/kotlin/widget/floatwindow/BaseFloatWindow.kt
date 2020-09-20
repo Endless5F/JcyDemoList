@@ -6,6 +6,9 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.widget.LinearLayout
 
+/**
+ * 仅可靠一边拖动
+ */
 abstract class BaseFloatWindow(context: Context, layoutId: Int) : LinearLayout(context), GestureDetector.OnGestureListener {
     /** y坐标  */
     var offsetY = 0f

@@ -20,8 +20,8 @@ public class ThumbUpActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_thumb_up);
         mRandom = new Random();
-        BarChart barChart = findViewById(R.id.barChart);
-        barChart.setBarInfoList(createBarInfo());
+//        BarChart barChart = findViewById(R.id.barChart);
+//        barChart.setBarInfoList(createBarInfo());
     }
 
     private List<BarChart.BarInfo> createBarInfo() {
