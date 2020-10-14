@@ -4,6 +4,7 @@
     package="com.android.customwidget">
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
     <application
         android:name=".App"
         android:icon="@mipmap/ic_launcher"
@@ -13,7 +14,8 @@
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true"
         tools:ignore="GoogleAppIndexingWarning">
-        <activity android:name=".kotlin.activity.LinearGridActivity"/>
+        <activity android:name=".kotlin.activity.XiDingActivity"></activity>
+        <activity android:name=".kotlin.activity.LinearGridActivity" />
         <activity android:name=".kotlin.activity.LinkageNavigationActivity" />
         <activity android:name=".activity.ScrollerDemoActivity" />
         <activity android:name=".kotlin.activity.ScrollRecycleViewActivity" />

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".kotlin.activity.XiDingActivity">
+
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
+        android:id="@+id/coordinator"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <com.google.android.material.appbar.AppBarLayout
+            android:id="@+id/app_bar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
+            app:elevation="0dp">
+
+            <com.google.android.material.appbar.CollapsingToolbarLayout
+                android:id="@+id/collapsingToolbar"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@android:color/transparent"
+                app:contentScrim="@android:color/transparent"
+                app:layout_scrollFlags="scroll|exitUntilCollapsed"
+                app:scrimAnimationDuration="300">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="小标题小标题小标题小标题小标题"
+                    android:textColor="#FF222222"
+                    android:textSize="18dp"
+                    app:layout_collapseMode="parallax"
+                    tools:text="小标题小标题小标题小标题小标题" />
+
+            </com.google.android.material.appbar.CollapsingToolbarLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="面部轮廓小V瓜子脸手术面部轮廓小V瓜子脸手术面部轮廓小V瓜子脸手术面部轮廓小V瓜子脸手术面部轮廓小V瓜子脸手术面部轮廓小V瓜子脸手术"
+                android:textColor="#FF222222"
+                android:textSize="18dp"
+                tools:text="面部轮廓小V瓜子脸手术面部轮廓小V瓜子脸手术面部轮廓小V瓜子脸手术面部轮廓小V瓜子脸手术面部轮廓小V瓜子脸手术面部轮廓小V瓜子脸手术" />
+        </com.google.android.material.appbar.AppBarLayout>
+
+        <!--吸顶效果：
+        若当前RecyclerView内部需要嵌套RecycleView，则不会有效果或者效果不好，
+        此时内部RecyclerView需要设置 rv.isNestedScrollingEnabled = false 属性，
+        此属性设置后内部RecyclerView则失去view复用的能力，因此建议通过viewType使用单层RecyclerView-->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:overScrollMode="never"
+            app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior" />
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+</LinearLayout>

@@ -20,12 +20,12 @@ class ScrollRecycleViewActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_scroll_recycle_view)
 
-        val linearManager = androidx.recyclerview.widget.LinearLayoutManager(this)
-        linearManager.orientation = androidx.recyclerview.widget.LinearLayoutManager.HORIZONTAL
+        val linearManager = LinearLayoutManager(this)
+        linearManager.orientation = LinearLayoutManager.HORIZONTAL
         rv_time.layoutManager = linearManager
 
-        val linearManager2 = androidx.recyclerview.widget.LinearLayoutManager(this)
-        linearManager2.orientation = androidx.recyclerview.widget.LinearLayoutManager.VERTICAL
+        val linearManager2 = LinearLayoutManager(this)
+        linearManager2.orientation = LinearLayoutManager.VERTICAL
         rv_content.layoutManager = linearManager2
 
         initData()
