@@ -57,5 +57,10 @@ dependencies {
     // kotlin 配置
     implementation "org.jetbrains.anko:anko:$anko_version"
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.3'
+    // 核心库：必要！公共API，使得协程在各个平台的接口得到统一
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.8"
+    // 平台库：当前平台对应的平台库，协程在具体平台的表现方式是有差异的(如Android)
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.3.8'
+    // 测试库：协程的测试库，方便开发者在测试中使用协程
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.3.8'
 }
