@@ -8,9 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import java.util.*
 
-abstract class RecyclerAdapter: androidx.recyclerview.widget.RecyclerView.Adapter<RecyclerAdapter.RecyclerViewHolder>() {
-
-    var fromType: String? = null
+abstract class RecyclerAdapter : RecyclerView.Adapter<RecyclerAdapter.RecyclerViewHolder>() {
 
     companion object {
         val HEADER_OFFSET = 100000
@@ -30,7 +28,7 @@ abstract class RecyclerAdapter: androidx.recyclerview.widget.RecyclerView.Adapte
     @NonNull
     protected abstract fun onCreateInnerViewHolder(parent: ViewGroup, viewType: Int): RecyclerViewHolder
 
-    protected abstract fun onBindInnerViewHolder(holder: RecyclerViewHolder, position: Int)
+    protected abstract fun onBindInnerViewHolder(viewHolder: RecyclerViewHolder, position: Int)
 
     protected abstract fun getInnerViewType(position: Int): Int
 
@@ -221,21 +219,29 @@ abstract class RecyclerAdapter: androidx.recyclerview.widget.RecyclerView.Adapte
         }
 
         val innerViewType = getInnerViewType(getInnerPosition(position))
-        if (innerViewType >= HEADER_OFFSET) {
-            throw IllegalStateException("Inner ViewType is out of range, must smaller than header ViewType range")
-        }
+
+        innerViewTypeCheck(innerViewType)
         return innerViewType
     }
 
-    override fun onAttachedToRecyclerView(recyclerView: androidx.recyclerview.widget.RecyclerView) {
+    /**
+     * 除头尾布局外的viewType校验，默认 innerViewType < HEADER_OFFSET正确
+     */
+    protected open fun innerViewTypeCheck(innerViewType: Int) {
+        if (innerViewType >= HEADER_OFFSET) {
+            throw IllegalStateException("Inner ViewType is out of range, must smaller than header ViewType range")
+        }
+    }
+
+    override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
         super.onAttachedToRecyclerView(recyclerView)
         val layoutManager = recyclerView.layoutManager
-        if (layoutManager is androidx.recyclerview.widget.GridLayoutManager) {
+        if (layoutManager is GridLayoutManager) {
             val spanSizeLookup = layoutManager.spanSizeLookup
             /**
              * 配置网格列表时，Header和Footer需要独占一行
              */
-            layoutManager.spanSizeLookup = object : androidx.recyclerview.widget.GridLayoutManager.SpanSizeLookup() {
+            layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
                 override fun getSpanSize(position: Int): Int {
                     if (getHeaderIndex(position) != -1) {
                         return layoutManager.spanCount
@@ -253,7 +259,7 @@ abstract class RecyclerAdapter: androidx.recyclerview.widget.RecyclerView.Adapte
     override fun onViewAttachedToWindow(holder: RecyclerViewHolder) {
         super.onViewAttachedToWindow(holder)
         val lp = holder.itemView.layoutParams
-        if (lp is androidx.recyclerview.widget.StaggeredGridLayoutManager.LayoutParams) {
+        if (lp is StaggeredGridLayoutManager.LayoutParams) {
             lp.isFullSpan = holder is HeaderHolder || holder is FooterHolder
         }
     }
@@ -262,5 +268,5 @@ abstract class RecyclerAdapter: androidx.recyclerview.widget.RecyclerView.Adapte
 
     internal inner class FooterHolder(itemView: View) : RecyclerViewHolder(itemView)
 
-    open class RecyclerViewHolder(val view: View) : androidx.recyclerview.widget.RecyclerView.ViewHolder(view)
+    open class RecyclerViewHolder(val view: View) : RecyclerView.ViewHolder(view)
 }

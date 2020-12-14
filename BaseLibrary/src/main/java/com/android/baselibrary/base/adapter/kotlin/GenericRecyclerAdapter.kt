@@ -2,7 +2,10 @@ package com.android.baselibrary.base.adapter.kotlin
 
 import android.view.View
 
-abstract class GenericRecyclerAdapter<T>(private val mDataList: MutableList<T>): RecyclerAdapter() {
+/**
+ * 继承自RecyclerAdapter，添加泛型和通用item点击事件
+ */
+abstract class GenericRecyclerAdapter<T>(private val mDataList: MutableList<T>) : RecyclerAdapter() {
 
     private var mOnItemClickListener: ((position: Int, data: T) -> Unit)? = null
 
@@ -38,12 +41,13 @@ abstract class GenericRecyclerAdapter<T>(private val mDataList: MutableList<T>):
     }
 
     /**
-     * 设置长按事件
+     * 设置点击事件
      */
     private fun registerItemLongClickListener(itemView: View, position: Int) {
         if (mOnItemLongClickListener != null) {
             itemView.setOnLongClickListener {
-                val data = mDataList.elementAtOrNull(position) ?: return@setOnLongClickListener false
+                val data = mDataList.elementAtOrNull(position)
+                        ?: return@setOnLongClickListener false
                 mOnItemLongClickListener!!.invoke(position, data)
             }
         }
@@ -52,7 +56,7 @@ abstract class GenericRecyclerAdapter<T>(private val mDataList: MutableList<T>):
     /**
      * 设置item点击事件
      */
-    fun setOnItemClickListener(li: (position: Int, data: T) -> Unit) {
+    fun setOnItemClickListener(li: ((position: Int, data: T) -> Unit)?) {
         mOnItemClickListener = li
     }
 
@@ -85,7 +89,13 @@ abstract class GenericRecyclerAdapter<T>(private val mDataList: MutableList<T>):
         }
     }
 
-    override fun getItemCount(): Int {
-        return mDataList.size
+    open fun setAll(list: MutableList<T>) {
+        mDataList.clear()
+        mDataList.addAll(list)
+        notifyDataSetChanged()
+    }
+
+    fun getInnerAll(): MutableList<T> {
+        return mDataList
     }
 }

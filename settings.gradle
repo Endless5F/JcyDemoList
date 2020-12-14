@@ -40,15 +40,15 @@ include ':App',
         ':BaseLibrary',
         ':CustomWidget'
 
-include ':Lib-StudySet:JavaLib'
+//include ':Lib-StudySet:JavaLib'
 include ':Lib-StudySet:KotlinLearn'
 //include ':Lib-StudySet:Architecture',
-//        ':Lib-StudySet:GradleLib',
-//        ':Lib-StudySet:HttpServer',
-//        ':Lib-StudySet:JavaLib',
-//        ':Lib-StudySet:LeetCode',
-//        ':Lib-StudySet:PerformanceAnalysis',
-//        ':Lib-StudySet:SourceCodeAnalysis'
+//include ':Lib-StudySet:GradleLib',
+//include ':Lib-StudySet:HttpServer',
+//include ':Lib-StudySet:JavaLib',
+//include ':Lib-StudySet:LeetCode',
+//include ':Lib-StudySet:PerformanceAnalysis',
+//include ':Lib-StudySet:SourceCodeAnalysis'
 
 
 

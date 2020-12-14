@@ -1,7 +1,7 @@
 package com.android.kotlinlearn.kotlinlib.basis
 
 import android.os.Build
-import android.support.annotation.RequiresApi
+import androidx.annotation.RequiresApi
 
 /**
  * 描述 ：    集合详解
