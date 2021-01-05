@@ -11,7 +11,7 @@ import com.android.customwidget.kotlin.ext.measureTextWidth
 import kotlinx.android.synthetic.main.form_item_layout_vertical.view.*
 
 /**
- * 表格View
+ * 表格View，适用于数据较少的情况
  *
  * @author jiaochengyun
  */
@@ -98,6 +98,13 @@ abstract class AbsFormView<T>(context: Context) : LinearLayout(context) {
     }
 
     /**
+     * 获取item间距(列间距)，仅 getGravityType() == horizontalLeft时有效
+     */
+    protected open fun getColumnSpaceSize(isFirstColumn: Boolean): Int {
+        return if (isFirstColumn) 0.dp else 8.dp
+    }
+
+    /**
      * 获取方向类型
      * @return vertical：图片和文本垂直排列，horizontal：图片和文本水平排列
      */
@@ -106,7 +113,7 @@ abstract class AbsFormView<T>(context: Context) : LinearLayout(context) {
     }
 
     /**
-     * 对齐方式，
+     * 对齐方式
      */
     protected open fun getGravityType(): Int {
         return onEachSideCenter
@@ -178,29 +185,36 @@ abstract class AbsFormView<T>(context: Context) : LinearLayout(context) {
         removeAllViews()
         val spanCount = getSpanCount()
 
-        val itemWidth = getItemMaxWidth(data)
+        val itemWidth = if (isVerticalOnEachSideCenter()) getItemMaxWidth(data) else 0
         // 计算item之间 间距的宽度
-        val dividerWidth = (getViewMaxWidth() - itemWidth * spanCount) / (spanCount - 1)
+        val dividerWidth = if (!isVerticalOnEachSideCenter()) 0 else (getViewMaxWidth() - itemWidth * spanCount) / (spanCount - 1)
 
         var rowView: LinearLayout? = null
         data.forEachIndexed { index, _ ->
-            val params = LayoutParams(itemWidth, LayoutParams.WRAP_CONTENT)
+            val contentWidth = if (isVerticalOnEachSideCenter()) itemWidth else LayoutParams.WRAP_CONTENT
+            val params = LayoutParams(contentWidth, LayoutParams.WRAP_CONTENT)
             if (index % spanCount == 0) {
                 rowView = createRowLinearLayout(index < spanCount)
                 addView(rowView)
             } else {
-                params.marginStart = dividerWidth
+                if (isVerticalOnEachSideCenter()) {
+                    // 若dividerWidth < 0，则可能出现item之间重叠的情况
+                    params.marginStart = dividerWidth
+                }
+            }
+            when(getGravityType()) {
+                horizontalLeft -> params.marginStart = getColumnSpaceSize(index % spanCount == 0)
+                horizontalCenter -> params.weight = 1f
             }
             val view = LayoutInflater.from(context).inflate(getLayoutId(), null)
 
             view.tv_item.apply {
                 text = getCurrentText(index)
-                layoutParams.width = itemWidth
                 setTextSize(COMPLEX_UNIT_PX, getItemTextSize())
             }
 
             view.iv_item.layoutParams.apply {
-                width = itemWidth
+                width = if (isVerticalOnEachSideCenter()) itemWidth else getIconWidth()
                 height = width
             }
             // 设置图片
@@ -214,5 +228,12 @@ abstract class AbsFormView<T>(context: Context) : LinearLayout(context) {
 
             rowView!!.addView(view, params)
         }
+    }
+
+    /**
+     * 是否为垂直并且两边对齐居中
+     */
+    private fun isVerticalOnEachSideCenter(): Boolean {
+        return getOrientationType() == vertical && getGravityType() == onEachSideCenter
     }
 }

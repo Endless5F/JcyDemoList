@@ -11,7 +11,11 @@ class VerticalFormView(context: Context) : AbsFormView<FormItemEntity>(context) 
     }
 
     override fun getSpanCount(): Int {
-        return 9
+        return 3
+    }
+
+    override fun getGravityType(): Int {
+        return horizontalCenter
     }
 
     override fun getCurrentIcon(index: Int): String {

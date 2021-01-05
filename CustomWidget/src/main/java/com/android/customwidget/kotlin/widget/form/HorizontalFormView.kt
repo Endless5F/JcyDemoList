@@ -10,6 +10,10 @@ class HorizontalFormView(context: Context) : AbsFormView<FormItemEntity>(context
         return R.layout.form_item_layout_horizontal
     }
 
+    override fun getOrientationType(): Int {
+        return horizontal
+    }
+
     override fun getIconWidth(): Int {
         return 45.dp
     }
