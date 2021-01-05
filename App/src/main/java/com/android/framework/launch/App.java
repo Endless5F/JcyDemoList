@@ -11,6 +11,7 @@ import com.android.baselibrary.common.GlobalActivityLifecycle;
 import com.android.baselibrary.utils.AppUtils;
 import com.android.baselibrary.utils.CrashHandler;
 import com.android.framework.CustomEventBusIndex;
+import com.didichuxing.doraemonkit.DoraemonKit;
 
 import org.greenrobot.eventbus.EventBus;
 
@@ -35,6 +36,8 @@ public class App extends Application {
                 .withWeChatAppSecret("你的微信AppSecret")
                 .withJavascriptInterface("latte")
                 .configure();
+
+        DoraemonKit.install(this);
 
         // EventBus安装默认事件总线
         EventBus.builder().addIndex(new CustomEventBusIndex()).installDefaultEventBus();

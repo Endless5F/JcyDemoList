@@ -35,6 +35,6 @@ class GridItemAdapter : androidx.recyclerview.widget.RecyclerView.Adapter<GridIt
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.itemView.tv_hot_part_item.text = mDataList[position].display_name
+        holder.itemView.tv_item.text = mDataList[position].display_name
     }
 }

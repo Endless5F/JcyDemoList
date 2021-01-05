@@ -45,6 +45,9 @@ class FloatBackManager private constructor() {
      */
     private var mFloatBackView: FloatBackView? = null
 
+    /**
+     * 不可使用单例，会造成内存泄露
+     */
     fun addFloatBackView(activity: Activity?, parent: FrameLayout?) {
         if (mFloatBackView == null) {
             mFloatBackView = activity?.let { FloatBackView(it) }

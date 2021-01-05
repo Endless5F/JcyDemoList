@@ -46,6 +46,11 @@ dependencies {
 
     implementation 'com.google.code.gson:gson:2.8.6'
 
+    implementation 'jp.wasabeef:glide-transformations:4.1.0'
+    implementation 'com.github.bumptech.glide:glide:4.11.0'
+    implementation 'com.github.bumptech.glide:okhttp3-integration:4.11.0'
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.11.0'
+
     implementation 'com.scwang.smart:refresh-layout-kernel:2.0.1'      //核心必须依赖
     implementation 'com.scwang.smart:refresh-header-classics:2.0.1'    //经典刷新头
 //    implementation  'com.scwang.smart:refresh-header-radar:2.0.1'       //雷达刷新头
