@@ -13,7 +13,6 @@ import android.widget.TextView;
 
 import com.android.customwidget.R;
 import com.android.customwidget.activity.ScrollerDemoActivity;
-import com.android.customwidget.activity.exerciseActivity.ThumbUpActivity;
 import com.android.customwidget.data.HomeData;
 import com.android.customwidget.exerciseList.hencoderpracticedraw1.DrawBasicActivity;
 import com.android.customwidget.exerciseList.hencoderpracticedraw2.PaintActivity;
@@ -23,10 +22,10 @@ import com.android.customwidget.exerciseList.hencoderpracticedraw5.DrawOrderActi
 import com.android.customwidget.exerciseList.hencoderpracticedraw6.Animation1Activity;
 import com.android.customwidget.exerciseList.hencoderpracticedraw7.Animation2Activity;
 import com.android.customwidget.exerciseList.hencoderpracticelayout1.LayoutBasicActivity;
-import com.android.customwidget.kotlin.activity.LinearGridActivity;
+import com.android.customwidget.kotlin.activity.CeilingSuctionActivity;
+import com.android.customwidget.kotlin.activity.FormActivity;
 import com.android.customwidget.kotlin.activity.LinkageNavigationActivity;
 import com.android.customwidget.kotlin.activity.ScrollRecycleViewActivity;
-import com.android.customwidget.kotlin.activity.XiDingActivity;
 
 import java.util.List;
 
@@ -122,10 +121,6 @@ public class HomePageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                             Intent intent8 = new Intent(mContext, LayoutBasicActivity.class);
                             mContext.startActivity(intent8);
                             break;
-                        case 9:
-                            Intent intent9 = new Intent(mContext, ThumbUpActivity.class);
-                            mContext.startActivity(intent9);
-                            break;
                         case 10:
                             Intent intent10 = new Intent(mContext, ScrollRecycleViewActivity.class);
                             mContext.startActivity(intent10);
@@ -139,11 +134,11 @@ public class HomePageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                             mContext.startActivity(intent12);
                             break;
                         case 13:
-                            Intent intent13 = new Intent(mContext, LinearGridActivity.class);
+                            Intent intent13 = new Intent(mContext, FormActivity.class);
                             mContext.startActivity(intent13);
                             break;
                         case 14:
-                            Intent intent14 = new Intent(mContext, XiDingActivity.class);
+                            Intent intent14 = new Intent(mContext, CeilingSuctionActivity.class);
                             mContext.startActivity(intent14);
                             break;
                         default:

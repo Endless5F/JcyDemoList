@@ -14,11 +14,7 @@
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true"
         tools:ignore="GoogleAppIndexingWarning">
-        <activity android:name=".kotlin.activity.XiDingActivity"></activity>
-        <activity android:name=".kotlin.activity.LinearGridActivity" />
-        <activity android:name=".kotlin.activity.LinkageNavigationActivity" />
-        <activity android:name=".activity.ScrollerDemoActivity" />
-        <activity android:name=".kotlin.activity.ScrollRecycleViewActivity" />
+
         <activity android:name=".activity.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -34,7 +30,11 @@
         <activity android:name=".exerciseList.hencoderpracticedraw6.Animation1Activity" />
         <activity android:name=".exerciseList.hencoderpracticedraw7.Animation2Activity" />
         <activity android:name=".exerciseList.hencoderpracticelayout1.LayoutBasicActivity" />
-        <activity android:name=".activity.exerciseActivity.ThumbUpActivity" />
+        <activity android:name=".kotlin.activity.CeilingSuctionActivity"/>
+        <activity android:name=".kotlin.activity.FormActivity" />
+        <activity android:name=".kotlin.activity.LinkageNavigationActivity" />
+        <activity android:name=".activity.ScrollerDemoActivity" />
+        <activity android:name=".kotlin.activity.ScrollRecycleViewActivity" />
     </application>
 
 </manifest>

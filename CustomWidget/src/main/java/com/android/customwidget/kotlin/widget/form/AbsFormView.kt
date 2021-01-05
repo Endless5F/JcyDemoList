@@ -1,43 +1,56 @@
-package com.android.customwidget.kotlin.widget
+package com.android.customwidget.kotlin.widget.form
 
 import android.content.Context
-import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.LinearLayout
-import android.widget.TextView
 import com.android.customwidget.R
 import com.android.customwidget.kotlin.ext.dp
 import com.android.customwidget.kotlin.ext.measureTextWidth
-import kotlinx.android.synthetic.main.linear_gird_item.view.*
+import kotlinx.android.synthetic.main.form_item_layout_vertical.view.*
 
 /**
- * 线性靠边GridView
- * 左右两边的View分别紧靠左右，中间的View居中
+ * 表格View
+ *
  * @author jiaochengyun
  */
-abstract class FormView2<T>(context: Context) : LinearLayout(context) {
+abstract class AbsFormView<T>(context: Context) : LinearLayout(context) {
 
     var spanCount = 4
-    var itemWidth = 44.dp
-    var viewMaxWidth = resources.displayMetrics.widthPixels
+    private var itemWidth = 45.dp
     var itemTextSize = resources.getDimension(R.dimen.dp_10)
+    private var viewMaxWidth = resources.displayMetrics.widthPixels
 
-    private val titleText: TextView by lazy {
-        createTitleView()
-    }
+    protected var dataList = arrayListOf<T>()
+
+    /**
+     * 内容(图片和文本)排列方向
+     */
+    protected val horizontal = 0
+    protected val vertical = 1
+
+    /**
+     * 水平靠左
+     */
+    protected val horizontalLeft = 0
+    /**
+     * 水平居中
+     */
+    protected val horizontalCenter = 1
+
+    /**
+     * 靠边中心，即左右两边的View分别紧靠左右，中间的View居中
+     */
+    protected val onEachSideCenter = 2
 
     init {
         orientation = VERTICAL
     }
 
-    private fun createTitleView(): TextView {
-        val textView = TextView(context)
-        textView.text = context.getString(R.string.app_name)
-        textView.setTextColor(context.resources.getColor(R.color.comm_main_color))
-        textView.setTextSize(TypedValue.COMPLEX_UNIT_PX, context.resources.getDimension(R.dimen.dp_16))
-        return textView
-    }
+    /**
+     * 获取图片宽度，宽高一致
+     */
+    abstract fun getIconWidth(): Int
 
     /**
      * 获取数据源中每一个位置的图片信息
@@ -50,15 +63,53 @@ abstract class FormView2<T>(context: Context) : LinearLayout(context) {
     abstract fun getCurrentText(index: Int): String
 
     /**
+     * item的点击事件
+     */
+    abstract fun onItemClickListener(index: Int)
+
+    protected open fun getLayoutId(): Int {
+        return R.layout.form_item_layout_vertical
+    }
+
+    /**
      * 行间距
      * @param isFirstRow 是否是第一行
      */
-    abstract fun getRowSpaceSize(isFirstRow: Boolean): Int
+    protected open fun getRowSpaceSize(isFirstRow: Boolean): Int {
+        return if (isFirstRow) 12.dp else 8.dp
+    }
+
+    /**
+     * 获取方向类型
+     * @return vertical：图片和文本垂直排列，horizontal：图片和文本水平排列
+     */
+    protected open fun getOrientationType(): Int {
+        return vertical
+    }
+
+    /**
+     * 对齐方式，
+     */
+    protected open fun getGravityType(): Int {
+        return onEachSideCenter
+    }
+
+    protected open fun getIconAndTextSpace(): Int {
+        return 5.dp
+    }
 
     /**
      * item的点击事件
      */
-    abstract fun onItemClickListener(index: Int)
+    protected open fun initItemWidth(data: ArrayList<T>): Int {
+        val iconWidth = getIconWidth()
+        var textMax = ""
+        data.forEachIndexed { index, _ ->
+            val text = getCurrentText(index)
+            textMax = if (text.length > textMax.length) text else textMax
+        }
+        return iconWidth.coerceAtLeast(textMax.measureTextWidth(itemTextSize))
+    }
 
     /**
      * 创建新的一行View
@@ -74,15 +125,15 @@ abstract class FormView2<T>(context: Context) : LinearLayout(context) {
         return linearLayout
     }
 
-    protected open fun setItemsData(data: ArrayList<T>) {
+    fun setItemsData(data: ArrayList<T>) {
+        dataList.clear()
+        dataList.addAll(data)
+
         addItems(data)
     }
 
     private fun addItems(data: List<T>) {
         removeAllViews()
-
-        addView(titleText)
-
         var textMax = ""
         data.forEachIndexed { index, _ ->
             val text = getCurrentText(index)
@@ -101,7 +152,7 @@ abstract class FormView2<T>(context: Context) : LinearLayout(context) {
             } else {
                 params.marginStart = dividerWidth
             }
-            val view = LayoutInflater.from(context).inflate(R.layout.linear_gird_item, null)
+            val view = LayoutInflater.from(context).inflate(getLayoutId(), null)
 
             // 设置文本
             val textData = getCurrentText(index)

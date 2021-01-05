@@ -5,6 +5,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/color_D9D9D9"
-    tools:context=".kotlin.activity.LinearGridActivity">
+    tools:context=".kotlin.activity.FormActivity">
 
 </FrameLayout>

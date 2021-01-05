@@ -8,7 +8,7 @@ import android.util.AttributeSet
 /**
  * 开启或关闭滑动
  */
-class CustomLinearLayoutManager : androidx.recyclerview.widget.LinearLayoutManager {
+class CustomLinearLayoutManager : LinearLayoutManager {
     private var isScrollEnabled = true
 
     constructor(context: Context?) : super(context) {}

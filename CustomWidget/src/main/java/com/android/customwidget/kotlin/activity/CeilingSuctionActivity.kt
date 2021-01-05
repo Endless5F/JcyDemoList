@@ -14,7 +14,7 @@ import kotlinx.android.synthetic.main.activity_xi_ding.*
  * 此时内部RecyclerView需要设置 rv.isNestedScrollingEnabled = false 属性，
  * 此属性设置后内部RecyclerView则失去view复用的能力，因此建议通过viewType使用单层RecyclerView
  */
-class XiDingActivity : AppCompatActivity() {
+class CeilingSuctionActivity : AppCompatActivity() {
 
     private var timeList = arrayListOf<String>()
 
