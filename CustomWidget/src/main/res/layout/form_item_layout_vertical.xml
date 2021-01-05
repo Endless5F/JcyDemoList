@@ -16,6 +16,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/dp_10"
+        android:lines="1"
+        android:ellipsize="end"
         android:textColor="#ff222222"
-        android:textSize="11.5dp" />
+        android:textSize="10dp" />
 </LinearLayout>

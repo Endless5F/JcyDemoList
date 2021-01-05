@@ -16,14 +16,15 @@ class FormActivity : BaseActivity() {
         setContentView(R.layout.activity_form)
         val formView = VerticalFormView(this)
         formData.apply {
-            add(FormItemEntity("数据1", ""))
-            add(FormItemEntity("数据2", ""))
-            add(FormItemEntity("数据3", ""))
-            add(FormItemEntity("数据4", ""))
-            add(FormItemEntity("数据5", ""))
-            add(FormItemEntity("数据6", ""))
-            add(FormItemEntity("数据7", ""))
-            add(FormItemEntity("数据8", ""))
+            add(FormItemEntity("数据1数据", ""))
+            add(FormItemEntity("数据2数据", ""))
+            add(FormItemEntity("数据3数据", ""))
+            add(FormItemEntity("数据4数据", ""))
+            add(FormItemEntity("数据5数据", ""))
+            add(FormItemEntity("数据6数据", ""))
+            add(FormItemEntity("数据7数据", ""))
+            add(FormItemEntity("数据8数据", ""))
+            add(FormItemEntity("数据9数据", ""))
         }
         formView.apply {
             setItemsData(formData)

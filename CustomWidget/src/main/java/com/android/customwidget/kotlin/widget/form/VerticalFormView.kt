@@ -10,6 +10,10 @@ class VerticalFormView(context: Context) : AbsFormView<FormItemEntity>(context) 
         return 45.dp
     }
 
+    override fun getSpanCount(): Int {
+        return 9
+    }
+
     override fun getCurrentIcon(index: Int): String {
         return dataList[index].icon
     }

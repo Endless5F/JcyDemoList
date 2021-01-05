@@ -2,6 +2,7 @@ package com.android.customwidget.kotlin.activity
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.android.customwidget.R
 import com.android.customwidget.kotlin.adapter.TimeRvAdapter
@@ -20,18 +21,20 @@ class CeilingSuctionActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Log.e("jcy", "getItemMaxWidth start ${System.currentTimeMillis()}")
         setContentView(R.layout.activity_xi_ding)
+        Log.e("jcy", "getItemMaxWidth end ${System.currentTimeMillis()}")
 
         val linearManager = LinearLayoutManager(this)
         linearManager.orientation = LinearLayoutManager.VERTICAL
         rv.layoutManager = linearManager
-        rv.isNestedScrollingEnabled = false
+//        rv.isNestedScrollingEnabled = false
         initData()
         initRecycle()
     }
 
     private fun initData() {
-        (1..5).forEach {
+        (1..50).forEach {
             timeList.add(FormatUtil.stampToDate(System.currentTimeMillis() + it * 1000))
         }
     }
