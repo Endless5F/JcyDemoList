@@ -43,9 +43,9 @@ abstract class AbsFormView<T>(context: Context) : LinearLayout(context) {
     protected val horizontalRight = 2
 
     /**
-     * 靠边居中，即散开或者说左右两边的View分别紧靠左右，中间的View居中
+     * 散开模式，即靠边居中或者说左右两边的View分别紧靠左右，中间的View居中
      */
-    protected val onEachSideCenter = 3
+    protected val spreadOutCenter = 3
 
     init {
         orientation = VERTICAL
@@ -124,7 +124,7 @@ abstract class AbsFormView<T>(context: Context) : LinearLayout(context) {
      * 对齐方式
      */
     protected open fun getGravityType(): Int {
-        return onEachSideCenter
+        return spreadOutCenter
     }
 
     /**
@@ -155,6 +155,8 @@ abstract class AbsFormView<T>(context: Context) : LinearLayout(context) {
         val iconWidth = getIconWidth()
         var textMaxWidth = 0
 
+        // 为了适配文本信息比图片宽的情况
+        // 由于不一定只有一行显示，因此需要遍历所有item的文本信息，获取最大值
         data.forEachIndexed { index, _ ->
             val text = getCurrentText(index)
             val textWidth = text.measureTextWidth(getItemTextSize()) + 1
@@ -193,13 +195,16 @@ abstract class AbsFormView<T>(context: Context) : LinearLayout(context) {
         removeAllViews()
         val spanCount = getSpanCount()
 
-        val itemWidth = if (isVerticalOnEachSideCenter()) getItemMaxWidth(data) else 0
+        val itemWidth = if (isVerticalSpreadOutCenter()) getItemMaxWidth(data) else 0
         // 计算item之间 间距的宽度
-        val dividerWidth = if (!isVerticalOnEachSideCenter()) 0 else (getViewMaxWidth() - itemWidth * spanCount) / (spanCount - 1)
+        val dividerWidth = if (!isVerticalSpreadOutCenter()) 0 else (getViewMaxWidth() - itemWidth * spanCount) / (spanCount - 1)
 
         var rowView: LinearLayout? = null
         data.forEachIndexed { index, _ ->
-            val contentWidth = if (isVerticalOnEachSideCenter()) itemWidth else LayoutParams.WRAP_CONTENT
+            val contentWidth = when {
+                isVerticalSpreadOutCenter() -> itemWidth
+                else -> LayoutParams.WRAP_CONTENT
+            }
             val params = LayoutParams(contentWidth, LayoutParams.WRAP_CONTENT)
             if (index % spanCount == 0) {
                 rowView = createRowLinearLayout(index < spanCount)
@@ -208,7 +213,7 @@ abstract class AbsFormView<T>(context: Context) : LinearLayout(context) {
                 addView(rowView)
             } else {
                 // 设置垂直并且两边对齐居中逻辑
-                if (isVerticalOnEachSideCenter()) {
+                if (isVerticalSpreadOutCenter()) {
                     // 若dividerWidth < 0，则可能出现item之间重叠的情况
                     params.marginStart = dividerWidth
                 }
@@ -221,7 +226,7 @@ abstract class AbsFormView<T>(context: Context) : LinearLayout(context) {
             val view = LayoutInflater.from(context).inflate(getLayoutId(), null)
 
             // 设置水平并且两边对齐居中逻辑
-            if (isHorizontalOnEachSideCenter()) {
+            if (isHorizontalSpreadOutCenter()) {
                 params.weight = 1f
                 params.gravity = Gravity.CENTER
                 when (index % spanCount) {
@@ -252,7 +257,7 @@ abstract class AbsFormView<T>(context: Context) : LinearLayout(context) {
             }
 
             view.iv_item.layoutParams.apply {
-                width = if (isVerticalOnEachSideCenter()) itemWidth else getIconWidth()
+                width = if (isVerticalSpreadOutCenter()) itemWidth else getIconWidth()
                 height = width
             }
             // 设置图片
@@ -269,16 +274,16 @@ abstract class AbsFormView<T>(context: Context) : LinearLayout(context) {
     }
 
     /**
-     * 是否为垂直并且两边对齐居中
+     * 是否为垂直并且散开模式
      */
-    private fun isVerticalOnEachSideCenter(): Boolean {
-        return getOrientationType() == vertical && getGravityType() == onEachSideCenter
+    private fun isVerticalSpreadOutCenter(): Boolean {
+        return getOrientationType() == vertical && getGravityType() == spreadOutCenter
     }
 
     /**
-     * 是否为水平并且两边对齐居中
+     * 是否为水平并且散开模式
      */
-    private fun isHorizontalOnEachSideCenter(): Boolean {
-        return getOrientationType() == horizontal && getGravityType() == onEachSideCenter
+    private fun isHorizontalSpreadOutCenter(): Boolean {
+        return getOrientationType() == horizontal && getGravityType() == spreadOutCenter
     }
 }
