@@ -6,6 +6,7 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.LinearLayout
+import android.widget.RelativeLayout
 import com.android.customwidget.R
 import com.android.customwidget.kotlin.ext.dp
 import com.android.customwidget.kotlin.ext.measureTextWidth
@@ -43,7 +44,7 @@ abstract class AbsFormView<T>(context: Context) : LinearLayout(context) {
 
     /**
      * 靠边居中，即散开或者说左右两边的View分别紧靠左右，中间的View居中
-    */
+     */
     protected val onEachSideCenter = 3
 
     init {
@@ -202,19 +203,48 @@ abstract class AbsFormView<T>(context: Context) : LinearLayout(context) {
             val params = LayoutParams(contentWidth, LayoutParams.WRAP_CONTENT)
             if (index % spanCount == 0) {
                 rowView = createRowLinearLayout(index < spanCount)
+                // 设置靠右显示逻辑
                 if (getGravityType() == horizontalRight) rowView?.gravity = Gravity.END
                 addView(rowView)
             } else {
+                // 设置垂直并且两边对齐居中逻辑
                 if (isVerticalOnEachSideCenter()) {
                     // 若dividerWidth < 0，则可能出现item之间重叠的情况
                     params.marginStart = dividerWidth
                 }
             }
+            // 设置居中逻辑和靠左、靠右显示间距
             when (getGravityType()) {
                 horizontalCenter -> params.weight = 1f
                 horizontalLeft, horizontalRight -> params.marginStart = getColumnSpaceSize(index % spanCount == 0)
             }
             val view = LayoutInflater.from(context).inflate(getLayoutId(), null)
+
+            // 设置水平并且两边对齐居中逻辑
+            if (isHorizontalOnEachSideCenter()) {
+                params.weight = 1f
+                params.gravity = Gravity.CENTER
+                when (index % spanCount) {
+                    0 -> { // 第一列
+                        when (view) {
+                            is LinearLayout -> view.gravity = Gravity.START or Gravity.CENTER_VERTICAL
+                            is RelativeLayout -> view.gravity = Gravity.START or Gravity.CENTER_VERTICAL
+                        }
+                    }
+                    spanCount - 1 -> { // 最后一列
+                        when (view) {
+                            is LinearLayout -> view.gravity = Gravity.END or Gravity.CENTER_VERTICAL
+                            is RelativeLayout -> view.gravity = Gravity.END or Gravity.CENTER_VERTICAL
+                        }
+                    }
+                    else -> {
+                        when (view) {
+                            is LinearLayout -> view.gravity = Gravity.CENTER
+                            is RelativeLayout -> view.gravity = Gravity.CENTER
+                        }
+                    }
+                }
+            }
 
             view.tv_item.apply {
                 text = getCurrentText(index)
@@ -243,5 +273,12 @@ abstract class AbsFormView<T>(context: Context) : LinearLayout(context) {
      */
     private fun isVerticalOnEachSideCenter(): Boolean {
         return getOrientationType() == vertical && getGravityType() == onEachSideCenter
+    }
+
+    /**
+     * 是否为水平并且两边对齐居中
+     */
+    private fun isHorizontalOnEachSideCenter(): Boolean {
+        return getOrientationType() == horizontal && getGravityType() == onEachSideCenter
     }
 }

@@ -19,7 +19,7 @@ class HorizontalFormView(context: Context) : AbsFormView<FormItemEntity>(context
     }
 
     override fun getGravityType(): Int {
-        return horizontalCenter
+        return onEachSideCenter
     }
 
     override fun getIconWidth(): Int {
