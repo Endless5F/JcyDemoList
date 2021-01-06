@@ -4,6 +4,9 @@
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
 
+    <color name="background_color">#FFFFFF</color>
+    <color name="common_clicked_color">#88888888</color>
+
     <color name="color_D9D9D9">#D9D9D9</color>
     <color name="color_EFEFF4">#EFEFF4</color>
 
