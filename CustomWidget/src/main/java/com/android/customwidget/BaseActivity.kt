@@ -7,6 +7,7 @@ import android.view.WindowManager
 import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
 import com.android.customwidget.kotlin.widget.floatwindow.FloatBackManager
+import com.android.customwidget.util.ScreenUtils
 
 open class BaseActivity : AppCompatActivity() {
 

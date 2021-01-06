@@ -1,33 +1,26 @@
 package com.android.customwidget.kotlin.ext
 
-import android.content.Context
 import android.graphics.Paint
 import android.text.TextUtils
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import com.android.customwidget.R
+import com.android.customwidget.util.ScreenUtils
 import com.scwang.smart.refresh.layout.SmartRefreshLayout
 
-fun addRefresh(view: View?): SmartRefreshLayout? {
-    view?.apply {
-        val parent = view.parent as ViewGroup
-        parent.removeView(view)
-
-        val createRefreshView = createRefreshView(view.context)
-        createRefreshView.addView(view)
-        parent.addView(createRefreshView)
-        return createRefreshView
+/**
+ * 设置状态栏间距
+ */
+fun setPaddingStatusBarHeight(view: View?) {
+    if (view != null) {
+        val statusBarHeight = ScreenUtils.getStatusBarHeight()
+        val paddingLeft = view.paddingLeft
+        val paddingTop = view.paddingTop + statusBarHeight
+        val paddingRight = view.paddingRight
+        val paddingBottom = view.paddingBottom
+        view.setPadding(paddingLeft, paddingTop, paddingRight, paddingBottom)
     }
-    return null
-}
-
-private fun createRefreshView(context:Context): SmartRefreshLayout {
-    val refreshView = SmartRefreshLayout(context)
-    refreshView.id = R.id.refresh_view
-    refreshView.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-
-    return refreshView
 }
 
 /**
@@ -56,4 +49,22 @@ fun String.measureTextWidth(textSize: Float = 10f): Int {
     val paint = Paint()
     paint.textSize = textSize
     return (paint.measureText(this) + 0.5).toInt()
+}
+
+/**
+ * 添加下拉刷新View-SmartRefreshLayout
+ */
+fun addRefresh(view: View?): SmartRefreshLayout? {
+    view?.apply {
+        val parent = view.parent as ViewGroup
+        parent.removeView(view)
+
+        val createRefreshView = SmartRefreshLayout(context)
+        createRefreshView.id = R.id.refresh_view
+        createRefreshView.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+        createRefreshView.addView(view)
+        parent.addView(createRefreshView)
+        return createRefreshView
+    }
+    return null
 }

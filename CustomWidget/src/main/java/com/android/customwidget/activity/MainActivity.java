@@ -2,6 +2,7 @@ package com.android.customwidget.activity;
 
 import android.os.Bundle;
 import android.view.View;
+import android.widget.TextView;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -13,6 +14,8 @@ import com.android.customwidget.data.HomeData;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 
+import static com.android.customwidget.kotlin.ext.ViewExtKt.setPaddingStatusBarHeight;
+
 
 public class MainActivity extends BaseActivity {
 
@@ -20,6 +23,9 @@ public class MainActivity extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        TextView title = findViewById(R.id.title);
+        setPaddingStatusBarHeight(title);
 
         RecyclerView rl_demo_list = findViewById(R.id.rl_demo_list);
         rl_demo_list.setLayoutManager(new LinearLayoutManager(this));//线性布局
