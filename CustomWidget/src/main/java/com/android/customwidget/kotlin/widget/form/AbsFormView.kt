@@ -2,6 +2,7 @@ package com.android.customwidget.kotlin.widget.form
 
 import android.content.Context
 import android.util.TypedValue.COMPLEX_UNIT_PX
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.LinearLayout
@@ -36,12 +37,18 @@ abstract class AbsFormView<T>(context: Context) : LinearLayout(context) {
     protected val horizontalCenter = 1
 
     /**
-     * 靠边中心，即左右两边的View分别紧靠左右，中间的View居中
+     * 水平靠右
      */
-    protected val onEachSideCenter = 2
+    protected val horizontalRight = 2
+
+    /**
+     * 靠边居中，即散开或者说左右两边的View分别紧靠左右，中间的View居中
+    */
+    protected val onEachSideCenter = 3
 
     init {
         orientation = VERTICAL
+        layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
     }
 
     /**
@@ -195,6 +202,7 @@ abstract class AbsFormView<T>(context: Context) : LinearLayout(context) {
             val params = LayoutParams(contentWidth, LayoutParams.WRAP_CONTENT)
             if (index % spanCount == 0) {
                 rowView = createRowLinearLayout(index < spanCount)
+                if (getGravityType() == horizontalRight) rowView?.gravity = Gravity.END
                 addView(rowView)
             } else {
                 if (isVerticalOnEachSideCenter()) {
@@ -202,9 +210,9 @@ abstract class AbsFormView<T>(context: Context) : LinearLayout(context) {
                     params.marginStart = dividerWidth
                 }
             }
-            when(getGravityType()) {
-                horizontalLeft -> params.marginStart = getColumnSpaceSize(index % spanCount == 0)
+            when (getGravityType()) {
                 horizontalCenter -> params.weight = 1f
+                horizontalLeft, horizontalRight -> params.marginStart = getColumnSpaceSize(index % spanCount == 0)
             }
             val view = LayoutInflater.from(context).inflate(getLayoutId(), null)
 
