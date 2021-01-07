@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.android.customwidget.BaseActivity
 import com.android.customwidget.R
 import com.android.customwidget.kotlin.adapter.TimeRvAdapter
 import com.android.customwidget.kotlin.utils.FormatUtil
@@ -15,7 +16,7 @@ import kotlinx.android.synthetic.main.activity_xi_ding.*
  * 此时内部RecyclerView需要设置 rv.isNestedScrollingEnabled = false 属性，
  * 此属性设置后内部RecyclerView则失去view复用的能力，因此建议通过viewType使用单层RecyclerView
  */
-class CeilingSuctionActivity : AppCompatActivity() {
+class CeilingSuctionActivity : BaseActivity() {
 
     private var timeList = arrayListOf<String>()
 
