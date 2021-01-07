@@ -15,7 +15,7 @@ class FormActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_form)
-        val formView = HorizontalFormView(this)
+        val formView = VerticalFormView(this)
         formData.apply {
             add(FormItemEntity("数据1数据", ""))
             add(FormItemEntity("数据2数据", ""))

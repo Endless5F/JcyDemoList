@@ -1,14 +1,9 @@
 package com.android.customwidget.kotlin.widget.form
 
 import android.content.Context
-import com.android.customwidget.R
 import com.android.customwidget.kotlin.ext.dp
 
 class HorizontalFormView(context: Context) : AbsFormView<FormItemEntity>(context) {
-
-    override fun getLayoutId(): Int {
-        return R.layout.form_item_layout_horizontal
-    }
 
     override fun getSpanCount(): Int {
         return 3

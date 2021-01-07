@@ -73,7 +73,9 @@ abstract class AbsFormView<T>(context: Context) : LinearLayout(context) {
     abstract fun onItemClickListener(index: Int)
 
     protected open fun getLayoutId(): Int {
-        return R.layout.form_item_layout_vertical
+        return if (getOrientationType() == vertical) {
+            R.layout.form_item_layout_vertical
+        } else R.layout.form_item_layout_horizontal
     }
 
     /**
