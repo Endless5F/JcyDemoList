@@ -66,7 +66,12 @@ dependencies {
     debugApi 'com.squareup.leakcanary:leakcanary-android:1.6.1'
     //leakcanary release 是无操作版本no-op
     releaseApi 'com.squareup.leakcanary:leakcanary-android-no-op:1.6.1'
-    api 'org.greenrobot:eventbus:3.2.0'//
+    api 'org.greenrobot:eventbus:3.2.0'
+
+    api 'jp.wasabeef:glide-transformations:4.1.0'
+    api 'com.github.bumptech.glide:glide:4.11.0'
+    api 'com.github.bumptech.glide:okhttp3-integration:4.11.0'
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.11.0'
 
     // 用于ScheduledExecutorService代替Timer实现定时器，符合阿里巴巴代码检查规范
     implementation 'org.apache.commons:commons-lang3:3.8'
