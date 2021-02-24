@@ -30,11 +30,6 @@ abstract class AbsFormView<T>(context: Context, attrs: AttributeSet? = null) : L
     protected var dataList = arrayListOf<T>()
 
     /**
-     * 文字大小
-     */
-    private var itemTextSize = 0f
-
-    /**
      * 内容(图片和文本)排列方向
      */
     protected val horizontal = 0
@@ -60,6 +55,11 @@ abstract class AbsFormView<T>(context: Context, attrs: AttributeSet? = null) : L
      */
     protected val spreadOutCenter = 3
 
+    /**
+     * 文字大小，默认10dp
+     */
+    private var itemTextSize = 10.dp.toFloat()
+
     init {
         orientation = VERTICAL
         layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
@@ -67,8 +67,12 @@ abstract class AbsFormView<T>(context: Context, attrs: AttributeSet? = null) : L
 
     override fun onFinishInflate() {
         super.onFinishInflate()
-        val itemView = LayoutInflater.from(context).inflate(getLayoutId(), null)
-        itemTextSize = itemView.findViewById<TextView>(R.id.tv_item).textSize
+        itemTextSize = if (getItemTextSize() == null) {
+            val itemView = LayoutInflater.from(context).inflate(getLayoutId(), null)
+            itemView.findViewById<TextView>(R.id.tv_item).textSize
+        } else {
+            getItemTextSize()!!
+        }
     }
 
     /**
@@ -100,8 +104,8 @@ abstract class AbsFormView<T>(context: Context, attrs: AttributeSet? = null) : L
     /**
      * 获取文本字体大小。优先级高于布局文件中定义宽高
      */
-    protected open fun setItemTextSize(size: Float) {
-        itemTextSize = size
+    protected open fun getItemTextSize(): Float? {
+        return null
     }
 
     /**
