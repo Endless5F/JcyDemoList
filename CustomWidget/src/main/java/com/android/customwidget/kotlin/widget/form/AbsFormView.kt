@@ -1,25 +1,38 @@
 package com.android.customwidget.kotlin.widget.form
 
 import android.content.Context
+import android.util.AttributeSet
 import android.util.TypedValue.COMPLEX_UNIT_PX
 import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.RelativeLayout
+import android.widget.TextView
+import androidx.core.content.ContextCompat
 import com.android.customwidget.R
 import com.android.customwidget.kotlin.ext.dp
 import com.android.customwidget.kotlin.ext.measureTextWidth
 import kotlinx.android.synthetic.main.form_item_layout_vertical.view.*
+import org.jetbrains.anko.bottomPadding
 
 /**
  * 表格View，适用于数据较少的情况
  *
+ * 支持动态设置列表形式视图数据，靠左对齐、靠右对齐、居中对齐和散开居中(两边靠边对齐，中间居中对齐)
+ *
  * @author jiaochengyun
  */
-abstract class AbsFormView<T>(context: Context) : LinearLayout(context) {
+abstract class AbsFormView<T>(context: Context, attrs: AttributeSet? = null) : LinearLayout(context, attrs) {
 
     protected var dataList = arrayListOf<T>()
+
+    /**
+     * 文字大小
+     */
+    private var itemTextSize = 0f
 
     /**
      * 内容(图片和文本)排列方向
@@ -52,8 +65,14 @@ abstract class AbsFormView<T>(context: Context) : LinearLayout(context) {
         layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
     }
 
+    override fun onFinishInflate() {
+        super.onFinishInflate()
+        val itemView = LayoutInflater.from(context).inflate(getLayoutId(), null)
+        itemTextSize = itemView.findViewById<TextView>(R.id.tv_item).textSize
+    }
+
     /**
-     * 获取图片宽度，宽高一致
+     * 获取图片宽度，宽高一致。优先级高于布局文件中定义宽高
      */
     abstract fun getIconWidth(): Int
 
@@ -79,10 +98,10 @@ abstract class AbsFormView<T>(context: Context) : LinearLayout(context) {
     }
 
     /**
-     * 获取文本字体大小
+     * 获取文本字体大小。优先级高于布局文件中定义宽高
      */
-    protected open fun getItemTextSize(): Float {
-        return 10.dp.toFloat()
+    protected open fun setItemTextSize(size: Float) {
+        itemTextSize = size
     }
 
     /**
@@ -104,14 +123,21 @@ abstract class AbsFormView<T>(context: Context) : LinearLayout(context) {
      * @param isFirstRow 是否是第一行
      */
     protected open fun getRowSpaceSize(isFirstRow: Boolean): Int {
-        return if (isFirstRow) 12.dp else 8.dp
+        return 0
+    }
+
+    /**
+     * 底部间距
+     */
+    protected open fun getBottomSpaceSize(): Int {
+        return 0
     }
 
     /**
      * 获取item间距(列间距)，仅 getGravityType() == horizontalLeft时有效
      */
     protected open fun getColumnSpaceSize(isFirstColumn: Boolean): Int {
-        return if (isFirstColumn) 0.dp else 8.dp
+        return if (isFirstColumn) 0.dp else 9.dp
     }
 
     /**
@@ -137,12 +163,24 @@ abstract class AbsFormView<T>(context: Context) : LinearLayout(context) {
     }
 
     /**
+     * 设置展示的图片
+     */
+    protected open fun setDisplayImage(currentIcon: String, ivItem: ImageView) {
+        // nothing
+        ivItem.setImageResource(R.mipmap.ic_launcher)
+    }
+
+    protected open fun setCurrentTextColor(index: Int, textView: TextView) {
+        // nothing
+    }
+
+    /**
      * 获取当前item宽度
      */
     protected open fun getItemWidth(index: Int): Int {
         val iconWidth = getIconWidth()
         val text = getCurrentText(index)
-        val textWidth = text.measureTextWidth(getItemTextSize()) + 1
+        val textWidth = text.measureTextWidth(itemTextSize) + 1
         return if (getOrientationType() == vertical) {
             iconWidth.coerceAtLeast(textWidth)
         } else {
@@ -161,7 +199,7 @@ abstract class AbsFormView<T>(context: Context) : LinearLayout(context) {
         // 由于不一定只有一行显示，因此需要遍历所有item的文本信息，获取最大值
         data.forEachIndexed { index, _ ->
             val text = getCurrentText(index)
-            val textWidth = text.measureTextWidth(getItemTextSize()) + 1
+            val textWidth = text.measureTextWidth(itemTextSize) + 1
             textMaxWidth = if (textMaxWidth > textWidth) textMaxWidth else textWidth
         }
 
@@ -190,11 +228,19 @@ abstract class AbsFormView<T>(context: Context) : LinearLayout(context) {
         dataList.clear()
         dataList.addAll(data)
 
-        addItems(data)
+        if (data.size == 0) {
+            visibility = View.GONE
+        } else {
+            addItems(data)
+            visibility = View.VISIBLE
+        }
     }
 
     private fun addItems(data: ArrayList<T>) {
         removeAllViews()
+        if (getBottomSpaceSize() > 0) {
+            bottomPadding = getBottomSpaceSize()
+        }
         val spanCount = getSpanCount()
 
         val itemWidth = if (isVerticalSpreadOutCenter()) getItemMaxWidth(data) else 0
@@ -253,19 +299,20 @@ abstract class AbsFormView<T>(context: Context) : LinearLayout(context) {
                 }
             }
 
-            view.tv_item.apply {
+            val tvItem = view.findViewById<TextView>(R.id.tv_item)
+            tvItem.apply {
                 text = getCurrentText(index)
-                setTextSize(COMPLEX_UNIT_PX, getItemTextSize())
+                setTextSize(COMPLEX_UNIT_PX, itemTextSize)
+                setCurrentTextColor(index, this)
             }
 
-            view.iv_item.layoutParams.apply {
+            val ivItem = view.findViewById<ImageView>(R.id.iv_item)
+            ivItem.layoutParams.apply {
                 width = if (isVerticalSpreadOutCenter()) itemWidth else getIconWidth()
                 height = width
             }
             // 设置图片
-            val icon = getCurrentIcon(index)
-            val drawable = context.resources.getDrawable(R.color.comm_main_color)
-            view.iv_item.setImageResource(R.mipmap.ic_launcher)
+            setDisplayImage(getCurrentIcon(index), ivItem)
 
             view.setOnClickListener {
                 onItemClickListener(index)
