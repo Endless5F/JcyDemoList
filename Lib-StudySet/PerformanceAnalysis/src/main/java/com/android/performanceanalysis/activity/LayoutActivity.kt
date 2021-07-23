@@ -4,10 +4,9 @@ import android.annotation.SuppressLint
 import android.annotation.TargetApi
 import android.os.Build
 import android.os.Bundle
-import android.support.v4.view.AsyncLayoutInflater
-import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.view.Choreographer
+import androidx.appcompat.app.AppCompatActivity
 import com.android.performanceanalysis.R
 
 /**

@@ -1,22 +1,18 @@
 package com.android.performanceanalysis.activity;
 
 import android.os.Bundle;
-import android.os.Handler;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
-import androidx.appcompat.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.AutoCompleteTextView;
 import android.widget.TextView;
 
-import com.android.performanceanalysis.LaunchApplication;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
+
 import com.android.performanceanalysis.R;
 import com.android.performanceanalysis.webview.WebViewActivity;
 import com.android.performanceanalysis.webview.utils.StatusBarUtil;

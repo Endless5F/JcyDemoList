@@ -2,9 +2,9 @@ package com.android.performanceanalysis.aop
 
 import android.icu.util.Calendar
 import android.os.Build
-import android.support.annotation.RequiresApi
-import android.support.multidex.BuildConfig
 import android.util.Log
+import androidx.annotation.RequiresApi
+import com.android.performanceanalysis.BuildConfig
 import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation.Around
 import org.aspectj.lang.annotation.Aspect

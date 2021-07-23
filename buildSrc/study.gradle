@@ -1,0 +1,431 @@
+apply plugin: 'com.android.library'
+apply plugin: 'com.android.gradle'
+
+println '你好gradlelib start '
+android {
+    compileSdkVersion 28
+
+    println '你好gradlelib android '
+    defaultConfig {
+        minSdkVersion 22
+        targetSdkVersion 28
+        versionCode 1
+        versionName "1.0"
+        println '你好gradlelib defaultConfig '
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+
+    }
+
+    buildTypes {
+        println '你好gradlelib buildTypes '
+        release {
+            println '你好gradlelib buildTypes buildTypes'
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    // 配置so库位置和分模块资源目录
+    sourceSets {
+        println '你好gradlelib sourceSets'
+        main {
+            jniLibs.srcDirs = ['libs']
+            res.srcDirs = ['src/main/res',
+                           'src/main/res-ad',
+                           'src/main/res-player']
+        }
+    }
+}
+
+dependencies {
+    println '你好gradlelib dependencies'
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    implementation 'com.android.support:appcompat-v7:28.0.0'
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'com.android.support.test:runner:1.0.2'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+}
+
+// 自定义插件配置信息，配合自定义Task(ReleaseInfoTask)完成更新版本信息。作用：同gradlew执行下面'Task实战'中的taskTest
+releaseInfo {
+    println '你好gradlelib releaseInfo'
+    versionCode = '1.0.0'
+    versionName = '100'
+    versionInfo = '第一个app信息'
+    fileName = 'release.xml'
+}
+
+/**
+ *
+ * 问：什么是gradle wrapper？
+ * 答：gradle wrapper 就是由gradle 帮我们生成的gradlew脚本，里面包含了用到的gradle版本信息，
+ * 我们编译代码的时候不直接运行gradle命令，而是运行gradlew 命令，
+ * 他会自动帮我们下载对应的gradle dist，gradle wrapper被添加到代码管理系统， 这样每一个开发人员都不用去折腾gradle版本。
+ * <p>
+ * gradle命令(Linux执行需要使用 ./)
+ * 常用任务指令：
+ * gradlew build。生成所有的输出，并执行所有的检查。
+ * gradlew run。生成应用程序并执行某些脚本或二进制文件
+ * gradlew check。执行所有检测类任务如tests、linting等
+ * gradlew clean。删除build文件目录。
+ * gradlew projects。查看项目结构。
+ * gradlew tasks。查看任务列表。查看某个任务详细信息，可用gradle help --task someTask
+ * gradlew dependencies。查看依赖列表。
+ * gradlew assembleDebug（或者gradlew aD） 编译并打Debug包
+ * gradlew assembleRelease（或者gradlew aR） 编译并打Release的包
+ * 调试类：
+ * gradlew -?, -h, --help。查看帮助信息。
+ * gradlew -v,--version。查看版本信息。
+ * gradlew -s,--stacktrace。执行任务时，打印栈信息。如gradle build --s
+ * 日志类：
+ * -q, --quiet。只打印errors类信息。
+ * -i, --info。打印详细的信息。
+ * 性能类：
+ * --configure-on-demand,--no-configure-on-demand。是否开启按需配置模式。
+ * --build-cache, --no-build-cache。是否使用缓存。
+ *
+ * 其它的详见其官方文档：https://docs.gradle.org/current/userguide/command_line_interface.html
+ */
+
+/**
+ * Gradle属性
+ * Gradle属性都有对应的命令行方式，gradle.properties文件属性和对应的命令行如下：
+ * gradle.properties文件属性	                                    命令行指令
+ * org.gradle.caching=(true,false)	                            --build-cache,  --no-build-cache
+ *  设置为true时，Gradle将在可能的情况下重用任何先前构建的任务输出，从而使构建速度更快。
+ * org.gradle.caching.debug=(true,false)
+ * org.gradle.configureondemand=(true,false)	                --configure-on-demand, --no-configure-on-demand
+ *  启用按需孵化配置，Gradle将尝试仅配置必要的项目。
+ * org.gradle.console=(auto,plain,rich,verbose)	                --console=(auto,plain,rich,verbose)
+ *  自定义控制台输出的颜色或详细程度。默认值取决于如何调用Gradle。
+ * org.gradle.daemon=(true,false)	                            --daemon, --no-daemon
+ * org.gradle.daemon.idletimeout=(# of idle millis)	            -Dorg.gradle.daemon.idletimeout=(number of milliseconds)
+ *  在指定的空闲毫秒数后，Gradle守护程序将自行终止。默认值为10800000（3小时）。
+ * org.gradle.debug=(true,false)	                            -Dorg.gradle.debug=（true,false)
+ * org.gradle.java.home=(path to JDK home)	                    -Dorg.gradle.java.home
+ * org.gradle.jvmargs=(JVM arguments)	                        -Dorg.gradle.jvmargs
+ *  指定用于Gradle守护程序的JVM参数。该设置对于配置JVM内存设置以提高构建性能特别有用。这不会影响Gradle客户端VM的JVM设置。
+ * org.gradle.logging.level=(quiet,warn,lifecycle,info,debug)	-Dorg.gradle.logging.level=(quiet,warn,lifecycle,info,debug)或者 -q、-w、-i、-d
+ *  当设置为安静，警告，生命周期，信息或调试时，Gradle将使用此日志级别。这些值不区分大小写。该lifecycle级别是默认级别。
+ * org.gradle.parallel=(true,false)	                            --parallel, --no-parallel
+ * org.gradle.warning.mode=(all,none,summary)	                -Dorg.gradle.warning.mode=(all,none,summary) 或者--warning-mode=(all,none,summary)
+ * org.gradle.workers.max=(max # of worker processes)	        --max-workers
+ *
+ * 其它的详见其官方文档：https://docs.gradle.org/current/userguide/build_environment.html
+ */
+
+/**
+ * gradle项目构建具体流程：
+ * Gradle项目的构建分为三个阶段：初始化、配置、执行。
+ * 1. 初始化（Initialization）
+ * 在这个阶段中，Gradle决定哪些项目加入到构建中（因为Gradle支持多项目构建），并为这些项目分别创建一个Project实例。
+ * Gradle在初始化阶段会首先去查找setting.gradle文件，查找的规则如下：
+ *  1. 查找当前构建目录下的setting.gradle文件。
+ *  2. 如果没有找到，则去与当前目录有相同嵌套级别的master目录查找。
+ *  3. 如果没有找到，则去父目录查找。
+ *  4. 如果没有找到，则进行单项目构建。
+ *  5. 如果找到了，Gradle去检查当前项目在settings.gradle中是否有定义。如果没有，则进行单项目构建，否则进行多项目构建。
+ *  注：多项目工程在根目录必须存在setting.gradle文件，单项目工程则可以不需要这个文件。
+ * 问：多项目构建的项目集如何决定？
+ * 答：多项目构建时，项目集由setting.gradle创建。项目集可以用一个树形结构表示，每个节点表示一个项目，并且有对应的项目路径。在大多数情况下，项目路径与文件系统中项目的位置一致，当然这也是可以配置的。
+ * 在setting.gradle中，有很多方法可以定义项目树，常见的是层次化和扁平化的布局。
+ *  层次化布局：setting.gradle中：include 'project1', 'project2:child', 'project3:child1'
+ *      注：include方法接收多个项目路径作为参数。 每个项目路径对应文件系统中的一个目录，
+ *      通常，项目路径和文件目录一一对应，比如project2:child对应项目根目录下的project2/child目录。
+ *      如果项目树的叶子节点和它的父节点都需要包含在构建中，则只需指定叶子节点即可。比如，project2:child，将创建两个项目实例project2和project2:child。
+ *  扁平化布局：setting.gradle中：includeFlat 'project3', 'project4'
+ *      注：includeFlat方法将目录名作为参数。这些目录是根项目目录的兄弟目录，并作为多项目树中根项目的子项目。
+ * Settings语法(即setting.gradle文件中语法)：重点include方法的语法， setting.gradle在构建时会创建代理对象Settings，其include方法对应着 Settings.include(java.lang.String[]).
+ *  其余的语法请见对应的DSL Reference(https://docs.gradle.org/current/dsl/org.gradle.api.initialization.Settings.html)
+ *  1. include方法接收项目路径数组作为参数，并将对应的项目添加到构建中。
+ *  2. 参数中支持的项目路径分隔符为“:”，而不是“/”。
+ *  3. 路径的最后一个节点是项目的名称。
+ *  4. 项目路径是根项目目录下的相对路径，可以使用ProjectDescriptor.setProjectDir(java.io.File))更改。
+ *  示例：引入‘aaa’项目，对应的文件目录是aaa/bbb
+ *      include 'aaa'
+ *      project(':aaa').projectDir = file('aaa/bbb')
+ * 2. 配置（Configuration）
+ *  在这个阶段，Gradle会配置加入到构建(即setting.gradle)中的Project实例，执行所有项目对应的构建脚本。
+ *  注1：作为名词的‘配置（Configuration）'是指，Gradle执行项目的构建脚本这一过程。
+ *  注2：作为动词的'配置（ Configure）'是指，Gradle执行项目的构建脚本这一动作。
+ *  1. 默认配置模式：
+ *  默认情况下，Gradle会配置settings.gradle里的所有项目，不论这些项目与最终执行的任务是否有关系。
+ *  这样做是因为Gradle允许一个项目在配置和执行阶段访问任何其他项目，如Gradle里可以进行跨项目配置(Cross project configuration)，一个项目的配置可能会依赖其他项目，所以在执行任务之前，需要配置所有的项目。
+ *  项目配置按照广度（ breadth-wise）顺序来执行，如父项目先于子项目被配置。
+ *  2. 按需配置模式：
+ *  由于多项目配置中，可能存在大量无需配置的项目，如果需要配置所有项目后才执行任务则会浪费大量的时间。从Gradle1.4开始，有一个孵化中的特性，叫做按需配置（configuration on demand）模式。按需配置项目时，Gradle只配置与最终任务相关联的项目，以缩短构建时间。这个模式以后可能会成为默认模式，甚至成为唯一的模式。
+ *  按需配置（configuration on demand）详见官网：https://docs.gradle.org/current/userguide/multi_project_builds.html
+ *  按需配置模式下，项目配置遵循规则如下：
+ *      1. 根项目总会被配置。
+ *      2. 构建的当前项目也会被配置。
+ *      3. 项目的依赖会被配置。如果项目A将项目B作为依赖，则构建A时，A和B都会被配置。
+ *      4. 任务依赖对应的项目会被配置。如’someTask.dependsOn(":someOtherProject:someOtherTask")‘，someOtherProject会被配置。
+ *      5. 通过命令行构建任务时会配置相应的项目。如构建 'projectA:projectB:someTask'时会配置projectB。
+ *  注：进行构建时，可以在命令行加入--configure-on-demand来指定用按需配置模式来进行构建，如gradle hello --configure-on-demand将以按需配置模式执行‘’hello“任务。
+ * 3. 执行（Execution）
+ * 在这个阶段，首先，Gradle确定要执行的任务集，任务集是由输入到命令行的任务名称参数和当前目录决定的。然后，Gradle会去执行任务集中的每个任务。
+ * 任务（Task）是由一系列的活动（Action）组成的，当任务执行的时候，活动会依次执行。可以通过doFirst和doLast方法将活动添加到任务中。
+ * 任务的位置：以$ gradle hello为例，在执行阶段，Gradle会从构建的当前项目目录开始，依据项目树往下查找名称为hello的任务并执行。因此Gradle不会执行当前项目的父项目和兄弟节点项目的任务。
+ * 任务的顺序：如果没有额外配置，Gradle将以字母数字顺序执行任务。比如 “:consumer:action” 将先于 “:producer:action”执行。
+ *
+ * 参考链接：https://www.jianshu.com/p/498ae3fabe6f
+ *
+ *
+ * gradle简易构建过程：
+ * 1. 初始化阶段：执行settings.gradle脚本，解析整个工程中所有Project，构建所有Project对应的project对象。
+ * 2. 配置阶段：解析所有project对象中的task对象，构建好所有task的拓扑图
+ * 3. 执行阶段：执行具体的task以及依赖的task
+ *
+ *
+ * gradle 配置阶段执行每个module的配置文件(build.gradle)时，是从上到下依次执行的(包括插件)，来构建有向无环图task。最后执行阶段执行所有的task
+ */
+
+/**
+ * gradle声明周期监听1：
+ * 配置本Project阶段开始前的监听回调
+ */
+this.beforeEvaluate {
+    println '配置阶段执行之前'
+}
+
+/**
+ * gradle声明周期监听2：
+ * 配置本Project阶段完成以后的回调
+ */
+this.afterEvaluate {
+    println '配置阶段执行完毕'
+}
+
+/**
+ * gradle声明周期监听3：
+ * gradle执行本Project完毕后的回调监听
+ */
+this.gradle.buildFinished {
+    println '执行阶段执行完毕'
+}
+
+/**
+ * 所有project配置完成后调用，可直接在setting.gradle中监听
+ */
+gradle.projectsEvaluated {
+    gradle ->
+        println "所有的project都配置完毕了，准备生成Task依赖关系"
+}
+
+/**
+ * 表示本Project "task 依赖关系已经生成"
+ */
+gradle.taskGraph.whenReady {
+    TaskExecutionGraph graph ->
+        println "task 依赖关系已经生成"
+}
+
+/**
+ * 每一个 Task 任务执行之前回调
+ */
+gradle.taskGraph.beforeTask {
+    Task task ->
+        println "Project[${task.project.name}]--->Task[${task.name}] 在执行之前被回调"
+}
+
+/**
+ * 每一个 task 执行之后被回调
+ */
+gradle.taskGraph.afterTask {
+    task, TaskState taskState ->
+        //第二个参数表示 task 的状态，是可选的参数
+        println "Project[${task.project.name}]--->Task[${task.name}] 在执行完毕,taskState[upToDate:${taskState.upToDate},skipped:${taskState.skipped},executed:${taskState.executed},didWork:${taskState.didWork}]"
+}
+
+
+/**
+ * Project API讲解
+ */
+this.getAllprojects() // 获取所有project
+this.getSubprojects() // 获取所有子project
+
+/**
+ * 获取项目所有project
+ */
+def getAllProject() {
+
+    println '''
+		------------------------------------------------------------
+		Root project
+		------------------------------------------------------------
+		'''
+
+    this.allprojects.eachWithIndex { project, index ->
+        if (index == 0) {
+            println "Root project ${project.name}"
+        } else {
+            println "+-------- Project ${project.name}"
+        }
+    }
+
+}
+
+/**
+ * 获取父Project
+ * 此方法可放到任意module的build.gralde文件中
+ */
+def getParentProject() {
+    def parentName = this.getParent().name
+    if (parentName == null) {
+        println "当前project没有父project"
+    } else {
+        println "当前project父project为：$parentName"
+    }
+}
+
+/**
+ * 获取根project
+ */
+def getRootProj() {
+    println this.getRootProject().name
+}
+
+/* 部分API需要参考根Project的build.gradle文件 */
+
+
+/**
+ * 属性相关 API
+ */
+ext {
+    versionCode = '1.0.0'
+    versionName = '100'
+    versionInfo = 'App的第1个版本，完成聊天功能'
+    destFile = file('release.xml')
+    if (destFile != null && !destFile.exists()) {
+        println '创建release.xml文件'
+        destFile.createNewFile()
+    }
+}
+
+// 打印common.gradle文件内容
+println getContent('common.gradle')
+
+def getContent(String path) {
+    try {
+        def file = file(path)
+        return file.text
+    } catch (GradleException e) {
+        println 'file not found..'
+    }
+    return null
+}
+
+// 拷贝文件、文件夹
+copy {
+    from file('build/outputs/apk/')
+    into getRootProject().getBuildDir().path + '/apk/'
+    exclude {} // 排除文件
+    rename {} // 文件重命名
+}
+
+// 对文件树进行遍历并拷贝
+fileTree('build/outputs/apk/') { FileTree fileTree ->
+    fileTree.visit { FileTreeElement element ->
+        println 'the file name is: ' + element.file.name
+        copy {
+            from element.file
+            into getRootProject().getBuildDir().path + '/test/'
+        }
+    }
+}
+
+
+task HelloTask(group: 'hello', description: 'study') {
+    println 'Task build'
+    doFirst {
+        println 'Hello Task'
+    }
+    doLast {
+        println 'Task end'
+    }
+}
+
+task HelloTask2(group: 'hello', description: 'study2', dependsOn: HelloTask) {
+    println 'Task build 2'
+    doFirst {
+        println 'Hello2 Task'
+    }
+    doLast {
+        println 'Task end 2'
+    }
+}
+
+
+// Task实战：将每个版本的版本信息保存到指定文件中
+// writeTask输入扩展属性，输出文件
+task writeTask {
+    // 为task指定输入
+    inputs.property('versionCode', this.versionCode)
+    inputs.property('versionName', this.versionName)
+    inputs.property('versionInfo', this.versionInfo)
+    // 为task指定输出
+    outputs.file this.destFile
+    doLast {
+        def data = inputs.getProperties() // 返回一个map
+        File file = outputs.getFiles().getSingleFile()
+        // 将map转为实体对象
+        def versionMsg = new VersionMsg(data)
+        def sw = new StringWriter()
+        def xmlBuilder = new groovy.xml.MarkupBuilder(sw)
+        if (file.text != null && file.text.size() <= 0) { // 文件中没有内容
+            // 实际上，xmlBuilder将xml数据写入到sw中
+            xmlBuilder.releases { // <releases>
+                release { // <releases>的子节点<release>
+                    versionCode(versionMsg.versionCode)
+                    // <release>的子节点<versionCode>1.0.0<versionCode>
+                    versionName(versionMsg.versionName)
+                    versionInfo(versionMsg.versionInfo)
+                }
+            }
+            // 将sw里的内容写到文件中
+            file.withWriter { writer ->
+                writer.append(sw.toString())
+            }
+        } else { // 已经有其它版本信息了
+            xmlBuilder.release {
+                versionCode(versionMsg.versionCode)
+                versionName(versionMsg.versionName)
+                versionInfo(versionMsg.versionInfo)
+            }
+            def lines = file.readLines()
+            def lengths = lines.size() - 1
+            file.withWriter('utf-8') { writer ->
+                lines.eachWithIndex { String line, int index ->
+                    if (index != lengths) {
+                        writer.append(line + '\r\n')
+                    } else if (index == lengths) {
+                        writer.append(sw.toString() + '\r\n')
+                        writer.append(line + '\r\n')
+                    }
+                }
+            }
+        }
+    }
+}
+
+// readTask输入writeTask的输出文件
+task readTask {
+    inputs.file destFile
+    doLast {
+        def file = inputs.files.singleFile
+        println file.text
+    }
+}
+
+task taskTest(dependsOn: [writeTask, readTask]) {
+    doLast {
+        println '任务执行完毕'
+    }
+}
+
+class VersionMsg {
+    String versionCode
+    String versionName
+    String versionInfo
+}

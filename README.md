@@ -14,15 +14,7 @@ CustomWidget：自定义组件，学习HenCoder练习项目集锦，以及自己
 
 HttpServer：Android本地的微型服务器，基于局域网实现Android应用服务器(该demo既是服务端又是客户端)
 
-GradleLib：Gradle自动化项目构建Demo部分笔记，其余笔记：settings.gradle、最外层build.gradle
-
-buidlSrc：Gradle自定义插件
-
-JavaLib：Java类库，目前主要为计算机组成原理部分、Java虚拟机规范以及easyExcel读取（包括多语言文件生成）
-
-Kotlinlearn：Kotlin基础知识学习
-
-LeetCode：算法练习
+buidlSrc：Gradle自定义插件和部分笔记，其余笔记：settings.gradle、最外层build.gradle
 
 PerformanceAnalysis：性能分析与优化，比较系统的学习性能分析和优化
 

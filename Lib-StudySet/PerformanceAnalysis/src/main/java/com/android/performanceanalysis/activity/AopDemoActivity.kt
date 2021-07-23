@@ -2,7 +2,7 @@ package com.android.performanceanalysis.activity
 
 import android.graphics.BitmapFactory
 import android.os.Bundle
-import android.support.v7.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatActivity
 import com.android.performanceanalysis.R
 import com.android.performanceanalysis.aop.SingleClick
 import kotlinx.android.synthetic.main.activity_aop_demo.*
